@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -52,6 +52,14 @@ function createWindow() {
     },
   });
   win.setMenu(null);
+  // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
+  win.webContents.on('context-menu', (_e, p) => {
+    const f = p.editFlags || {};
+    const items = p.isEditable
+      ? [{ role: 'cut', label: 'Вырезать', enabled: !!f.canCut }, { role: 'copy', label: 'Копировать', enabled: !!f.canCopy }, { role: 'paste', label: 'Вставить', enabled: !!f.canPaste }, { type: 'separator' }, { role: 'selectAll', label: 'Выделить всё', enabled: !!f.canSelectAll }]
+      : (p.selectionText ? [{ role: 'copy', label: 'Копировать' }] : []);
+    if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
+  });
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);

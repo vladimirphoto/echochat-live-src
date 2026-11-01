@@ -268,7 +268,7 @@ body.t-widgets .stats{display:none}
 
 @media (max-height:820px){
   .stat{padding:9px 16px}.stat b{font-size:20px}.stat .ic{width:22px;height:22px}
-  #tab-live .tips{display:none}
+  #tab-live .tips{padding:11px 16px}#tab-live .tips h2{margin-bottom:6px}#tab-live .tips ol{gap:3px;font-size:13px}
   header{margin-bottom:10px}
 }
 
@@ -475,5 +475,9 @@ label+.csel{margin-top:0}
 /* стрелка «листать вниз» кликабельна, но сам светящийся круг клики не перехватывает */
 .sh-btn{position:relative;width:54px;height:54px;border-radius:50%;border:0;padding:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer;pointer-events:none;transition:background .2s,transform .2s}
 .scrollhint.on .sh-btn{pointer-events:auto}
-.sh-btn:hover{background:rgba(255,255,255,.12);transform:scale(1.08)}
+.scrollhint:after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(150,105,255,.95) 0%,rgba(139,92,246,.42) 40%,transparent 70%);-webkit-mask-image:radial-gradient(circle,#000 25%,transparent 68%);mask-image:radial-gradient(circle,#000 25%,transparent 68%);opacity:0;transition:opacity .25s;pointer-events:none}
+/* при наведении тот же мягкий фиолетовый круг, только ярче (без жёсткой границы) */
+.scrollhint:has(.sh-btn:hover):after{opacity:1}
+.sh-btn{z-index:1}
+.sh-btn:hover svg{filter:drop-shadow(0 0 7px rgba(255,255,255,.85))}
 .sh-btn:focus-visible{outline:2px solid var(--a1);outline-offset:2px}

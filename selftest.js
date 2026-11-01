@@ -204,10 +204,10 @@ const PAGE_TEST = `(async () => {
     add('ui', 'плашка «Зрители сейчас» делится на TikTok и Twitch', !!$('#sViewers') && !!$('#sViewersTw') && $('#sViewers').closest('.vv').classList.contains('tt') && $('#sViewersTw').closest('.vv').classList.contains('tw') && rr($('#sViewersTw')).left > rr($('#sViewers')).left);
     vtw.hidden = vtwHidden;
     { const tpEl = $('.tips'), cnEl = $('#btnConnect').closest('.card'), tp = rr(tpEl), cn = rr(cnEl);
-      // в невысоком окне «Перед эфиром» скрыт правилом CSS (так и было) — тогда сверяем только порядок в разметке
-      add('ui', 'эфир: «Перед эфиром» сверху, «Подключение» под ним', !!(tpEl.compareDocumentPosition(cnEl) & Node.DOCUMENT_POSITION_FOLLOWING) && (tp.height === 0 || (tp.bottom <= cn.top + 1 && Math.abs(tp.left - cn.left) <= 1)), JSON.stringify([tp.bottom, cn.top].map(Math.round)));
+      // «Перед эфиром» показывается всегда (в невысоком окне страница прокручивается)
+      add('ui', 'эфир: «Перед эфиром» сверху, «Подключение» под ним', !!(tpEl.compareDocumentPosition(cnEl) & Node.DOCUMENT_POSITION_FOLLOWING) && (tp.height > 0 && tp.bottom <= cn.top + 1 && Math.abs(tp.left - cn.left) <= 1), JSON.stringify([tp.bottom, cn.top].map(Math.round)));
       add('ui', 'раздел называется «Озвучка»', $('.nav[data-tab=voice]').textContent.trim() === 'Озвучка'); }
-    add('ui', 'вкладка «Эфир» без прокрутки', $('#tab-live').scrollHeight <= $('#tab-live').clientHeight + 1, $('#tab-live').scrollHeight + '/' + $('#tab-live').clientHeight);
+    add('ui', 'вкладка «Эфир» без прокрутки (в высоком окне; в невысоком прокручивается)', innerHeight < 860 || $('#tab-live').scrollHeight <= $('#tab-live').clientHeight + 1, $('#tab-live').scrollHeight + '/' + $('#tab-live').clientHeight);
     const ca = rr($('#btnClear')), cf = rr($('.feed-card'));
     add('ui', 'кнопка «Очистить» внутри карточки ленты', ca.right <= cf.right && ca.left >= cf.left && ca.bottom <= cf.bottom, JSON.stringify([ca.right, cf.right]));
     $('.nav[data-tab=widgets]').click(); await sleep(400);
@@ -419,7 +419,8 @@ async function run(win, app) {
     await new Promise((resolve) => (win.webContents.isLoading() ? win.webContents.once('did-finish-load', resolve) : resolve()));
     await new Promise((r) => setTimeout(r, 800));
     const page = await win.webContents.executeJavaScript(PAGE_TEST, true);
-    finish([...mainTests(), ...page, ...(await eventTests(win))]);
+    const ctx = { group: 'ui', name: 'меню по правой кнопке в полях ввода (вставка ника)', ok: win.webContents.listenerCount('context-menu') > 0, detail: '' };
+    finish([...mainTests(), ...page, ...(await eventTests(win)), ctx]);
   } catch (e) {
     finish([{ group: 'ui', name: 'автотест не смог запуститься', ok: false, detail: String(e && e.stack || e) }]);
   }
