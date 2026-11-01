@@ -26,7 +26,7 @@ const DEFAULTS = {
   selected: 'b-svetlana', vol: 80, maxLen: 140, nick: '',
   presets: [],
   widgets: [], wSel: '', twNick: '',
-  voiceOn: true, ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
+  ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
   kaspi: { enabled: false, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true },
@@ -384,7 +384,6 @@ function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук го
 
 let voiceCalls = 0; // сколько раз пытались озвучить (для автотеста)
 function enqueue(item, force = false) {
-  if (S.voiceOn === false && !force) return; // общий выключатель озвучки (студия озвучки играет всегда)
   voiceCalls++; // пауза относится только к ленте чата: озвучка идёт по настройкам на странице «Озвучка»
   if (queue.length >= QUEUE_MAX) queue.shift();
   item.preset = item.preset || selectedPreset();
@@ -454,15 +453,15 @@ async function pump() {
   } finally { busy = false; curItem = null; document.body.classList.remove('talking'); }
 }
 
-// «Пропустить фразу» и общий выключатель (из окна и из меню значка в трее)
+// «Пропустить фразу» (из окна и из меню значка в трее)
 function skipPhrase() { if (curItem) curItem.cancelled = true; stopCurrent(); }
 function silence() { queue.forEach((it) => { it.cancelled = true; }); skipPhrase(); }
 
 // значок в трее показывает и меняет основные переключатели озвучки: окно сообщает их состояние, трей присылает команды
-const TRAY_KEYS = ['voiceOn', 'ttChat', 'gifts', 'follows', 'twChat'];
+const TRAY_KEYS = ['ttChat', 'gifts', 'follows', 'twChat'];
 const trayEl = (k) => document.querySelector('input[data-k=' + k + ']');
 const pushTray = () => { try { window.echo.trayState(Object.fromEntries(TRAY_KEYS.map((k) => [k, !!S[k]]))); } catch (_) {} };
-TRAY_KEYS.forEach((k) => { const el = trayEl(k); if (el) el.addEventListener('change', () => { if (k === 'voiceOn' && !S.voiceOn) silence(); pushTray(); }); });
+TRAY_KEYS.forEach((k) => { const el = trayEl(k); if (el) el.addEventListener('change', () => { pushTray(); }); });
 window.echo.onTraySet(({ key, value }) => { const el = TRAY_KEYS.includes(key) && trayEl(key); if (el) { el.checked = !!value; el.dispatchEvent(new Event('change')); } });
 window.echo.onTraySkip(skipPhrase);
 pushTray();

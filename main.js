@@ -54,8 +54,8 @@ function trayImage() {
   return img;
 }
 // состояние для меню трея: переключатели озвучки приходят из окна, подключения — из событий статуса, обновление — из проверок
-const TRAY_KEYS = ['voiceOn', 'ttChat', 'gifts', 'follows', 'twChat'];
-const trayS = { voiceOn: true, ttChat: true, gifts: true, follows: true, twChat: true };
+const TRAY_KEYS = ['ttChat', 'gifts', 'follows', 'twChat'];
+const trayS = { ttChat: true, gifts: true, follows: true, twChat: true };
 const trayConn = { tt: 'offline', tw: 'offline' };
 const trayUpd = { busy: false, version: '' };
 const toast = (body) => { try { if (Notification.isSupported()) new Notification({ title: 'ЭхоЧат LIVE', body, icon: path.join(__dirname, 'src', 'icon.png') }).show(); } catch (_) {} };
@@ -74,7 +74,6 @@ function buildTrayMenu() {
     { type: 'separator' },
     ...status,
     { type: 'separator' },
-    flag('voiceOn', 'Озвучка включена'),
     { label: 'Пропустить текущую фразу', click: () => send('tray:skip') },
     { label: 'Что озвучивать', submenu: [
       flag('ttChat', 'TikTok: сообщения чата'), flag('gifts', 'TikTok: подарки'), flag('follows', 'TikTok: новые подписки'), flag('twChat', 'Twitch: сообщения чата'),
