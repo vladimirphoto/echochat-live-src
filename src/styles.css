@@ -481,3 +481,7 @@ label+.csel{margin-top:0}
 .sh-btn{z-index:1}
 .sh-btn:hover svg{filter:drop-shadow(0 0 7px rgba(255,255,255,.85))}
 .sh-btn:focus-visible{outline:2px solid var(--a1);outline-offset:2px}
+
+/* плавность: стрелка и её свечение на собственном слое, чтобы не мерцали при прокрутке и смене вкладок */
+.scrollhint{will-change:opacity,transform;contain:layout paint}
+.scrollhint svg{will-change:transform}

@@ -1014,6 +1014,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '1.19.4': ['Стрелка «листать» больше не дёргается при переключении вкладок: появляется и гаснет сразу и плавно, без задержки и мигания у границы'],
   '1.19.3': ['«Перед эфиром» больше не пропадает в невысоком окне (страница при необходимости прокручивается)', 'В полях ников TikTok и Twitch работает меню по правой кнопке: вставить, вырезать, копировать', 'Стрелка «листать»: при наведении мягкое свечение становится ярче, без резкой границы'],
   '1.19.2': ['Пауза на странице «Эфир» останавливает только ленту чата: озвучка сообщений, подарков и подписок идёт по настройкам на странице «Озвучка»'],
   '1.19.1': ['Лента чата сама возвращается вниз через 10 секунд после того, как её перестали листать (пока читаешь — новые сообщения её не сдёргивают)', 'Стрелка «можно листать» теперь кнопка: клик плавно опускает страницу до конца'],
@@ -1053,12 +1054,19 @@ $('#kLogClear').onclick = () => { klog.innerHTML = '<div class="empty">Пока 
 /* ---------- стрелка «можно листать» на странице озвучки ---------- */
 (() => {
   const hint = $('#scrollHint');
-  const upd = () => { const tab = document.querySelector('.tab.show'); const more = !!tab && tab.scrollHeight - tab.scrollTop - tab.clientHeight > 40; hint.classList.toggle('on', more); };
+  // порог с запасом: включается при >40 px до конца, гаснет при <=12 px — у границы стрелка не мигает
+  const upd = () => {
+    const tab = document.querySelector('.tab.show'), on = hint.classList.contains('on');
+    const more = !!tab && tab.scrollHeight - tab.scrollTop - tab.clientHeight > (on ? 12 : 40);
+    if (more !== on) hint.classList.toggle('on', more);
+  };
+  // при переключении вкладки состояние обновляется сразу и ещё раз после отрисовки (а не по таймеру): без задержки и «залипания»
+  $$('.nav').forEach((b) => b.addEventListener('click', () => { upd(); requestAnimationFrame(upd); }));
   // клик по стрелке — плавно до конца страницы
   $('.sh-btn', hint).addEventListener('click', () => { const tab = document.querySelector('.tab.show'); if (tab) tab.scrollTo({ top: tab.scrollHeight, behavior: 'smooth' }); });
   document.addEventListener('scroll', upd, { passive: true, capture: true });
   window.addEventListener('resize', upd);
-  setInterval(upd, 400);
+  setInterval(upd, 250); // содержимое вкладок дорисовывается само (список голосов, предпросмотры)
   upd();
 })();
 

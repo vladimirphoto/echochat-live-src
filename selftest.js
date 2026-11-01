@@ -239,6 +239,10 @@ const PAGE_TEST = `(async () => {
       const tab = document.querySelector('.tab.show'), sh = document.getElementById('scrollHint');
       if (sh.classList.contains('on')) { sh.querySelector('.sh-btn').click(); for (let i = 0; i < 40 && tab.scrollHeight - tab.scrollTop - tab.clientHeight > 2; i++) await sleep(100); }
       add('ui', 'стрелка «листать»: клик плавно опускает страницу до конца', tab.scrollHeight - tab.scrollTop - tab.clientHeight <= 2, Math.round(tab.scrollHeight - tab.scrollTop - tab.clientHeight));
+      // стрелка реагирует на смену вкладки сразу (раньше — с задержкой до 0,4 с), без мигания
+      const hintOk = async (id) => { document.querySelector('.nav[data-tab=' + id + ']').click(); await sleep(70); const tb = document.querySelector('.tab.show'), rest = tb.scrollHeight - tb.scrollTop - tb.clientHeight, on = sh.classList.contains('on'); return (rest > 40 && on) || (rest <= 12 && !on) || (rest > 12 && rest <= 40); };
+      const h1 = await hintOk('live'), h2 = await hintOk('voice'), h3 = await hintOk('filters'), h4 = await hintOk('widgets');
+      add('ui', 'стрелка «листать»: состояние обновляется сразу при переключении вкладок', h1 && h2 && h3 && h4, [h1, h2, h3, h4].join(','));
       $('.nav[data-tab=live]').click(); }
     // --- проверка обновлений ---
     const up = await window.echo.checkUpdate();
