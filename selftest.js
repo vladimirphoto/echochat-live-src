@@ -340,10 +340,12 @@ async function eventTests(win) {
   // вкладка «Настройки» и окно «Закрыть программу?»
   add('ui', 'вкладка «Настройки»: крестик, автозапуск, автообновление', await q("!!document.querySelector('.nav[data-tab=settings]') && !!document.querySelector('#tab-settings #closeModeSel .csel-drop') && !!document.querySelector('#setAutoUpd') && !!document.querySelector('#setAutostart') && !!document.querySelector('#setAutostartHidden')"));
   const autoUpd0 = await q('window.echo.appSettings().then((x) => x.autoUpdate)');
-  await q('window.echo.appSettingsSet({ autoUpdate: false })');
+  await q("document.querySelector('#setAutoUpd').click()"); // как пользователь: клик по переключателю, интерфейс и основной процесс обновляются вместе
+  await wait(250);
   const autoUpd1 = await q('window.echo.appSettings().then((x) => x.autoUpdate)');
   const uiOff = await q("document.querySelector('#setAutoUpd').checked");
-  await q('window.echo.appSettingsSet({ autoUpdate: ' + (autoUpd0 === false ? 'false' : 'true') + ' })');
+  await q("document.querySelector('#setAutoUpd').click()"); // возвращаем как было
+  await wait(250);
   add('настройки: автообновление выключается и сохраняется', autoUpd0 === true && autoUpd1 === false && uiOff === false, JSON.stringify([autoUpd0, autoUpd1, uiOff]));
   send('app:ask-close');
   await wait(250);

@@ -194,9 +194,9 @@ function createWindow() {
     },
   });
   win.setMenu(null);
-  if (useTray) win.on('minimize', () => { if (tray) win.hide(); });
+  if (useTray) win.on('minimize', () => { if (tray) win.hide(); }); // без иконки в трее окно не прячем, иначе его не вернуть
   win.on('close', onWindowClose);
-  win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем // без иконки в трее окно не прячем, иначе его не вернуть
+  win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
   win.webContents.on('context-menu', (_e, p) => {
     const f = p.editFlags || {};
