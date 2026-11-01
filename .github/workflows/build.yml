@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# два запуска подряд не должны одновременно публиковать один и тот же релиз
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
@@ -18,6 +23,8 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run dist
+      # установщик для установленной версии: она обновляется сама, скачивая файл с «Setup» в имени
+      - run: npm run dist:setup
 
       # Автотест собранного приложения: открывает окно, нажимает кнопки,
       # синтезирует голоса, проверяет подключение к несуществующему эфиру.
@@ -50,7 +57,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: EchoChat-LIVE-exe
-          path: dist/*.exe
+          path: dist/EchoChat-LIVE-*.exe
       - name: Read version
         id: ver
         shell: bash
@@ -62,4 +69,4 @@ jobs:
           name: ЭхоЧат LIVE ${{ steps.ver.outputs.v }}
           target_commitish: ${{ github.sha }}
           body_path: selftest.md
-          files: dist/*.exe
+          files: dist/EchoChat-LIVE-*.exe

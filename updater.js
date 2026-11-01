@@ -25,7 +25,7 @@ const isInstalled = () => process.platform === 'win32' && app.isPackaged && !pro
 const isSetupName = (name) => /setup/i.test(String(name || ''));
 // нужный файл релиза: установленной версии — установщик (без него обновления нет), portable — обычный exe (а если его нет, любой exe)
 function pickAsset(assets, installed) {
-  const exes = (assets || []).filter((a) => a && /\.exe$/i.test(a.name));
+  const exes = (assets || []).filter((a) => a && /\.exe$/i.test(a.name) && !/uninstall/i.test(a.name));
   return exes.find((a) => isSetupName(a.name) === !!installed) || (installed ? null : exes[0]) || null;
 }
 
