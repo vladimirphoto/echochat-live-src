@@ -16,3 +16,17 @@ test('онлайн Twitch: стрима нет, канала нет, сбой с
   assert.equal(await viewersOf('shroud', async () => ({ ok: false })), null);
   assert.equal(await viewersOf('a"b', reply({})), null);
 });
+
+test('аватарки Twitch: кэш отдаётся мгновенно, один запрос на ник, пустой кэш не ждёт сеть', async () => {
+  const tw = require('../twitch');
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; await new Promise((r) => setTimeout(r, 30)); return { text: async () => 'https://img.example/a.png' }; };
+  try {
+    assert.equal(tw.cachedAvatar('NewUser'), ''); // до загрузки — пусто и без ожидания
+    const [a, b] = await Promise.all([tw.avatarOf('NewUser'), tw.avatarOf('newuser')]);
+    assert.equal(a, 'https://img.example/a.png'); assert.equal(b, a);
+    assert.equal(calls, 1);
+    assert.equal(tw.cachedAvatar('NEWUSER'), 'https://img.example/a.png');
+  } finally { globalThis.fetch = realFetch; }
+});

@@ -58,19 +58,27 @@ function connect(channel, handlers) {
 }
 
 // Аватарка Twitch без ключа API: публичный сервис decapi.me отдаёт ссылку текстом
-const avatars = new Map();
-async function avatarOf(login) {
+const avatars = new Map(), avatarPending = new Map();
+// то, что уже известно, — мгновенно и без сети (пусто, если ещё не загружено)
+const cachedAvatar = (login) => avatars.get(String(login || '').toLowerCase()) || '';
+function avatarOf(login) {
   login = String(login || '').toLowerCase();
-  if (avatars.has(login)) return avatars.get(login);
-  let url = '';
-  try {
-    const r = await fetch('https://decapi.me/twitch/avatar/' + encodeURIComponent(login), { signal: AbortSignal.timeout(5000) });
-    const t = (await r.text()).trim();
-    if (/^https:\/\//.test(t)) url = t;
-  } catch (_) {}
-  if (avatars.size > 2000) avatars.clear();
-  avatars.set(login, url);
-  return url;
+  if (avatars.has(login)) return Promise.resolve(avatars.get(login));
+  if (avatarPending.has(login)) return avatarPending.get(login); // один запрос на ник, даже если пишет подряд
+  const p = (async () => {
+    let url = '';
+    try {
+      const r = await fetch('https://decapi.me/twitch/avatar/' + encodeURIComponent(login), { signal: AbortSignal.timeout(5000) });
+      const t = (await r.text()).trim();
+      if (/^https:\/\//.test(t)) url = t;
+    } catch (_) {}
+    if (avatars.size > 2000) avatars.clear();
+    avatars.set(login, url);
+    avatarPending.delete(login);
+    return url;
+  })();
+  avatarPending.set(login, p);
+  return p;
 }
 
 // Сколько зрителей сейчас смотрит канал: публичный GraphQL Twitch (как у веб-версии), без ключей.
@@ -91,4 +99,4 @@ async function viewersOf(login, fetchImpl = globalThis.fetch) {
   } catch (_) { return null; }
 }
 
-module.exports = { connect, avatarOf, parseLine, viewersOf };
+module.exports = { connect, avatarOf, cachedAvatar, parseLine, viewersOf };

@@ -133,6 +133,8 @@ function applyAutostart() {
     app.setLoginItemSettings({ openAtLogin: !!appSet.autostart, path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath, args: appSet.autostartHidden ? ['--hidden'] : [] });
   } catch (_) {}
 }
+ipcMain.on('win:min', () => { if (win && !win.isDestroyed()) win.minimize(); });
+ipcMain.on('win:close', () => { if (win && !win.isDestroyed()) win.close(); });
 ipcMain.handle('app:settings:get', () => publicApp());
 ipcMain.handle('app:settings:set', (_e, patch) => {
   const c = cleanApp(patch);
@@ -174,10 +176,13 @@ app.on('second-instance', showWindow);
 function createWindow() {
   // стартовый размер окна (не больше экрана)
   const wa = require('electron').screen.getPrimaryDisplay().workAreaSize;
+  // на Windows рамка своя (кнопки «свернуть» и «закрыть», без «развернуть»): родная показывает неактивный квадратик
+  const TB = process.platform === 'win32' ? 32 : 0;
   win = new BrowserWindow({
     width: Math.min(1105, wa.width),
-    height: Math.min(748, wa.height),
+    height: Math.min(748 + TB, wa.height),
     useContentSize: true,
+    frame: process.platform !== 'win32',
     resizable: false, // размер окна фиксированный: интерфейс рассчитан на 1105×748
     maximizable: false,
     fullscreenable: false,
@@ -196,6 +201,7 @@ function createWindow() {
   });
   win.setMenu(null);
   if (useTray) win.on('minimize', () => { if (tray) win.hide(); }); // без иконки в трее окно не прячем, иначе его не вернуть
+  win.on('maximize', () => { try { win.unmaximize(); } catch (_) {} }); // двойной клик по полосе окна не должен разворачивать его
   win.on('close', onWindowClose);
   win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
@@ -466,10 +472,12 @@ ipcMain.handle('tw:connect', async (_e, name) => {
   let first = true;
   const t = twitch.connect(name, {
     onStatus: (st) => { if (tw === t) send('tw:status', { state: st, channel: t.channel }); },
-    onChat: async (m) => {
+    // без await: ни показ, ни озвучка не ждут сеть, и порядок сообщений не нарушается;
+    // аватарка берётся из кэша, а у нового человека догружается в фоне — со следующего сообщения она уже есть
+    onChat: (m) => {
       if (tw !== t || !m.text) return;
-      const avatar = await twitch.avatarOf(m.id);
-      if (tw !== t) return;
+      const avatar = twitch.cachedAvatar(m.id);
+      if (!avatar) twitch.avatarOf(m.id).catch(() => {});
       send('tw:chat', { ...m, avatar });
       wmsg({ platform: 'twitch', name: m.name, text: m.text, avatar, color: colorOf(m.name) });
     },
