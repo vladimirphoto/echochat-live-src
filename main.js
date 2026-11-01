@@ -178,8 +178,9 @@ function createWindow() {
     width: Math.min(1105, wa.width),
     height: Math.min(748, wa.height),
     useContentSize: true,
-    minWidth: 1060,
-    minHeight: 720,
+    resizable: false, // размер окна фиксированный: интерфейс рассчитан на 1105×748
+    maximizable: false,
+    fullscreenable: false,
     show: !SELFTEST && !startHidden,
     backgroundColor: '#0b0b12',
     title: 'ЭхоЧат LIVE',
