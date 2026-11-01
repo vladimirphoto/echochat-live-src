@@ -31,11 +31,11 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
 const SELFTEST = process.argv.includes('--selftest');
 
 function createWindow() {
-  // размер под содержимое: все блоки помещаются без прокрутки (но не больше экрана)
+  // стартовый размер окна (не больше экрана)
   const wa = require('electron').screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
-    width: Math.min(1260, wa.width),
-    height: Math.min(880, wa.height),
+    width: Math.min(1105, wa.width),
+    height: Math.min(748, wa.height),
     useContentSize: true,
     minWidth: 1060,
     minHeight: 720,
