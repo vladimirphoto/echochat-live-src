@@ -130,6 +130,7 @@ const TITLES = {
   filters: ['Фильтры', 'Что голос читает вслух, а что пропускает'],
   widgets: ['Виджеты', 'Чат TikTok и Twitch для OBS и TikTok LIVE Studio'],
   kaspi: ['Донаты Каспи', 'Донаты на экран стрима: имя, сумма и картинка'],
+  settings: ['Настройки', 'Окно, запуск и обновления'],
 };
 $$('.nav').forEach((b) => b.addEventListener('click', () => {
   $$('.nav').forEach((x) => x.classList.toggle('active', x === b));
@@ -667,6 +668,43 @@ btn.onclick = async () => {
 $('#nick').addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
 
 /* ---------- обновление по кнопке ---------- */
+/* ---------- настройки приложения: хранятся в основном процессе (крестик, трей, автозапуск, автообновление) ---------- */
+let AS = { closeMode: 'ask', autoUpdate: true, autostart: false, autostartHidden: true, canTray: false, canAutostart: false };
+const CLOSE_OPTS = [{ v: 'ask', label: 'Спрашивать' }, { v: 'tray', label: 'Сворачивать в трей' }, { v: 'quit', label: 'Закрывать программу' }];
+const renderClose = makeSelect('closeModeSel', { options: () => CLOSE_OPTS, get: () => AS.closeMode, set: (v) => setApp({ closeMode: v }) });
+function renderApp() {
+  $('#setWin').hidden = !AS.canTray;
+  $('#setRun').hidden = !AS.canAutostart;
+  $('#setAutoUpd').checked = !!AS.autoUpdate;
+  $('#setAutostart').checked = !!AS.autostart;
+  $('#setAutostartHidden').checked = !!AS.autostartHidden;
+  $('#setAutostartHidden').closest('.sw').style.opacity = AS.autostart ? '' : '.45';
+  $('#setAutostartHidden').disabled = !AS.autostart;
+  renderClose();
+}
+async function setApp(patch) {
+  try { AS = { ...AS, ...(await window.echo.appSettingsSet(patch)) }; } catch (_) {}
+  renderApp();
+}
+const appReady = window.echo.appSettings().then((s) => { AS = { ...AS, ...s }; renderApp(); }).catch(() => {});
+$('#setAutoUpd').addEventListener('change', (e) => setApp({ autoUpdate: e.target.checked }));
+$('#setAutostart').addEventListener('change', (e) => setApp({ autostart: e.target.checked }));
+$('#setAutostartHidden').addEventListener('change', (e) => setApp({ autostartHidden: e.target.checked }));
+
+// крестик: окно спрашивает, свернуть в трей или закрыть
+const closeBack = $('#closeBack');
+async function closeAnswer(action) {
+  const remember = action !== 'cancel' && $('#closeRemember').checked;
+  closeBack.hidden = true; $('#closeRemember').checked = false;
+  try { AS = { ...AS, ...(await window.echo.closeAnswer({ action, remember })) }; renderApp(); } catch (_) {}
+}
+window.echo.onAskClose(() => { closeBack.hidden = false; $('#closeTray').focus(); });
+$('#closeTray').onclick = () => closeAnswer('tray');
+$('#closeQuit').onclick = () => closeAnswer('quit');
+$('#closeCancel').onclick = () => closeAnswer('cancel');
+closeBack.addEventListener('click', (e) => { if (e.target === closeBack) closeAnswer('cancel'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !closeBack.hidden) closeAnswer('cancel'); });
+
 const btnUpd = $('#btnUpdate');
 let updReady = false;
 const SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -694,6 +732,7 @@ let updChecked = false, autoUpdTried = false;
 async function autoCheckUpdate() {
   if (updReady || updChecked || btnUpd.classList.contains('busy')) return;
   let r = null;
+  await appReady;
   try { r = await window.echo.checkUpdate(); } catch (_) {}
   if (!r || !r.ok) return; // нет сети — попробуем снова, когда появится интернет, или через 6 часов
   updChecked = true;
@@ -702,7 +741,7 @@ async function autoCheckUpdate() {
   btnUpd.classList.add('new');
   setUpd('down', `Обновить до ${r.version}`);
   sys(`Доступна новая версия ${r.version}. Нажми кнопку слева внизу, чтобы обновиться.`);
-  if ((r.portable || r.installed) && !autoUpdTried) { autoUpdTried = true; btnUpd.click(); } // при запуске обновляемся сразу
+  if ((r.portable || r.installed) && AS.autoUpdate && !autoUpdTried) { autoUpdTried = true; btnUpd.click(); } // при запуске обновляемся сразу (если не выключено в «Настройках»)
 }
 setTimeout(autoCheckUpdate, 1500);
 setInterval(() => { updChecked = false; autoCheckUpdate(); }, UPD_EVERY_MS);
@@ -1029,6 +1068,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '1.20.0': ['Значок в трее: общий выключатель озвучки, «Пропустить фразу», быстрые переключатели «Что озвучивать», статус подключения и обновления прямо из меню', 'Новая вкладка «Настройки»: что делает крестик, запуск вместе с Windows (можно сразу в трей), автообновление включается и выключается', 'При закрытии окна программа спрашивает: свернуть в трей или закрыть. Выбор можно запомнить', 'В «Озвучке» появился общий выключатель «Озвучка включена»'],
   '1.19.5': ['Окно при запуске открывается в новом размере (1105×748)'],
   '1.19.4': ['Стрелка «листать» больше не дёргается при переключении вкладок: появляется и гаснет сразу и плавно, без задержки и мигания у границы'],
   '1.19.3': ['«Перед эфиром» больше не пропадает в невысоком окне (страница при необходимости прокручивается)', 'В полях ников TikTok и Twitch работает меню по правой кнопке: вставить, вырезать, копировать', 'Стрелка «листать»: при наведении мягкое свечение становится ярче, без резкой границы'],

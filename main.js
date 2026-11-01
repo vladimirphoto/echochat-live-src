@@ -34,6 +34,7 @@ if (process.platform === 'win32') app.setAppUserModelId('live.echochat.app'); //
 // ---- трей (Windows): «свернуть» прячет окно в трей, озвучка продолжает работать; крестик закрывает приложение, как раньше
 let tray = null;
 const useTray = process.platform === 'win32' && !SELFTEST;
+const startHidden = useTray && process.argv.includes('--hidden'); // запуск вместе с Windows сразу в трей
 // один экземпляр: иначе повторный запуск ярлыка, пока приложение в трее, поднял бы второе (с конфликтом порта виджета)
 const gotLock = SELFTEST || app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
@@ -112,6 +113,55 @@ ipcMain.on('tray:state', (_e, st) => {
   rebuildTrayMenu();
 });
 
+// ---- настройки приложения: нужны основному процессу до загрузки окна (поведение крестика, автозапуск, автообновление)
+const APP_DEFAULTS = { closeMode: 'ask', autoUpdate: true, autostart: false, autostartHidden: true };
+const APP_FILE = () => path.join(app.getPath('userData'), 'app-settings.json');
+const cleanApp = (o) => {
+  const r = {};
+  if (o && ['ask', 'tray', 'quit'].includes(o.closeMode)) r.closeMode = o.closeMode;
+  for (const k of ['autoUpdate', 'autostart', 'autostartHidden']) if (o && typeof o[k] === 'boolean') r[k] = o[k];
+  return r;
+};
+let appSet = { ...APP_DEFAULTS };
+try { appSet = { ...APP_DEFAULTS, ...cleanApp(JSON.parse(require('fs').readFileSync(APP_FILE(), 'utf8'))) }; } catch (_) {}
+const saveApp = () => { try { require('fs').writeFileSync(APP_FILE(), JSON.stringify(appSet, null, 2)); } catch (_) {} };
+const canAutostart = process.platform === 'win32' && app.isPackaged && !SELFTEST;
+const publicApp = () => ({ ...appSet, canTray: useTray && !!tray, canAutostart });
+function applyAutostart() {
+  if (!canAutostart) return;
+  try {
+    app.setLoginItemSettings({ openAtLogin: !!appSet.autostart, path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath, args: appSet.autostartHidden ? ['--hidden'] : [] });
+  } catch (_) {}
+}
+ipcMain.handle('app:settings:get', () => publicApp());
+ipcMain.handle('app:settings:set', (_e, patch) => {
+  const c = cleanApp(patch);
+  appSet = { ...appSet, ...c };
+  saveApp();
+  if ('autostart' in c || 'autostartHidden' in c) applyAutostart();
+  return publicApp();
+});
+
+// ---- крестик: спрашиваем «свернуть в трей или закрыть» (или делаем по сохранённому выбору)
+let quitting = false, askPending = false;
+app.on('before-quit', () => { quitting = true; });
+function onWindowClose(e) {
+  if (quitting || !useTray || !tray || appSet.closeMode === 'quit') return; // обычное закрытие
+  if (win.webContents.isLoading()) return;
+  e.preventDefault();
+  if (appSet.closeMode === 'tray') { win.hide(); return; }
+  showWindow();
+  if (!askPending) { askPending = true; send('app:ask-close'); }
+}
+ipcMain.handle('app:close-answer', (_e, a) => {
+  askPending = false;
+  const action = a && a.action;
+  if (action !== 'tray' && action !== 'quit') return publicApp(); // «Отмена»
+  if (a.remember) { appSet.closeMode = action; saveApp(); }
+  if (action === 'tray') { if (win && !win.isDestroyed()) win.hide(); } else app.quit();
+  return publicApp();
+});
+
 function createTray() {
   tray = new Tray(trayImage());
   tray.setToolTip('ЭхоЧат LIVE');
@@ -130,7 +180,7 @@ function createWindow() {
     useContentSize: true,
     minWidth: 1060,
     minHeight: 720,
-    show: !SELFTEST,
+    show: !SELFTEST && !startHidden,
     backgroundColor: '#0b0b12',
     title: 'ЭхоЧат LIVE',
     icon: path.join(__dirname, 'src', 'icon.png'),
@@ -144,7 +194,9 @@ function createWindow() {
     },
   });
   win.setMenu(null);
-  if (useTray) win.on('minimize', () => { if (tray) win.hide(); }); // без иконки в трее окно не прячем, иначе его не вернуть
+  if (useTray) win.on('minimize', () => { if (tray) win.hide(); });
+  win.on('close', onWindowClose);
+  win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем // без иконки в трее окно не прячем, иначе его не вернуть
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
   win.webContents.on('context-menu', (_e, p) => {
     const f = p.editFlags || {};
@@ -629,6 +681,8 @@ app.whenReady().then(async () => {
   try { wsrv = await widget.start(() => wset, 7878, { getDonate: () => donateWidgetSettings(), getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }) }); } catch (_) { wsrv = null; }
   createWindow();
   if (useTray) { try { createTray(); } catch (_) { tray = null; } }
+  if (startHidden && !tray) showWindow(); // трея нет — окно всё равно должно быть видно
+  if (appSet.autostart) applyAutostart(); // путь в автозапуске обновляется, если программу переместили или обновили
   if (!SELFTEST) { netTick(); setInterval(netTick, 8000); }
   // прогрев: модуль, DNS и TLS-соединение готовы до первой фразы эфира
   edgeSynth('Привет', 'ru-RU-SvetlanaNeural', 1, '+0Hz').catch(() => {});

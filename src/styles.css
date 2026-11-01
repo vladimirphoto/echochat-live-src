@@ -485,3 +485,11 @@ label+.csel{margin-top:0}
 /* плавность: стрелка и её свечение на собственном слое, чтобы не мерцали при прокрутке и смене вкладок */
 .scrollhint{will-change:opacity,transform;contain:layout paint}
 .scrollhint svg{will-change:transform}
+/* окно «Закрыть программу?» — в стиле «Что нового» */
+#closeBack .muted{margin:0 0 6px;font-size:13.5px;line-height:1.45}
+.cl-rem{margin:8px 0 14px;padding:6px 0}
+.cl-btns{display:grid;gap:10px}
+.cl-btns .btn{width:100%;justify-content:center}
+#tab-settings .cols{grid-template-columns:1fr 1fr}
+#tab-settings .col-left{display:flex;flex-direction:column;gap:16px}
+@media(max-width:1060px){#tab-settings .cols{grid-template-columns:1fr}}
