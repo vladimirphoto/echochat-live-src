@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -29,6 +29,7 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
   likesTimer = setTimeout(() => { likesTimer = null; wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
 }
 const SELFTEST = process.argv.includes('--selftest');
+if (process.platform === 'win32') app.setAppUserModelId('live.echochat.app'); // нужен для уведомлений Windows; совпадает с ярлыками установщика
 
 // ---- трей (Windows): «свернуть» прячет окно в трей, озвучка продолжает работать; крестик закрывает приложение, как раньше
 let tray = null;
@@ -51,14 +52,70 @@ function trayImage() {
   }
   return img;
 }
+// состояние для меню трея: переключатели озвучки приходят из окна, подключения — из событий статуса, обновление — из проверок
+const TRAY_KEYS = ['voiceOn', 'ttChat', 'gifts', 'follows', 'twChat'];
+const trayS = { voiceOn: true, ttChat: true, gifts: true, follows: true, twChat: true };
+const trayConn = { tt: 'offline', tw: 'offline' };
+const trayUpd = { busy: false, version: '' };
+const toast = (body) => { try { if (Notification.isSupported()) new Notification({ title: 'ЭхоЧат LIVE', body, icon: path.join(__dirname, 'src', 'icon.png') }).show(); } catch (_) {} };
+
+function buildTrayMenu() {
+  const flag = (key, label) => ({ label, type: 'checkbox', checked: !!trayS[key], click: (it) => send('tray:set', { key, value: it.checked }) });
+  const tt = trayConn.tt === 'live' ? 'подключён' : trayConn.tt === 'ended' ? 'эфир завершён' : 'не подключён';
+  const status = [{ label: 'TikTok: ' + tt, enabled: false }];
+  if (trayConn.tw === 'live') status.push({ label: 'Twitch: подключён', enabled: false });
+  else if (trayConn.tw === 'reconnect') status.push({ label: 'Twitch: переподключение…', enabled: false });
+  const upd = trayUpd.busy ? { label: 'Обновление…', enabled: false }
+    : trayUpd.version ? { label: 'Обновить до ' + trayUpd.version, click: trayInstallUpdate }
+    : { label: 'Проверить обновления', click: trayCheckUpdate };
+  return Menu.buildFromTemplate([
+    { label: 'Открыть ЭхоЧат LIVE', click: showWindow },
+    { type: 'separator' },
+    ...status,
+    { type: 'separator' },
+    flag('voiceOn', 'Озвучка включена'),
+    { label: 'Пропустить текущую фразу', click: () => send('tray:skip') },
+    { label: 'Что озвучивать', submenu: [
+      flag('ttChat', 'TikTok: сообщения чата'), flag('gifts', 'TikTok: подарки'), flag('follows', 'TikTok: новые подписки'), flag('twChat', 'Twitch: сообщения чата'),
+    ] },
+    { type: 'separator' },
+    upd,
+    { type: 'separator' },
+    { label: 'Выход', click: () => app.quit() },
+  ]);
+}
+function rebuildTrayMenu() { if (tray) { try { tray.setContextMenu(buildTrayMenu()); } catch (_) {} } }
+
+async function trayCheckUpdate() {
+  if (trayUpd.busy) return;
+  trayUpd.busy = true; rebuildTrayMenu();
+  try {
+    const r = await updater.check();
+    trayUpd.version = r.available ? r.version : '';
+    toast(r.available ? `Доступна версия ${r.version}. Чтобы обновиться, выбери «Обновить» в меню значка` : `Установлена последняя версия (${r.current})`);
+  } catch (err) { toast('Не удалось проверить обновления: ' + String((err && err.message) || err)); }
+  trayUpd.busy = false; rebuildTrayMenu();
+}
+async function trayInstallUpdate() {
+  if (trayUpd.busy) return;
+  trayUpd.busy = true; rebuildTrayMenu();
+  toast(`Скачиваю версию ${trayUpd.version}. Приложение перезапустится само`);
+  try {
+    const r = await updater.install((p) => send('upd:progress', p));
+    if (r && r.manual) toast('Это запуск не из установленной версии: страница загрузки открыта в браузере');
+  } catch (err) { toast('Ошибка обновления: ' + String((err && err.message) || err)); }
+  trayUpd.busy = false; rebuildTrayMenu();
+}
+ipcMain.on('tray:state', (_e, st) => {
+  if (!st || typeof st !== 'object') return;
+  for (const k of TRAY_KEYS) if (typeof st[k] === 'boolean') trayS[k] = st[k];
+  rebuildTrayMenu();
+});
+
 function createTray() {
   tray = new Tray(trayImage());
   tray.setToolTip('ЭхоЧат LIVE');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Открыть ЭхоЧат LIVE', click: showWindow },
-    { type: 'separator' },
-    { label: 'Выход', click: () => app.quit() },
-  ]));
+  rebuildTrayMenu();
   tray.on('click', showWindow);
   tray.on('double-click', showWindow);
 }
@@ -104,6 +161,9 @@ function createWindow() {
 }
 
 const send = (channel, payload) => {
+  if ((channel === 'tt:status' || channel === 'tw:status') && payload && payload.state) {
+    trayConn[channel === 'tt:status' ? 'tt' : 'tw'] = payload.state; rebuildTrayMenu();
+  }
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 };
 
@@ -558,7 +618,7 @@ ipcMain.handle('kaspi:probe', () => new Promise((resolve) => {
 const updater = require('./updater');
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('upd:check', async () => {
-  try { return await updater.check(); } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+  try { const r = await updater.check(); if (r && r.ok && !trayUpd.busy) { trayUpd.version = r.available ? r.version : ''; rebuildTrayMenu(); } return r; } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
 ipcMain.handle('upd:install', async () => {
   try { return await updater.install((p) => send('upd:progress', p)); } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }

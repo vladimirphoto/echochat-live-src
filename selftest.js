@@ -326,6 +326,17 @@ async function eventTests(win) {
   send('tw:chat', { name: 'ТВгромко', text: 'твич с озвучкой', created: null, id: 'tl', avatar: '' });
   await wait(300);
   add('озвучка Twitch включена отдельно от TikTok', (await q('window.__echo.voiceCalls')) === calls0 + 1);
+  // общий выключатель озвучки (он же в меню трея): при выключенном не озвучивается ничего, при включении всё возвращается
+  const setMaster = (v) => q("(() => { const sw = document.querySelector('input[data-k=voiceOn]'); sw.checked = " + v + "; sw.dispatchEvent(new Event('change')); })()");
+  await setMaster(false);
+  const callsM = await q('window.__echo.voiceCalls');
+  send('tw:chat', { name: 'ТВмастер', text: 'твич при общем выключателе', created: null, id: 'tm', avatar: '' });
+  await wait(300);
+  add('озвучка: общий выключатель глушит всё', (await q('window.__echo.voiceCalls')) === callsM && (await q('window.__echo.S.voiceOn')) === false, callsM + ' → ' + (await q('window.__echo.voiceCalls')));
+  await setMaster(true);
+  send('tw:chat', { name: 'ТВмастер2', text: 'твич после включения', created: null, id: 'tn', avatar: '' });
+  await wait(300);
+  add('озвучка: после включения общего выключателя озвучка возвращается', (await q('window.__echo.voiceCalls')) === callsM + 1 && (await q('window.__echo.S.voiceOn')) === true);
   await q("window.__echo.S.ttChat = false; window.__echo.S.twChat = false");
   const sysEl = await q("(() => { const t = document.querySelector('#feed .msg.sys .t'); if (!t) return null; const c = getComputedStyle(t); return { fs: parseFloat(c.fontSize), br: parseFloat(c.borderTopLeftRadius), line: getComputedStyle(t.parentElement, '::before').content }; })()");
   add('системные сообщения: крупная «таблетка» без линий', sysEl && sysEl.fs >= 13 && sysEl.br >= 12 && (sysEl.line === 'none' || sysEl.line === 'normal'), JSON.stringify(sysEl));
