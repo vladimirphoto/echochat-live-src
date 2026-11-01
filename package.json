@@ -10,6 +10,7 @@
     "test": "node --test \"test/*.test.js\"",
     "pages": "node tools/build-pages.js",
     "dist": "electron-builder --win portable --x64",
+    "dist:setup": "electron-builder --win nsis --x64",
     "dist:mac": "electron-builder --mac dmg --arm64 --publish never"
   },
   "dependencies": {
@@ -60,6 +61,21 @@
       ],
       "artifactName": "EchoChat-LIVE-${version}.${ext}",
       "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1049",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ЭхоЧат LIVE",
+      "uninstallDisplayName": "ЭхоЧат LIVE",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "EchoChat-LIVE-Setup-${version}.${ext}"
     },
     "afterPack": "tools/adhoc-sign.js",
     "mac": {

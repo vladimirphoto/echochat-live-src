@@ -1,0 +1,50 @@
+name: Build Windows setup
+
+# Ручной запуск: Actions → «Build Windows setup» → Run workflow.
+# Собирает установщик EchoChat-LIVE-Setup-<версия>.exe (установка и удаление через «Параметры → Приложения», иконка в трее).
+# Релиз не публикуется — файл забирается из «Artifacts» внизу страницы запуска.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      - run: npm run dist:setup
+
+      # Тот же автотест, что и для portable-сборки: окно, кнопки, голоса, подключение к несуществующему эфиру
+      - name: Self-test packaged app
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path dist/win-unpacked -Filter *.exe | Where-Object { $_.Name -notmatch 'uninstall|elevate' } | Select-Object -First 1
+          Write-Host "Testing $($exe.FullName)"
+          $out = Join-Path $PWD 'selftest.json'
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList '--selftest',"--out=$out" -PassThru
+          if (-not $p.WaitForExit(240000)) { $p.Kill(); Write-Host 'TIMEOUT: app did not finish' }
+          if (Test-Path $out) {
+            $r = Get-Content $out -Raw | ConvertFrom-Json
+            Write-Host "=== SELFTEST v$($r.version) electron $($r.electron) ==="
+            foreach ($t in $r.results) {
+              $mark = if ($t.ok) { 'PASS' } else { 'FAIL' }
+              Write-Host ("[{0}] [{1}] {2} :: {3}" -f $mark, $t.group, $t.name, $t.detail)
+              if (-not $t.ok) { $m = ("{0} :: {1}" -f $t.name, $t.detail) -replace "`r|`n",' '; Write-Host ("::error title=SELFTEST FAIL [{0}]::{1}" -f $t.group, $m) }
+            }
+            Write-Host "critical failed: $($r.criticalFailed)"
+            if ($r.criticalFailed -gt 0) { exit 1 }
+          } else {
+            Write-Host '::error title=SELFTEST::no result file - app failed to start or crashed'
+            exit 1
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EchoChat-LIVE-Setup
+          path: dist/EchoChat-LIVE-Setup-*.exe
+          if-no-files-found: error

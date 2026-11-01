@@ -121,6 +121,16 @@ test('обновление: берётся новейший релиз с EXE, �
   assert.equal(u.pickRelease(list).version, '1.11.0');
   assert.equal(u.pickRelease([]), null);
 });
+test('обновление: установленная версия берёт установщик, portable — обычный exe', () => {
+  const u = require('../updater.js');
+  const rel = (v, names) => ({ tag_name: 'v' + v, assets: names.map((n) => ({ name: n, browser_download_url: n, size: 1 })) });
+  const both = [rel('1.20.0', ['EchoChat-LIVE-1.20.0.exe', 'EchoChat-LIVE-Setup-1.20.0.exe'])];
+  assert.equal(u.pickRelease(both, true).asset.name, 'EchoChat-LIVE-Setup-1.20.0.exe');
+  assert.equal(u.pickRelease(both, false).asset.name, 'EchoChat-LIVE-1.20.0.exe');
+  const mixed = [rel('1.20.0', ['EchoChat-LIVE-1.20.0.exe']), rel('1.19.0', ['EchoChat-LIVE-Setup-1.19.0.exe'])];
+  assert.equal(u.pickRelease(mixed, true).version, '1.19.0'); // выпуск без установщика установленной версии не подходит
+  assert.equal(u.pickRelease(mixed, false).version, '1.20.0');
+});
 test('ссылка iCloud: только официальный адрес команды', () => {
   const sc = require('../shortcut');
   assert.equal(sc.isICloudLink('https://www.icloud.com/shortcuts/4e916b32ae1b47efbe3d85395359ceaa'), true);

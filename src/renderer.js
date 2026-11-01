@@ -687,7 +687,7 @@ async function autoCheckUpdate() {
   btnUpd.classList.add('new');
   setUpd('down', `Обновить до ${r.version}`);
   sys(`Доступна новая версия ${r.version}. Нажми кнопку слева внизу, чтобы обновиться.`);
-  if (r.portable && !autoUpdTried) { autoUpdTried = true; btnUpd.click(); } // при запуске обновляемся сразу
+  if ((r.portable || r.installed) && !autoUpdTried) { autoUpdTried = true; btnUpd.click(); } // при запуске обновляемся сразу
 }
 setTimeout(autoCheckUpdate, 1500);
 setInterval(() => { updChecked = false; autoCheckUpdate(); }, UPD_EVERY_MS);

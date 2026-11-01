@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -30,6 +30,40 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
 }
 const SELFTEST = process.argv.includes('--selftest');
 
+// ---- трей (Windows): «свернуть» прячет окно в трей, озвучка продолжает работать; крестик закрывает приложение, как раньше
+let tray = null;
+const useTray = process.platform === 'win32' && !SELFTEST;
+// один экземпляр: иначе повторный запуск ярлыка, пока приложение в трее, поднял бы второе (с конфликтом порта виджета)
+const gotLock = SELFTEST || app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+
+function showWindow() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+function trayImage() {
+  const src = nativeImage.createFromPath(path.join(__dirname, 'src', 'icon.png'));
+  const img = nativeImage.createEmpty();
+  for (const [size, scaleFactor] of [[16, 1], [24, 1.5], [32, 2]]) {
+    img.addRepresentation({ scaleFactor, width: size, height: size, buffer: src.resize({ width: size, height: size, quality: 'best' }).toPNG() });
+  }
+  return img;
+}
+function createTray() {
+  tray = new Tray(trayImage());
+  tray.setToolTip('ЭхоЧат LIVE');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Открыть ЭхоЧат LIVE', click: showWindow },
+    { type: 'separator' },
+    { label: 'Выход', click: () => app.quit() },
+  ]));
+  tray.on('click', showWindow);
+  tray.on('double-click', showWindow);
+}
+app.on('second-instance', showWindow);
+
 function createWindow() {
   // стартовый размер окна (не больше экрана)
   const wa = require('electron').screen.getPrimaryDisplay().workAreaSize;
@@ -49,9 +83,11 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       autoplayPolicy: 'no-user-gesture-required', // озвучка стартует без клика в окне
+      backgroundThrottling: false, // скрытое окно (в трее) не «засыпает»: очередь озвучки идёт без задержек
     },
   });
   win.setMenu(null);
+  if (useTray) win.on('minimize', () => { if (tray) win.hide(); }); // без иконки в трее окно не прячем, иначе его не вернуть
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
   win.webContents.on('context-menu', (_e, p) => {
     const f = p.editFlags || {};
@@ -529,8 +565,10 @@ ipcMain.handle('upd:install', async () => {
 });
 
 app.whenReady().then(async () => {
+  if (!gotLock) return; // уже запущен другой экземпляр — он покажет своё окно
   try { wsrv = await widget.start(() => wset, 7878, { getDonate: () => donateWidgetSettings(), getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }) }); } catch (_) { wsrv = null; }
   createWindow();
+  if (useTray) { try { createTray(); } catch (_) { tray = null; } }
   if (!SELFTEST) { netTick(); setInterval(netTick, 8000); }
   // прогрев: модуль, DNS и TLS-соединение готовы до первой фразы эфира
   edgeSynth('Привет', 'ru-RU-SvetlanaNeural', 1, '+0Hz').catch(() => {});
