@@ -48,7 +48,6 @@ const PAGE_TEST = `(async () => {
     add('ui', 'вкладка «Виджеты»: ссылка и настройки', /^https:\\/\\/vladimirphoto\\.github\\.io\\/jonny-chat-tiktok\\/chat\\/\\?tt=(left|right)&tw=(left|right)&w=\\w+$/.test($('#wUrl').value) && !!$('#wAlignTtSel') && !!$('#wAlignTwSel') && document.querySelectorAll('#tab-widgets input[data-k]').length >= 5, $('#wUrl').value);
     add('ui', 'иконки в 4 плашках', document.querySelectorAll('.stat .ic').length === 4);
     add('ui', 'иконки в меню', document.querySelectorAll('.nav .ic').length === 6);
-    add('ui', 'полоса окна (Windows): только «свернуть» и «закрыть», без «развернуть»', window.echo.platform !== 'win32' || (!$('#titlebar').hidden && document.querySelectorAll('#titlebar .tb-btn').length === 2 && Math.round($('.app').getBoundingClientRect().top) === 32), window.echo.platform);
     add('ui', 'карточки голосов', document.querySelectorAll('#voices .voice').length >= 2, document.querySelectorAll('#voices .voice').length);
     add('ui', 'версия в сайдбаре', /\\d+\\.\\d+/.test($('#verLine').textContent), $('#verLine').textContent);
 
@@ -338,7 +337,9 @@ async function eventTests(win) {
   send('tw:chat', { name: 'ТВмастер2', text: 'твич после включения', created: null, id: 'tn', avatar: '' });
   await wait(300);
   add('озвучка: после включения общего выключателя озвучка возвращается', (await q('window.__echo.voiceCalls')) === callsM + 1 && (await q('window.__echo.S.voiceOn')) === true);
-  add('окно: изменение размера отключено', !win.isResizable());
+  let resizePrevented = false;
+  win.emit('will-resize', { preventDefault: () => { resizePrevented = true; } }, { x: 0, y: 0, width: 1400, height: 900 });
+  add('окно: мышью растянуть нельзя, развернуть на весь экран можно', resizePrevented && win.isMaximizable() && win.isFullScreenable(), JSON.stringify([resizePrevented, win.isMaximizable(), win.isFullScreenable()]));
   // вкладка «Настройки» и окно «Закрыть программу?»
   add('ui', 'вкладка «Настройки»: крестик, автозапуск, автообновление', await q("!!document.querySelector('.nav[data-tab=settings]') && !!document.querySelector('#tab-settings #closeModeSel .csel-drop') && !!document.querySelector('#setAutoUpd') && !!document.querySelector('#setAutostart') && !!document.querySelector('#setAutostartHidden')"));
   const autoUpd0 = await q('window.echo.appSettings().then((x) => x.autoUpdate)');

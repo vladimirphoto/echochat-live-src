@@ -493,13 +493,3 @@ label+.csel{margin-top:0}
 #tab-settings .cols{grid-template-columns:1fr 1fr}
 #tab-settings .col-left{display:flex;flex-direction:column;gap:16px}
 @media(max-width:1060px){#tab-settings .cols{grid-template-columns:1fr}}
-
-/* своя полоса окна на Windows: только «свернуть» и «закрыть», окно не растягивается */
-.titlebar{position:fixed;top:0;left:0;right:0;height:32px;z-index:200;display:flex;align-items:center;justify-content:flex-end;background:rgba(10,10,17,.85);border-bottom:1px solid var(--line);-webkit-app-region:drag}
-.titlebar[hidden]{display:none}
-.tb-title{margin-right:auto;padding-left:14px;font-size:12px;color:var(--muted)}
-.tb-btn{-webkit-app-region:no-drag;all:unset;-webkit-app-region:no-drag;width:46px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text);cursor:default}
-.tb-btn svg{width:11px;height:11px}
-.tb-btn:hover{background:rgba(255,255,255,.1)}
-.tb-close:hover{background:#e81123;color:#fff}
-body.has-tb .app{height:calc(100vh - 32px);margin-top:32px}
