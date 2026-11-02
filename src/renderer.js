@@ -952,8 +952,28 @@ $('#dUrl').onfocus = (e) => e.target.select();
 $('#kUrl').onfocus = (e) => e.target.select();
 $('#dCopy').onclick = () => copyFrom('#dUrl', $('#dCopy'), 'Копировать');
 $('#btnDonateTest').onclick = () => window.echo.donateTest();
-$('#kToken').onclick = () => {
-  if (!confirm('Старый токен перестанет работать. Новый токен нужно ввести в команде на iPhone. Сменить?')) return;
+// своё окно подтверждения в стиле приложения (вместо системного confirm с заголовком «echochat-live»)
+function askConfirm({ title, text, ok = 'Да', cancel = 'Отмена', danger = false }) {
+  return new Promise((resolve) => {
+    const back = $('#cfBack'), yes = $('#cfYes'), no = $('#cfNo'), prev = document.activeElement;
+    $('#cfTitle').textContent = title; $('#cfText').textContent = text;
+    yes.textContent = ok; no.textContent = cancel;
+    $('.cf-box', back).classList.toggle('danger', !!danger);
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); } };
+    const done = (v) => {
+      back.hidden = true; document.removeEventListener('keydown', onKey, true);
+      back.onclick = yes.onclick = no.onclick = null;
+      if (prev && prev.focus) prev.focus();
+      resolve(v);
+    };
+    document.addEventListener('keydown', onKey, true);
+    yes.onclick = () => done(true); no.onclick = () => done(false);
+    back.onclick = (e) => { if (e.target === back) done(false); };
+    back.hidden = false; no.focus(); // по умолчанию выбрана «Отмена»: случайный Enter ничего не сломает
+  });
+}
+$('#kToken').onclick = async () => {
+  if (!await askConfirm({ title: 'Перевыпустить токен?', text: 'Старый токен перестанет работать. Новый токен нужно будет ввести в команде на iPhone.', ok: 'Перевыпустить', danger: true })) return;
   K.token = newToken(); pushDonate(); refreshKaspiUi();
 };
 let kQrDone = '';

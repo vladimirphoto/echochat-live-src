@@ -422,6 +422,18 @@ label+.csel{margin-top:0}
 .wn-box li{position:relative;padding-left:22px;font-size:14px;line-height:1.4;color:var(--text)}
 .wn-box li:before{content:"✦";position:absolute;left:0;color:var(--a2)}
 .wn-box .btn{width:100%}
+/* окно подтверждения в стиле приложения: тот же размытый фон, что у «Что нового» */
+.cf-back{z-index:110}
+.cf-box{width:min(400px,90vw);animation:cfpop .22s cubic-bezier(.2,.8,.2,1)}
+.cf-box h2{font-size:20px;margin:0 0 10px}
+.cf-box p{margin:0 0 24px;color:var(--muted);font-size:14px;line-height:1.5}
+.cf-row{display:flex;gap:10px}
+.cf-row .btn{flex:1;width:auto;margin-top:0;padding:12px 16px;font-size:14px}
+.cf-row .btn.ghost{padding:12px 16px;font-size:14px}
+.cf-row .btn:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+.cf-box.danger .btn.primary{background:linear-gradient(135deg,#ef4444,#f97316);box-shadow:0 10px 26px rgba(239,68,68,.3)}
+@keyframes cfpop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
 .kc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .kc-head .kstat{margin:0;font-size:12px;padding:4px 12px;border-radius:99px}
 .kstep{display:flex;gap:14px;padding:14px 0;border-top:1px solid rgba(255,255,255,.07)}
