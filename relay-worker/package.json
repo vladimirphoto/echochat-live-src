@@ -1,0 +1,14 @@
+{
+  "name": "echochat-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сервер приёма донатов Каспи для ЭхоЧат LIVE (Cloudflare Worker)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "type": "module"
+}

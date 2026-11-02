@@ -1,0 +1,12 @@
+name = "echochat-relay"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Очередь на Durable Objects (SQLite-хранилище доступно на бесплатном плане)
+[[durable_objects.bindings]]
+name = "QUEUE"
+class_name = "Queue"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Queue"]
