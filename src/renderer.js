@@ -29,12 +29,13 @@ const DEFAULTS = {
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
-  kaspi: { enabled: false, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true },
+  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
 S.likes = { ...DEFAULTS.likes, ...(S.likes && typeof S.likes === 'object' ? S.likes : {}) };
 S.kaspi = { ...DEFAULTS.kaspi, ...(S.kaspi && typeof S.kaspi === 'object' ? S.kaspi : {}) };
+S.kaspi.enabled = true; // приём всегда включён: переключателя больше нет
 // виджеты: у каждого своё выравнивание TikTok и Twitch и своя ссылка. Первый — для OBS, второй — для TikTok LIVE Studio.
 // Прежнее выравнивание (одно на всё приложение) переносится на первый виджет.
 try {

@@ -542,7 +542,7 @@ ipcMain.handle('net:state', () => netOnline);
 
 // ---------- Донаты Каспи ----------
 const kaspi = require('./kaspi');
-let dset = { enabled: false, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true };
+let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true };
 let krx = null, krxP = null;
 const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage });
 let lastDon = { key: '', t: 0 };
