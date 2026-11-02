@@ -29,7 +29,7 @@ const DEFAULTS = {
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
-  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true },
+  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
@@ -377,6 +377,7 @@ function speakName(n) {
 
 /* ---------- очередь озвучки ---------- */
 const queue = [];
+let chimeStop = null; // обрывает играющий звук доната
 let busy = false, cur = null, curUrl = null, curEl = null, curResolve = null, curItem = null;
 
 const QUEUE_MAX = 8;       // длиннее очередь — больше отставание от эфира
@@ -395,6 +396,7 @@ function enqueue(item, force = false) {
 }
 
 function stopCurrent() {
+  if (chimeStop) { const st = chimeStop; chimeStop = null; st(); }
   if (cur) { cur.onended = cur.onerror = null; cur.pause(); cur = null; }
   if (curUrl) { URL.revokeObjectURL(curUrl); curUrl = null; }
   if (curResolve) { const r = curResolve; curResolve = null; r(); }
@@ -423,11 +425,43 @@ function synthFor(text, p) {
 
 // синтез стартует заранее, пока играет предыдущая фраза — без пауз между сообщениями
 function ensureSynth(item) {
+  if (item.chime) return null; // у звука доната нет синтеза речи
   if (!item.p) item.p = synthFor(item.say, item.preset);
   return item.p;
 }
 
+// звук доната: мягкий «колокольчик» из четырёх нот (до-ми-соль-до), собирается в браузере, без файлов; громкость как у озвучки
+let actx = null;
+function playChime() {
+  return new Promise((resolve) => {
+    let done = false, timer = 0, master = null, oscs = [];
+    const finish = () => { if (done) return; done = true; clearTimeout(timer); chimeStop = null; resolve(); };
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t0 = actx.currentTime + 0.04, vol = Math.max(0, Math.min(1, (S.vol == null ? 100 : S.vol) / 100));
+      master = actx.createGain(); master.gain.value = 0.5 * vol; master.connect(actx.destination);
+      [[1046.5, 0, 0.8, 0.34], [1318.5, 0.12, 0.8, 0.34], [1568, 0.24, 0.9, 0.36], [2093, 0.38, 1.5, 0.46]].forEach(([f, at, len, peak]) => {
+        [[f, 1, len], [f * 2, 0.22, len * 0.55], [f * 3.01, 0.07, len * 0.3]].forEach(([fr, k, l]) => {
+          const o = actx.createOscillator(), g = actx.createGain();
+          o.type = 'sine'; o.frequency.value = fr;
+          g.gain.setValueAtTime(0.0001, t0 + at);
+          g.gain.exponentialRampToValueAtTime(peak * k, t0 + at + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + l);
+          o.connect(g); g.connect(master); o.start(t0 + at); o.stop(t0 + at + l + 0.05); oscs.push(o);
+        });
+      });
+      chimeStop = () => { // оборвать: быстро гасим и освобождаем
+        try { master.gain.cancelScheduledValues(actx.currentTime); master.gain.setTargetAtTime(0, actx.currentTime, 0.015); oscs.forEach((o) => { try { o.stop(actx.currentTime + 0.08); } catch (_) {} }); } catch (_) {}
+        finish();
+      };
+      timer = setTimeout(finish, 1300); // следующая фраза (голос) начинается, пока звук ещё затихает
+    } catch (_) { finish(); }
+  });
+}
+
 async function speakItem(item) {
+  if (item.chime) { await playChime(); return; }
   const r = await ensureSynth(item);
   if (item.cancelled) return; // нажали паузу, пока звук готовился
   // не получилось озвучить — молча пропускаем сообщение: без системного голоса Windows и без уведомлений
@@ -922,8 +956,13 @@ async function pushDonate() {
 }
 $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
-  el.addEventListener('change', () => { K[el.dataset.kk] = el.checked; pushDonate(); });
+  el.addEventListener('change', () => {
+    K[el.dataset.kk] = el.checked; pushDonate();
+    if (!el.checked && el.dataset.kk === 'sound') dropSrc('donateSound'); // выключили — звук обрывается сразу
+    if (!el.checked && el.dataset.kk === 'voice') dropSrc('donateVoice');
+  });
 });
+$('#kSoundTest').addEventListener('click', () => enqueue({ el: null, chime: true, src: 'donateSound' }, true));
 bindRange('kDur', 'kDurVal', (v) => v + ' с', () => K.duration, (v) => { K.duration = v; pushDonate(); })();
 bindRange('kScale', 'kScaleVal', (v) => v + '%', () => K.scale, (v) => { K.scale = v; pushDonate(); })();
 bindRange('kMin', 'kMinVal', (v) => kmoney(v), () => K.minAmount, (v) => { K.minAmount = v; pushDonate(); })();
@@ -1006,7 +1045,8 @@ window.echo.onKaspiLog((l) => {
 // донат пришёл (или нажат тест): строка в ленте и голос
 window.echo.onDonate((d) => {
   const el = addMsg({ name: d.name, text: `💸 донат ${kmoney(d.amount)}${d.message ? ' · ' + d.message : ''}`, kind: 'gift', color: '#f14635' });
-  if (K.voice) enqueue({ el, say: `${speakName(d.name)}, спасибо за донат ${d.amount} тенге`, preset: eventPreset() });
+  if (K.sound) enqueue({ el: null, chime: true, src: 'donateSound' }, true);
+  if (K.voice) enqueue({ el, src: 'donateVoice', say: `${speakName(d.name)}, спасибо за донат ${d.amount} тенге`, preset: eventPreset() });
 });
 // предпросмотр виджета донатов
 let dvInit = false;
