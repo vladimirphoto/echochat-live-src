@@ -937,7 +937,7 @@ function refreshKaspiUi() {
   $('#kBox').hidden = !K.enabled;
   if (!K.enabled) return setKStat('Приём отключён', 'bad');
   $('#kUrl').value = kaspiAddr();
-  if (kState.relayBase) setKStat(kState.relay === false ? 'Нет связи с сервером приёма, проверь интернет' : 'Приём включён: телефон шлёт уведомления через сервер, общий Wi-Fi не нужен', kState.relay === false ? 'bad' : 'ok');
+  if (kState.relayBase) setKStat(kState.relay === false ? 'Нет связи с сервером, проверьте интернет' : 'Приём включён', kState.relay === false ? 'bad' : 'ok');
   else if (!kState.running) setKStat('Запускаю приём…', '');
   else if (!kState.ips.length) setKStat('Не найдено подключение к локальной сети: подключи компьютер к Wi-Fi или кабелю', 'bad');
   else setKStat('Приём включён' + (kState.ips.length > 1 ? '. Другие адреса компьютера: ' + kState.ips.slice(1).join(', ') : ''), 'ok');
@@ -951,7 +951,7 @@ if (window.echo.onKaspiRelay) window.echo.onKaspiRelay((s) => { kState.relay = s
 $('#dUrl').onfocus = (e) => e.target.select();
 $('#kUrl').onfocus = (e) => e.target.select();
 $('#dCopy').onclick = () => copyFrom('#dUrl', $('#dCopy'), 'Копировать');
-$('#kCopy').onclick = () => copyFrom('#kUrl', $('#kCopy'), 'Копировать адрес');
+$('#kCopy').onclick = () => copyFrom('#kUrl', $('#kCopy'), 'Скопировать адрес');
 $('#btnDonateTest').onclick = () => window.echo.donateTest();
 $('#kProbe').onclick = async () => {
   setKStat('Проверяю…', '');
@@ -969,8 +969,8 @@ $('#kShortcut').onclick = async () => {
   const r = await window.echo.kaspiShortcut().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
   if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
   $('#kQr').innerHTML = r.qr; $('#kScUrl').value = r.url; kQrDone = r.url;
-  $('#kScNote').textContent = r.relay && r.manual ? 'Сервер приёма включён: создай команду вручную. Адрес из кнопки «Скопировать адрес» — в поле URL, тело JSON с полем text = Ввод команды.'
-    : r.relay ? 'Сервер приёма включён, общий Wi-Fi не нужен. Нажми «Скопировать адрес», наведи камеру на QR и вставь адрес, когда iOS его спросит.' : '';
+  $('#kScNote').textContent = r.relay && r.manual ? 'Готовой команды нет. Создайте её вручную: скопированный адрес в поле URL, метод POST, тело JSON с полем text = «Входные данные команды».'
+    : r.relay ? '' : 'Телефон и компьютер должны быть в одной Wi-Fi сети.';
 };
 $('#kScUrl').onfocus = (e) => e.target.select();
 $('#kTokCopy').onclick = async () => {

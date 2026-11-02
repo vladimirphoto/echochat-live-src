@@ -257,22 +257,23 @@
           <div class="col-right">
             <div class="card kc">
               <div class="kc-head"><h2>Подключение iPhone</h2><div class="kstat" id="kStat"></div></div>
-              <div class="kstep"><span class="kn">1</span><div class="kb"><b>Ваш токен</b>
-                <input id="kTok" class="ktok" readonly spellcheck="false" />
-                <div class="wbtn-row"><button class="btn wbtn primary" id="kTokCopy">Скопировать токен</button><button class="btn wbtn ghost" id="kToken">Перевыпустить</button></div>
-                <small>Токен нужен один раз, при добавлении команды. Никому не передавайте.</small></div></div>
               <div id="kBox" hidden>
-              <div class="kstep"><span class="kn">2</span><div class="kb"><b>Установите команду</b>
+              <div class="kstep"><span class="kn">1</span><div class="kb"><b>Скопируйте адрес</b>
+                <button class="btn wbtn primary" id="kCopy">Скопировать адрес</button>
+                <small>В адресе ваш личный токен. Никому его не показывайте.</small></div></div>
+              <div class="kstep"><span class="kn">2</span><div class="kb"><b>Добавьте команду</b>
                 <div class="kinst"><div id="kQr" class="kqr"></div>
-                  <div class="kside"><small>Наведите камеру iPhone на QR (одна Wi-Fi сеть) → «Добавить команду». iOS сначала спросит адрес, вставьте скопированный (токен в нём уже есть), и только потом добавит команду.</small>
-                    <button class="btn wbtn primary" id="kCopy">Скопировать адрес</button></div></div>
+                  <div class="kside"><small>Наведите камеру iPhone на QR и нажмите «Добавить команду». Когда iOS спросит адрес, вставьте скопированный.</small></div></div>
                 <small class="kwarn" id="kScNote"></small>
                 <button hidden id="kShortcut" type="button"></button><input id="kUrl" type="hidden" /><input id="kScUrl" type="hidden" /></div></div>
-              <div class="kstep"><span class="kn">3</span><div class="kb"><b>Включите автоматизацию (один раз)</b>
-                <small>«Команды» → Автоматизация → + → Уведомление → Kaspi.kz → «Немедленно» → «Выполнить команду» → EchoChat Kaspi. iOS не позволяет импортировать этот шаг.</small></div></div>
+              <div class="kstep"><span class="kn">3</span><div class="kb"><b>Включите автоматизацию</b>
+                <small>«Команды» → Автоматизация → «+» → Уведомление → Kaspi.kz → «Немедленно» → выберите добавленную команду. Автоматизация должна быть включена, иначе донаты не придут.</small></div></div>
               <div class="kstep"><span class="kn">4</span><div class="kb"><b>Проверьте</b>
                 <div class="wbtn-row"><button class="btn wbtn primary" id="kProbe">Проверить связь</button><button class="btn wbtn ghost" id="kSamples">Тестовый донат</button></div></div></div>
               <details class="kmore"><summary>Дополнительно</summary>
+                <label style="margin-top:8px">Токен</label>
+                <input id="kTok" class="ktok" readonly spellcheck="false" />
+                <div class="wbtn-row"><button class="btn wbtn ghost" id="kTokCopy">Скопировать токен</button><button class="btn wbtn ghost" id="kToken">Перевыпустить</button></div>
                 <div class="toggles" style="margin-top:8px"><label class="sw"><input type="checkbox" data-kk="strict" checked /><i></i><span>Пропускать покупки и исходящие<small>Выключите, если настоящие донаты не проходят</small></span></label></div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><label>Журнал уведомлений</label><button class="btn ghost" id="kLogClear" style="padding:4px 12px;font-size:12px">Очистить</button></div>
                 <div class="klog" id="kLog"><div class="empty">Пока ничего не приходило</div></div>
