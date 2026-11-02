@@ -622,8 +622,11 @@ const shortcutUrl = () => `http://${kaspiHost()}/shortcut/${dset.token}/EchoChat
 // адрес команды и QR (SVG) для камеры iPhone; токен наружу не уходит никуда, кроме окна приложения
 ipcMain.handle('kaspi:shortcut', async () => {
   if (!krx || !krx.port) return { ok: false, error: 'Приём выключен. Включи переключатель выше' };
-  const link = await icloudLink(), url = link || shortcutUrl(), q = qrcode(0, 'M'); q.addData(url); q.make();
-  return { ok: true, url, qr: q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }), signed: !!link || !!signedShortcutPath() };
+  const qrOf = (u) => { const q = qrcode(0, 'M'); q.addData(u); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); };
+  // есть сервер: адрес команды — адрес сервера (ссылка iCloud могла быть подписана с адресом компьютера)
+  if (relayBaseNow) { const url = `${relayBaseNow}/notify.php?token=${dset.token}`; return { ok: true, url, qr: qrOf(url), signed: false, relay: true }; }
+  const link = await icloudLink(), url = link || shortcutUrl();
+  return { ok: true, url, qr: qrOf(url), signed: !!link || !!signedShortcutPath() };
 });
 // тестовые уведомления в формате Каспи идут через настоящий приёмник: проверяется весь путь
 ipcMain.handle('kaspi:sample', async (_e, i) => {

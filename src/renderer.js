@@ -968,7 +968,7 @@ $('#kShortcut').onclick = async () => {
   const r = await window.echo.kaspiShortcut().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
   if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
   $('#kQr').innerHTML = r.qr; $('#kScUrl').value = r.url; kQrDone = r.url;
-  $('#kScNote').textContent = '';
+  $('#kScNote').textContent = r.relay ? 'Сервер приёма включён: создай команду вручную. Адрес ниже — в поле URL, тело JSON с полем text = Ввод команды.' : '';
 };
 $('#kScUrl').onfocus = (e) => e.target.select();
 $('#kTokCopy').onclick = async () => {
