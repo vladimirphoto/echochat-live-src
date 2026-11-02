@@ -951,17 +951,9 @@ if (window.echo.onKaspiRelay) window.echo.onKaspiRelay((s) => { kState.relay = s
 $('#dUrl').onfocus = (e) => e.target.select();
 $('#kUrl').onfocus = (e) => e.target.select();
 $('#dCopy').onclick = () => copyFrom('#dUrl', $('#dCopy'), 'Копировать');
-$('#kCopy').onclick = () => copyFrom('#kUrl', $('#kCopy'), 'Скопировать адрес');
 $('#btnDonateTest').onclick = () => window.echo.donateTest();
-$('#kProbe').onclick = async () => {
-  setKStat('Проверяю…', '');
-  const r = await window.echo.kaspiProbe().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
-  if (r && r.ok && r.accepted) setKStat('Приём работает: пробное уведомление дошло, донат показан в виджете', 'ok');
-  else if (r && r.ok) setKStat('Приём работает, но уведомление пропущено: ' + (r.reason || 'не распознано'), 'bad');
-  else setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
-};
 $('#kToken').onclick = () => {
-  if (!confirm('Старый адрес перестанет работать, и телефон придётся настроить заново. Сменить?')) return;
+  if (!confirm('Старый токен перестанет работать. Новый токен нужно ввести в команде на iPhone. Сменить?')) return;
   K.token = newToken(); pushDonate(); refreshKaspiUi();
 };
 let kQrDone = '';
@@ -969,19 +961,13 @@ $('#kShortcut').onclick = async () => {
   const r = await window.echo.kaspiShortcut().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
   if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
   $('#kQr').innerHTML = r.qr; $('#kScUrl').value = r.url; kQrDone = r.url;
-  $('#kScNote').textContent = r.relay && r.manual ? 'Готовой команды нет. Создайте её вручную: скопированный адрес в поле URL, метод POST, тело JSON с полем text = «Входные данные команды».'
+  $('#kScNote').textContent = r.relay && r.manual ? 'Готовой команды нет: в QR адрес приёма. Создайте команду вручную: этот адрес в поле URL, метод POST, тело JSON с полем text = «Входные данные команды».'
     : r.relay ? '' : 'Телефон и компьютер должны быть в одной Wi-Fi сети.';
 };
 $('#kScUrl').onfocus = (e) => e.target.select();
 $('#kTokCopy').onclick = async () => {
   try { await navigator.clipboard.writeText(K.token); } catch (_) { const t = document.createElement('input'); t.value = K.token; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
   $('#kTokCopy').textContent = '✓ Скопировано'; setTimeout(() => { $('#kTokCopy').textContent = 'Скопировать токен'; }, 1500);
-};
-let sampleN = 0;
-$('#kSamples').onclick = async () => {
-  const r = await window.echo.kaspiSample(sampleN++ % 5).catch(() => null);
-  if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
-  setKStat(r.expectReject ? (r.accepted ? 'Ошибка: исходящая операция принята' : 'Тест пройден: покупка/исходящая отклонена') : (r.accepted ? 'Тест пройден: донат принят' : 'Пропущено: ' + r.reason), (r.accepted !== r.expectReject) ? 'ok' : 'bad');
 };
 setInterval(() => { const on = kState && (kState.running || kState.relayBase); if (on && !kQrDone) $('#kShortcut').click(); if (kState && !on) kQrDone = ''; }, 1500);
 // журнал уведомлений: видно, что пришло с телефона и как приложение это поняло
