@@ -922,8 +922,6 @@ $$('input[data-kk]').forEach((el) => {
 bindRange('kDur', 'kDurVal', (v) => v + ' с', () => K.duration, (v) => { K.duration = v; pushDonate(); })();
 bindRange('kScale', 'kScaleVal', (v) => v + '%', () => K.scale, (v) => { K.scale = v; pushDonate(); })();
 bindRange('kMin', 'kMinVal', (v) => kmoney(v), () => K.minAmount, (v) => { K.minAmount = v; pushDonate(); })();
-makeSelect('kAlignSel', { options: () => [{ v: 'left', label: 'Слева' }, { v: 'center', label: 'По центру' }, { v: 'right', label: 'Справа' }], get: () => K.align, set: (v) => { K.align = v; pushDonate(); } });
-makeSelect('kVposSel', { options: () => [{ v: 'top', label: 'Сверху' }, { v: 'center', label: 'По центру' }, { v: 'bottom', label: 'Снизу' }], get: () => K.vpos, set: (v) => { K.vpos = v; pushDonate(); } });
 
 async function refreshDonateLink() {
   const r = await window.echo.donateLink().catch(() => null);
