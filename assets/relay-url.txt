@@ -1,2 +1,2 @@
-# Адрес сервера приёма донатов (папка relay/ на хостинге), например https://example.kz/echochat
-# Пусто: приложение принимает донаты только по Wi-Fi
+# Адрес сервера приёма донатов (Cloudflare Worker, деплой из relay-worker/)
+https://echochat-relay.vavanphoto.workers.dev
