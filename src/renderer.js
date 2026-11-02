@@ -1014,8 +1014,8 @@ function fitDonate() {
   fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
   fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
 }
-// видеоинструкция «Донаты Каспи»: пока чужой ролик-заглушка. Чтобы заменить на свой, поменяйте ID: в ссылке youtube.com/watch?v=ЭТО_ID
-const GUIDE_VIDEO_ID = 'tYPJqC4Iuuw';
+// видеоинструкция «Донаты Каспи»: «Установка на айфон». Чтобы заменить, поменяйте ID: в ссылке youtube.com/watch?v=ЭТО_ID
+const GUIDE_VIDEO_ID = 'adgkv62-uT8';
 let guideInit = false;
 async function initGuideVideo() {
   if (guideInit) return;
