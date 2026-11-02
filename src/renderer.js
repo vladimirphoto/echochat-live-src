@@ -456,13 +456,18 @@ async function pump() {
 
 // «Пропустить фразу» (из окна и из меню значка в трее)
 function skipPhrase() { if (curItem) curItem.cancelled = true; stopCurrent(); }
+// выключили переключатель — сразу замолкаем: убираем из очереди все фразы этого источника и обрываем текущую, если она его
+function dropSrc(src) {
+  for (let i = queue.length - 1; i >= 0; i--) if (queue[i].src === src) { queue[i].cancelled = true; queue.splice(i, 1); }
+  if (curItem && curItem.src === src) skipPhrase();
+}
 function silence() { queue.forEach((it) => { it.cancelled = true; }); skipPhrase(); }
 
 // значок в трее показывает и меняет основные переключатели озвучки: окно сообщает их состояние, трей присылает команды
 const TRAY_KEYS = ['ttChat', 'gifts', 'follows', 'twChat'];
 const trayEl = (k) => document.querySelector('input[data-k=' + k + ']');
 const pushTray = () => { try { window.echo.trayState(Object.fromEntries(TRAY_KEYS.map((k) => [k, !!S[k]]))); } catch (_) {} };
-TRAY_KEYS.forEach((k) => { const el = trayEl(k); if (el) el.addEventListener('change', () => { pushTray(); }); });
+TRAY_KEYS.forEach((k) => { const el = trayEl(k); if (el) el.addEventListener('change', () => { if (!el.checked) dropSrc(k); pushTray(); }); });
 window.echo.onTraySet(({ key, value }) => { const el = TRAY_KEYS.includes(key) && trayEl(key); if (el) { el.checked = !!value; el.dispatchEvent(new Event('change')); } });
 window.echo.onTraySkip(skipPhrase);
 pushTray();
@@ -487,7 +492,7 @@ function handleChat(m, platform) {
   if (platform === 'twitch' ? !S.twChat : !S.ttChat) return; // озвучка этой платформы выключена — сообщение остаётся в ленте
   const t = clean(m.text);
   if (!t) return;
-  enqueue({ el, say: S.readName ? `${speakName(m.name)}: ${t}` : t, preset: platform === 'twitch' ? twPreset() : ttPreset() });
+  enqueue({ el, src: platform === 'twitch' ? 'twChat' : 'ttChat', say: S.readName ? `${speakName(m.name)}: ${t}` : t, preset: platform === 'twitch' ? twPreset() : ttPreset() });
 }
 window.echo.onChat((m) => handleChat(m, 'tiktok'));
 // Twitch: сообщения есть только если канал указан и подключён
@@ -495,12 +500,12 @@ window.echo.onTwChat((m) => handleChat(m, 'twitch'));
 window.echo.onGift((g) => {
   counters.gifts += g.count; bump('#sGifts', counters.gifts);
   const el = addMsg({ name: g.name, text: `🎁 отправил(а) «${g.gift}» ×${g.count}`, kind: 'gift', avatar: g.avatar, platform: 'tiktok', giftImg: g.image });
-  if (S.gifts) enqueue({ el, say: g.count > 1 ? `${speakName(g.name)}, спасибо за подарки ${g.gift}, ${g.count} штук` : `${speakName(g.name)}, спасибо за подарок ${g.gift}`, preset: eventPreset() });
+  if (S.gifts) enqueue({ el, src: 'gifts', say: g.count > 1 ? `${speakName(g.name)}, спасибо за подарки ${g.gift}, ${g.count} штук` : `${speakName(g.name)}, спасибо за подарок ${g.gift}`, preset: eventPreset() });
 });
 window.echo.onFollow((f) => {
   counters.follows++; bump('#sFollows', counters.follows);
   const el = addMsg({ name: f.name, text: '➕ подписался(ась) на канал', kind: 'follow', avatar: f.avatar, platform: 'tiktok' });
-  if (S.follows) enqueue({ el, say: `${speakName(f.name)}, спасибо за подписку`, preset: eventPreset() });
+  if (S.follows) enqueue({ el, src: 'follows', say: `${speakName(f.name)}, спасибо за подписку`, preset: eventPreset() });
 });
 // итог от TikTok (total) надёжнее суммы событий; если итога нет (или 0) — копим сами
 window.echo.onLike((l) => {
