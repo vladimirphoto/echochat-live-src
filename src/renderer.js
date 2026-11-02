@@ -138,7 +138,7 @@ $$('.nav').forEach((b) => b.addEventListener('click', () => {
   $$('.tab').forEach((t) => t.classList.toggle('show', t.id === 'tab-' + b.dataset.tab));
   document.body.classList.toggle('t-widgets', b.dataset.tab === 'widgets');
   if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); });
-  if (b.dataset.tab === 'kaspi') requestAnimationFrame(() => initDonatePreview());
+  if (b.dataset.tab === 'kaspi') requestAnimationFrame(() => { initGuideVideo(); initDonatePreview(); });
   $('#title').textContent = TITLES[b.dataset.tab][0];
   $('#subtitle').textContent = TITLES[b.dataset.tab][1];
 }));
@@ -1013,6 +1013,17 @@ function fitDonate() {
   const k = Math.min(1, w / 560, h / 200);
   fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
   fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
+}
+// видеоинструкция «Донаты Каспи»: пока чужой ролик-заглушка. Чтобы заменить на свой, поменяйте ID: в ссылке youtube.com/watch?v=ЭТО_ID
+const GUIDE_VIDEO_ID = 'tYPJqC4Iuuw';
+let guideInit = false;
+async function initGuideVideo() {
+  if (guideInit) return;
+  guideInit = true; // грузим один раз и только когда вкладку открыли: при старте приложения интернет не тратится
+  const base = await window.echo.donateUrl();
+  if (!base) return; // локальный сервер не запустился — карточка остаётся скрытой
+  $('#guideFrame').src = new URL(base).origin + '/guide?v=' + encodeURIComponent(GUIDE_VIDEO_ID);
+  $('#guideCard').hidden = false;
 }
 async function initDonatePreview() {
   if (dvInit) { fitDonate(); return; }

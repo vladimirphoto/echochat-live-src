@@ -12,6 +12,9 @@ const PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/chat/';
 const DONATE_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/donate/';
 const LIKES_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/likes/';
 
+// страница-обёртка с плеером YouTube (идентификатор ролика проверяется в маршруте: 11 символов a-z, A-Z, 0-9, _ и -)
+const guidePage = (id) => `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Видеоинструкция</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1" title="Видеоинструкция" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></body></html>`;
+
 function start(getSettings, port = 7878, opts = {}) {
   const origins = opts.origins || [PAGES_ORIGIN];
   const clients = new Set();
@@ -30,6 +33,14 @@ function start(getSettings, port = 7878, opts = {}) {
     if (u === '/' || u === '/chat') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(PAGE); }
     if (u === '/donate') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(DONATE_PAGE); }
     if (u === '/likes') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(LIKES_PAGE); }
+    // видеоинструкция во вкладке «Донаты Каспи»: плеер YouTube открывается со страницы на 127.0.0.1, а не с file://
+    // (с file:// YouTube часто отвечает «ошибка 153», потому что у запроса нет адреса-источника)
+    if (u === '/guide') {
+      const m = /[?&]v=([\w-]{11})(?:&|$)/.exec(req.url);
+      if (!m) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin-when-cross-origin' });
+      return res.end(guidePage(m[1]));
+    }
     if (u === '/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', ...cors });
       res.write('retry: 2000\n\n');
@@ -63,4 +74,4 @@ function start(getSettings, port = 7878, opts = {}) {
     server.listen(p, host);
   });
 }
-module.exports = { start, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, PAGES_ORIGIN };
+module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, PAGES_ORIGIN };
