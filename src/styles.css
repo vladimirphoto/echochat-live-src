@@ -383,7 +383,6 @@ label+.csel{margin-top:0}
 
 /* ---------- донаты Каспи ---------- */
 #tab-kaspi .cols{grid-template-columns:minmax(380px,440px) minmax(0,1fr)}
-#tab-kaspi .col-right{order:-1}
 #tab-kaspi .card{padding:16px 18px}
 #tab-kaspi .col-left,#tab-kaspi .col-right{display:flex;flex-direction:column;gap:14px;min-width:0}
 #dvBox{min-height:150px}
