@@ -21,9 +21,11 @@
         <button class="nav" data-tab="filters"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/></svg>Фильтры</button>
         <button class="nav" data-tab="widgets"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><path d="M17.2 13.5v7.5M13.5 17.2H21"/></svg>Виджеты</button>
         <button class="nav" data-tab="kaspi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.9 9.3c-.4-1-1.4-1.5-2.8-1.5-1.6 0-2.7.8-2.7 2s1 1.7 2.7 2c1.7.3 2.9.9 2.9 2.2 0 1.3-1.3 2.1-2.9 2.1-1.5 0-2.6-.6-3-1.7M12 6.4v1.4M12 16.3v1.4"/></svg>Донаты Каспи</button>
-              <button class="nav" data-tab="settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+              <button class="nav" data-tab="license"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.2 4L12 5l4.8 7L21 8l-2 11H5z"/><path d="M5.5 21h13"/></svg>Лицензия</button>
+        <button class="nav" data-tab="settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
       </nav>
       <div class="side-foot">
+        <button class="lic-chip" id="licChip" type="button" title="Лицензия"><i class="lc-dot"></i><span class="lc-t" id="licChipT">Лицензия</span><small id="licChipS"></small></button>
         <button class="btn ghost upd" id="btnUpdate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></svg><span>Проверить обновления</span></button>
         <small id="verLine">Версия —</small>
       </div>
@@ -283,6 +285,54 @@
         </div>
       </section>
       <!-- НАСТРОЙКИ -->
+      <!-- ЛИЦЕНЗИЯ -->
+      <section class="tab" id="tab-license">
+        <div class="cols lic-cols">
+          <div class="col-left">
+            <div class="card lic-status" id="licCard">
+              <div class="lic-top"><span class="lic-badge" id="licBadge">—</span><span class="lic-net" id="licNet"><s></s><span id="licNetT"></span></span></div>
+              <div class="lic-title" id="licTitle">—</div>
+              <div class="lic-sub" id="licSub"></div>
+              <div class="lic-bar" id="licBarWrap"><i id="licBar"></i></div>
+              <div class="lic-rows">
+                <div><span>Ключ</span><b id="licKey">—</b></div>
+                <div><span>Устройства</span><b id="licDev">—</b></div>
+                <div><span>Последняя проверка</span><b id="licCheck">—</b></div>
+                <div><span>ID установки</span><b id="licIid">—</b></div>
+              </div>
+              <div class="lic-btns"><button class="btn ghost" id="licRefresh" type="button">Проверить сейчас</button><button class="btn ghost" id="licRelease" type="button" hidden>Освободить устройство</button></div>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="card">
+              <h2>Активировать ключ</h2>
+              <p class="muted">Ключ приходит после оплаты. Он выглядит так: ECHO-XXXXX-XXXXX-XXXXX-XXXXX</p>
+              <div class="nick-field" id="licKeyField"><input id="licKeyInput" maxlength="29" placeholder="ECHO-…" spellcheck="false" autocomplete="off" /></div>
+              <div class="lic-msg" id="licMsg" aria-live="polite"></div>
+              <button class="btn primary" id="licActivate" type="button">Активировать</button>
+              <div class="note">Один ключ можно перенести на другой компьютер: нажмите «Освободить устройство» здесь, затем введите ключ на новом. Если старый компьютер недоступен, напишите автору, он сбросит устройства</div>
+            </div>
+          </div>
+        </div>
+        <div class="lic-plans">
+          <div class="card lic-plan">
+            <div class="lp-name">Lite</div><div class="lp-price">Бесплатно</div>
+            <ul><li>Эфир и озвучка чата</li><li>Фильтры</li><li>Настройки и обновления</li><li class="off">Виджеты</li><li class="off">Донаты Каспи</li></ul>
+          </div>
+          <div class="card lic-plan hot">
+            <div class="lp-tag">Рекомендуем</div>
+            <div class="lp-name">Pro</div><div class="lp-price"><b id="licPlanPrice">5 000 ₸</b><span id="licPlanDays">/ 30 дней</span></div>
+            <ul><li>Всё из Lite</li><li>Виджеты чата и топ лайков</li><li>Донаты Каспи на экран стрима</li><li>Перенос на другой компьютер</li></ul>
+            <button class="btn primary" id="licBuy" type="button">Купить Pro</button>
+          </div>
+          <div class="card lic-plan">
+            <div class="lp-name">Lifetime</div><div class="lp-price">Навсегда</div>
+            <ul><li>Всё из Pro</li><li>Без продлений</li><li>Выдаётся автором</li></ul>
+            <button class="btn ghost" id="licBuyLife" type="button">Узнать подробнее</button>
+          </div>
+        </div>
+      </section>
+
       <section class="tab" id="tab-settings">
         <div class="cols">
           <div class="col-left">
@@ -318,6 +368,36 @@
   <div class="wn-back cf-back" id="cfBack" hidden><div class="wn-box cf-box" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText"><h2 id="cfTitle"></h2><p id="cfText"></p><div class="cf-row"><button class="btn ghost" id="cfNo" type="button">Отмена</button><button class="btn primary" id="cfYes" type="button">Да</button></div></div></div>
   <div class="wn-back" id="closeBack" hidden><div class="wn-box"><h2>Закрыть ЭхоЧат LIVE?</h2><p class="muted">Если свернуть в трей, озвучка и подключение к чату продолжат работать. Вернуть окно можно кликом по значку у часов</p><label class="sw cl-rem"><input type="checkbox" id="closeRemember" /><i></i><span>Больше не спрашивать<small>Выбор можно поменять во вкладке «Настройки»</small></span></label><div class="cl-btns"><button class="btn primary" id="closeTray">Свернуть в трей</button><button class="btn ghost" id="closeQuit">Закрыть программу</button><button class="btn ghost" id="closeCancel">Отмена</button></div></div></div>
   </div>
+  <div class="wn-back" id="licBuyBack" hidden>
+    <div class="wn-box lic-buy" role="dialog" aria-modal="true" aria-labelledby="licBuyTitle">
+      <div class="lb-head"><span class="wn-badge" id="licBuyBadge">Pro</span><button class="lb-x" id="licBuyX" type="button" aria-label="Закрыть">×</button></div>
+      <h2 id="licBuyTitle">Pro на 30 дней</h2>
+      <div class="lb-price"><b id="licPrice">5 000 ₸</b><span id="licPriceSub">за 30 дней</span></div>
+      <div class="lb-body">
+        <div class="lb-qr" id="licQrBox"><div class="lb-qrframe"><img id="licQr" alt="QR-код для оплаты" /></div><small>Наведите камеру Kaspi на QR-код</small></div>
+        <ol class="lb-steps">
+          <li><b>Оплатите</b><span id="licPayNote"></span></li>
+          <li><b>Отправьте чек автору</b><span>Ключ придёт в ответ</span></li>
+          <li><b>Введите ключ</b><span>Pro откроется сразу, перезапуск не нужен</span></li>
+        </ol>
+      </div>
+      <a class="btn ghost lb-contact" id="licContact" href="#" target="_blank" rel="noopener" hidden>Написать автору</a>
+      <div class="nick-field" id="licBuyField"><input id="licBuyKey" maxlength="29" placeholder="Ключ ECHO-…" spellcheck="false" autocomplete="off" /></div>
+      <div class="lic-msg" id="licBuyMsg" aria-live="polite"></div>
+      <button class="btn primary" id="licBuyAct" type="button">Активировать</button>
+    </div>
+  </div>
+  <div class="wn-back cf-back" id="licEndBack" hidden>
+    <div class="wn-box lic-end" role="dialog" aria-modal="true" aria-labelledby="licEndTitle">
+      <div class="le-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2c0 5 3 6 5 10-2 4-5 5-5 10M17 2c0 5-3 6-5 10 2 4 5 5 5 10"/></svg></div>
+      <h2 id="licEndTitle">Пробный период закончился</h2>
+      <p id="licEndText">Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты» и «Донаты Каспи» откроются с Pro</p>
+      <ul><li>Виджеты чата и топ лайков для OBS и TikTok LIVE Studio</li><li>Донаты Каспи на экране стрима</li><li>Перенос лицензии на другой компьютер</li></ul>
+      <div class="cf-row"><button class="btn ghost" id="licEndLite" type="button">Остаться на Lite</button><button class="btn primary" id="licEndPro" type="button">Открыть Pro</button></div>
+    </div>
+  </div>
+  <div class="lic-wow" id="licWow" hidden><div class="lw-ring"></div><div class="lw-card"><div class="lw-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><b id="licWowT">Pro активирован</b><small id="licWowS"></small></div></div>
   <script src="renderer.js"></script>
+  <script src="license-ui.js"></script>
 </body>
 </html>

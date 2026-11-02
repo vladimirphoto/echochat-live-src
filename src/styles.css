@@ -514,3 +514,114 @@ label+.csel{margin-top:0}
 .ios-badge{flex:none;padding:3px 12px;border-radius:99px;background:var(--grad);font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
 .guide-box{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 40px rgba(139,92,246,.25)}
 .guide-box iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* ---------- Лицензия: статус, тарифы, покупка Pro, блокировка разделов ---------- */
+.btn[hidden]{display:none}
+.lic-chip{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;font-weight:600;transition:.2s}
+.lic-chip:hover{background:rgba(255,255,255,.09)}
+.lic-chip:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+.lic-chip .lc-t{white-space:nowrap}
+.lic-chip .lc-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.side-foot .lic-chip small{margin-left:auto;padding:0;color:var(--muted);font-size:11px;font-weight:500}
+.lic-chip.pro,.lic-chip.lifetime{border-color:rgba(139,92,246,.45);background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(236,72,153,.12))}
+.lic-chip.pro .lc-dot,.lic-chip.lifetime .lc-dot{background:var(--grad);box-shadow:0 0 10px rgba(236,72,153,.7)}
+.lic-chip.trial .lc-dot{background:var(--a3);box-shadow:0 0 10px rgba(34,211,238,.6)}
+.lic-chip.bump{animation:licbump 1.1s ease}
+@keyframes licbump{0%{box-shadow:0 0 0 0 rgba(236,72,153,.7)}60%{box-shadow:0 0 0 14px rgba(236,72,153,0)}100%{box-shadow:0 0 0 0 rgba(236,72,153,0)}}
+
+.lic-cols{grid-template-columns:minmax(330px,420px) minmax(0,1fr)}
+.lic-status{position:relative;overflow:hidden}
+.lic-status:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--grad);opacity:.7}
+.lic-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}
+.lic-badge{display:inline-block;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.8px;background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+.lic-status.pro .lic-badge,.lic-status.lifetime .lic-badge{background:var(--grad);border-color:transparent;color:#fff}
+.lic-status.trial .lic-badge{background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.5);color:var(--a3)}
+.lic-net{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+.lic-net s{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block}
+.lic-net.off s{background:#fbbf24}
+.lic-title{font-size:22px;font-weight:700;letter-spacing:.2px}
+.lic-sub{color:var(--muted);margin-top:4px;font-size:13px;min-height:19px;line-height:1.4}
+.lic-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.08);margin:16px 0 4px;overflow:hidden}
+.lic-bar i{display:block;height:100%;width:0;border-radius:6px;background:var(--grad);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.lic-status.lite .lic-bar{display:none}
+.lic-rows{margin-top:14px;border-top:1px solid var(--line)}
+.lic-rows div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.lic-rows span{color:var(--muted)}
+.lic-rows b{font-weight:600;text-align:right;user-select:text;word-break:break-all}
+.lic-btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.lic-btns .btn{flex:1;white-space:nowrap;padding:10px 14px}
+.lic-msg{min-height:18px;margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.4}
+.lic-msg.bad{color:#fca5a5}.lic-msg.ok{color:var(--ok)}
+.lic-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.lic-plan{position:relative;display:flex;flex-direction:column}
+.lic-plan.hot{border-color:rgba(139,92,246,.55);background:linear-gradient(160deg,rgba(139,92,246,.16),rgba(236,72,153,.08)),var(--panel);box-shadow:0 14px 40px rgba(139,92,246,.18)}
+.lp-tag{position:absolute;top:-1px;right:16px;padding:3px 10px;border-radius:0 0 10px 10px;background:var(--grad);font-size:10.5px;font-weight:700;letter-spacing:.4px}
+.lp-name{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.9px}
+.lp-price{font-size:24px;font-weight:700;margin:6px 0 14px}.lp-price span{font-size:13px;color:var(--muted);font-weight:500;margin-left:6px}
+.lic-plan ul{list-style:none;display:grid;gap:9px;margin-bottom:6px;flex:1}
+.lic-plan li{position:relative;padding-left:22px;font-size:13.5px;line-height:1.4}
+.lic-plan li:before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:700}
+.lic-plan li.off{color:var(--muted)}.lic-plan li.off:before{content:"✕";color:var(--muted)}
+.lic-plan .btn{display:block;width:100%;margin-top:14px;padding:11px 14px}
+
+/* закрытые разделы: размытие и карточка «Откройте Pro» */
+#tab-widgets>*,#tab-kaspi>*{transition:filter .9s cubic-bezier(.2,.8,.2,1),opacity .9s ease}
+.tab.is-locked,.tab.unlocking{position:relative;overflow:hidden}
+.lic-plans[hidden]{display:none}
+.tab.is-locked>*:not(.lock-ov){filter:blur(9px) saturate(.75);opacity:.55;pointer-events:none;user-select:none}
+.lock-ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;transition:opacity .7s ease}
+.lock-ov.out{opacity:0;pointer-events:none}
+.lock-card{width:min(390px,100%);padding:28px 26px 26px;border-radius:22px;text-align:center;background:linear-gradient(160deg,rgba(139,92,246,.2),rgba(236,72,153,.1)),rgba(21,21,31,.9);border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 70px rgba(0,0,0,.5);animation:cfpop .35s cubic-bezier(.2,.8,.2,1)}
+.lock-ic{width:54px;height:54px;margin:0 auto 14px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px rgba(139,92,246,.45)}
+.lock-ic svg{width:26px;height:26px;color:#fff}
+.lock-card h3{font-size:19px;margin-bottom:6px}
+.lock-card p{color:var(--muted);font-size:13.5px;line-height:1.5}
+.lock-card .btn{margin-top:18px}
+
+/* окно покупки Pro */
+.lic-buy{width:min(720px,94vw);max-height:92vh;overflow:auto}
+.lb-head{display:flex;justify-content:space-between;align-items:center}
+.lb-x{all:unset;cursor:pointer;width:30px;height:30px;border-radius:9px;text-align:center;line-height:28px;font-size:22px;color:var(--muted);transition:.2s}
+.lb-x:hover{background:var(--panel);color:var(--text)}
+.lb-price{display:flex;align-items:baseline;gap:10px;margin:-6px 0 18px}
+.lb-price b{font-size:34px;line-height:1.1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lb-price span{color:var(--muted)}
+.lb-body{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin-bottom:16px}
+.lb-body.noqr{grid-template-columns:1fr}
+.lb-qr{text-align:center}
+.lb-qrframe{width:208px;height:208px;padding:12px;border-radius:20px;background:#fff;box-shadow:0 14px 40px rgba(0,0,0,.45),0 0 0 6px rgba(255,255,255,.06)}
+.lb-qrframe img{width:100%;height:100%;object-fit:contain;display:block;border-radius:6px}
+.lb-qr small{display:block;margin-top:12px;color:var(--muted);font-size:11.5px}
+.lb-steps{list-style:none;counter-reset:s;display:grid;gap:16px}
+.lb-steps li{position:relative;padding-left:42px;counter-increment:s}
+.lb-steps li:before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:9px;background:rgba(139,92,246,.22);border:1px solid rgba(139,92,246,.5);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.lb-steps b{display:block;font-size:14.5px}
+.lb-steps span{display:block;color:var(--muted);font-size:13px;margin-top:2px;line-height:1.45}
+.lb-contact{display:block;box-sizing:border-box;text-align:center;margin-bottom:12px;padding:11px 14px;text-decoration:none}
+.lic-buy .nick-field input{font-size:15px;letter-spacing:.4px}
+
+/* конец пробного периода */
+.lic-end{text-align:center}
+.le-ico{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);display:flex;align-items:center;justify-content:center;color:#fbbf24}
+.le-ico svg{width:30px;height:30px}
+.lic-end h2{margin:0 0 8px}
+.lic-end p{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px}
+.lic-end ul{text-align:left;margin-bottom:22px}
+.lic-end .cf-row .btn.primary{margin-top:0}
+
+/* плавное открытие Pro после активации */
+.lic-wow{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.38),rgba(8,8,16,0) 62%);animation:lwbg 2.8s ease both}
+.lic-wow[hidden]{display:none}
+.lw-ring{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(236,72,153,.85);animation:lwring 1.7s ease-out both}
+.lw-card{position:relative;text-align:center;padding:30px 44px 28px;border-radius:26px;background:linear-gradient(160deg,rgba(139,92,246,.22),rgba(236,72,153,.12)),rgba(21,21,31,.94);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.6);animation:lwpop .6s cubic-bezier(.2,.9,.3,1.2) both,lwout .5s 2.2s ease forwards}
+.lw-check{width:76px;height:76px;margin:0 auto 14px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(236,72,153,.6)}
+.lw-check svg{width:36px;height:36px;color:#fff;stroke-dasharray:30;stroke-dashoffset:30;animation:lwdraw .6s .3s ease forwards}
+.lw-card b{display:block;font-size:24px;letter-spacing:.2px}
+.lw-card small{display:block;color:var(--muted);margin-top:4px;font-size:13px}
+@keyframes lwbg{0%{opacity:0}15%{opacity:1}80%{opacity:1}100%{opacity:0}}
+@keyframes lwring{from{transform:scale(.4);opacity:1}to{transform:scale(7);opacity:0}}
+@keyframes lwpop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes lwout{to{opacity:0;transform:translateY(-8px)}}
+@keyframes lwdraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.lic-wow,.lw-ring,.lw-card,.lw-check svg,.lic-chip.bump{animation-duration:.01s!important;animation-delay:0s!important}#tab-widgets>*,#tab-kaspi>*{transition:none}}
+@media(max-width:1060px){.lic-plans{grid-template-columns:1fr}.lb-body{grid-template-columns:1fr}}

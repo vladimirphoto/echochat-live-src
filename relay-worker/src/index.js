@@ -2,6 +2,9 @@
 // Тот же протокол, что у папки relay/ (PHP): приложение ходит на /notify.php и /poll.php,
 // поэтому приложение менять не нужно. Очередь каждого токена лежит в своём Durable Object.
 
+import { handleLicense } from './license-router.js';
+export { Licenses } from './license-do.js';
+
 const MAX_BODY = 8192;        // байт на одно уведомление
 const MAX_QUEUE = 200;        // сколько уведомлений ждёт забора на один токен
 const TTL_SEC = 300;          // уведомление старше 5 минут не нужно
@@ -89,6 +92,10 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/' || url.pathname === '') return json(200, { ok: true, service: 'echochat-relay' });
+
+    // лицензирование: /lic/* (приложение) и /admin (автор)
+    const lic = await handleLicense(request, env, url);
+    if (lic) return lic;
 
     if (url.pathname !== '/notify.php' && url.pathname !== '/poll.php') return json(404, { ok: false });
 

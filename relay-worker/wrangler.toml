@@ -7,6 +7,17 @@ compatibility_date = "2025-01-01"
 name = "QUEUE"
 class_name = "Queue"
 
+# База лицензий (ключи, устройства, ключ подписи)
+[[durable_objects.bindings]]
+name = "LICENSES"
+class_name = "Licenses"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Queue"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Licenses"]
+
+# Секрет ADMIN_TOKEN (вход в /admin) задаётся в панели Cloudflare: Workers → echochat-relay → Settings → Variables and Secrets

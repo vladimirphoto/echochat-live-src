@@ -1,0 +1,235 @@
+'use strict';
+// Интерфейс лицензии: вкладка «Лицензия», статус в сайдбаре, размытие закрытых разделов, окно покупки Pro,
+// экран конца пробного периода и плавное открытие Pro. Логика тарифов живёт в основном процессе (license.js),
+// здесь только показ состояния. Использует $ и askConfirm из renderer.js.
+(() => {
+  const echo = window.echo;
+  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи' };
+  const DAY = 86400000;
+  const qa = (s) => [...document.querySelectorAll(s)];
+  const plural = (n, [a, b, c]) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d >= 2 && d <= 4 ? b : c; };
+  const days = (n) => `${n} ${plural(n, ['день', 'дня', 'дней'])}`;
+  const fmtDate = (t) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fmtTime = (t) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const money = (n) => Number(n).toLocaleString('ru-RU').replace(/ /g, ' ') + ' ₸';
+  const goTab = (tab) => { const b = document.querySelector(`.nav[data-tab="${tab}"]`); if (b) b.click(); };
+  const store = { get: (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} }, del: (k) => { try { localStorage.removeItem(k); } catch (_) {} } };
+
+  let st = null;          // последнее состояние лицензии
+  let purchase = null;    // данные экрана покупки (assets/purchase.json, pay-qr.png)
+  let buyKind = 'pro';
+
+  // ---------- закрытые разделы: размытие + карточка ----------
+  const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+  function lockText(tab, s) {
+    const what = LOCKABLE[tab];
+    if (s.reason === 'trial-ended') return [`Пробный период закончился`, `Раздел «${what}» входит в Pro. Остальные разделы продолжают работать`];
+    if (s.reason === 'sub-expired') return [`Подписка Pro закончилась`, `Продлите Pro, чтобы снова пользоваться разделом «${what}»`];
+    if (s.reason === 'offline-expired') return [`Нужна проверка лицензии`, `Подключитесь к интернету: лицензия подтвердится сама, и «${what}» откроется`];
+    if (s.reason === 'revoked') return [`Ключ отозван`, `Напишите автору или введите другой ключ на вкладке «Лицензия»`];
+    return [`Раздел доступен в Pro`, `«${what}» открывается с тарифом Pro. Эфир, озвучка и фильтры остаются бесплатными`];
+  }
+  function applyLocks(s, unlockAnim) {
+    for (const tab of Object.keys(LOCKABLE)) {
+      const el = document.getElementById('tab-' + tab);
+      if (!el) continue;
+      const must = s.locked.includes(tab);
+      let ov = el.querySelector(':scope > .lock-ov');
+      const kids = [...el.children].filter((c) => !c.classList.contains('lock-ov'));
+      if (must) {
+        clearTimeout(el._unlock);
+        el.classList.remove('unlocking');
+        el.classList.add('is-locked');
+        kids.forEach((k) => k.setAttribute('inert', ''));
+        if (!ov) {
+          ov = document.createElement('div');
+          ov.className = 'lock-ov';
+          ov.innerHTML = `<div class="lock-card"><div class="lock-ic">${LOCK_SVG}</div><h3></h3><p></p><button class="btn primary" type="button">Открыть Pro</button></div>`;
+          ov.querySelector('button').addEventListener('click', () => { goTab('license'); openBuy('pro'); });
+          el.appendChild(ov);
+        }
+        ov.classList.remove('out');
+        const [h, p] = lockText(tab, s);
+        ov.querySelector('h3').textContent = h;
+        ov.querySelector('p').textContent = p;
+      } else if (el.classList.contains('is-locked')) {
+        // плавное открытие: размытие уходит, карточка тает
+        kids.forEach((k) => k.removeAttribute('inert'));
+        el.classList.remove('is-locked');
+        if (ov) {
+          el.classList.add('unlocking');
+          ov.classList.add('out');
+          clearTimeout(el._unlock);
+          el._unlock = setTimeout(() => { el.classList.remove('unlocking'); ov.remove(); }, unlockAnim ? 1000 : 50);
+        }
+      }
+    }
+  }
+
+  // ---------- вкладка «Лицензия» и чип в сайдбаре ----------
+  const BADGE = { lite: 'LITE', trial: 'ПРОБНЫЙ ПЕРИОД', pro: 'PRO', lifetime: 'LIFETIME' };
+  function describe(s) {
+    const left = s.daysLeft;
+    if (s.plan === 'pro') return { title: 'Pro активен', sub: s.until ? `Действует до ${fmtDate(s.until)} · осталось ${days(left)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (30 * DAY))) : 1 };
+    if (s.plan === 'lifetime') return { title: 'Pro навсегда', sub: 'Бессрочная лицензия, продлевать не нужно', frac: 1 };
+    if (s.plan === 'trial') return { title: 'Все функции открыты', sub: left != null ? `Пробный период: осталось ${days(left)}, до ${fmtDate(s.until)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (3 * DAY))) : 1 };
+    const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают, «Виджеты» и «Донаты Каспи» откроются с Pro', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть «Виджеты» и «Донаты Каспи»', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
+    return { title: 'Бесплатный тариф', sub: why || 'Эфир, озвучка и фильтры. «Виджеты» и «Донаты Каспи» открываются с Pro', frac: 0 };
+  }
+  function renderStatus(s) {
+    const d = describe(s);
+    const card = $('#licCard');
+    card.className = 'card lic-status ' + s.plan;
+    $('#licBadge').textContent = BADGE[s.plan] || s.plan.toUpperCase();
+    $('#licTitle').textContent = d.title;
+    $('#licSub').textContent = d.sub;
+    $('#licBar').style.width = Math.round(d.frac * 100) + '%';
+    const net = $('#licNet');
+    net.classList.toggle('off', !!s.offline);
+    $('#licNetT').textContent = s.offline
+      ? (s.paid && s.graceUntil ? `Нет связи. Офлайн-доступ до ${fmtDate(s.graceUntil)}` : 'Нет связи с сервером лицензий')
+      : (s.lastCheck ? 'Лицензия проверена' : 'Проверяем…');
+    $('#licKey').textContent = s.keyMasked || '—';
+    $('#licDev').textContent = s.paid && s.maxDevices ? `${s.devices} из ${s.maxDevices}` : '—';
+    $('#licCheck').textContent = s.lastCheck ? (s.offline ? `${fmtTime(s.lastCheck)} · не удалась` : `сегодня, ${fmtTime(s.lastCheck)}`) : '—';
+    $('#licIid').textContent = s.installShort || '—';
+    $('#licRelease').hidden = !s.paid;
+    $('#licBuy').textContent = s.plan === 'pro' ? 'Продлить Pro' : 'Купить Pro';
+    document.querySelector('.lic-plans').hidden = s.plan === 'lifetime';
+  }
+  function renderChip(s) {
+    const chip = $('#licChip');
+    chip.className = 'lic-chip ' + s.plan;
+    const t = { lite: 'Lite', trial: 'Пробный', pro: 'Pro', lifetime: 'Lifetime' }[s.plan] || s.title;
+    $('#licChipT').textContent = t;
+    $('#licChipS').textContent = s.plan === 'lite' ? 'Открыть Pro' : s.plan === 'lifetime' ? '' : s.daysLeft != null ? `${s.daysLeft} дн.` : '';
+  }
+
+  // ---------- окно покупки Pro ----------
+  async function loadPurchase() {
+    if (!purchase) { try { purchase = await echo.licPurchase(); } catch (_) { purchase = null; } }
+    return purchase || { price: 5000, days: 30, payNote: '', contactLabel: '', contactUrl: '', qr: '' };
+  }
+  async function openBuy(kind) {
+    buyKind = kind;
+    const p = await loadPurchase();
+    const life = kind === 'life';
+    $('#licBuyBadge').textContent = life ? 'Lifetime' : 'Pro';
+    $('#licBuyTitle').textContent = life ? 'Lifetime: Pro навсегда' : `Pro на ${days(p.days)}`;
+    $('#licPrice').textContent = life ? 'Без продлений' : money(p.price);
+    $('#licPriceSub').textContent = life ? 'условия назовёт автор' : `за ${days(p.days)}`;
+    $('#licPayNote').textContent = life ? 'Напишите автору, он назовёт условия и пришлёт реквизиты' : (p.payNote || 'Переведите сумму автору и отправьте чек');
+    const showQr = !life && !!p.qr;
+    $('#licQrBox').hidden = !showQr;
+    if (showQr) $('#licQr').src = p.qr;
+    $('#licQrBox').parentElement.classList.toggle('noqr', !showQr);
+    const c = $('#licContact');
+    c.hidden = !p.contactUrl;
+    if (p.contactUrl) { c.href = p.contactUrl; c.textContent = p.contactLabel || 'Написать автору'; }
+    setMsg('#licBuyMsg', '');
+    $('#licBuyKey').value = '';
+    $('#licBuyBack').hidden = false;
+    setTimeout(() => $('#licBuyKey').focus(), 60);
+  }
+  const closeBuy = () => { $('#licBuyBack').hidden = true; };
+
+  // ---------- активация ключа ----------
+  function setMsg(sel, text, kind) { const m = $(sel); m.textContent = text || ''; m.className = 'lic-msg' + (kind ? ' ' + kind : ''); }
+  const cleanKey = (inp) => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 29); };
+  async function activate({ input, msg, btn }) {
+    const inp = $(input);
+    const key = inp.value.trim();
+    if (!key) { setMsg(msg, 'Введите ключ', 'bad'); if (typeof flagField === 'function') flagField(inp); return; }
+    const b = $(btn), label = b.textContent;
+    b.style.pointerEvents = 'none'; b.textContent = 'Проверяю…'; setMsg(msg, '');
+    let r;
+    try { r = await echo.licActivate(key); } catch (e) { r = { ok: false, message: 'Не удалось связаться с программой. Перезапустите её' }; }
+    b.style.pointerEvents = ''; b.textContent = label;
+    if (!r || !r.ok) { setMsg(msg, (r && r.message) || 'Не удалось активировать ключ', 'bad'); if (typeof flagField === 'function') flagField(inp); return; }
+    inp.value = '';
+    setMsg(msg, 'Ключ принят', 'ok');
+    closeBuy();
+    if (r.state) apply(r.state, { activated: true });
+  }
+
+  // ---------- плавное открытие Pro ----------
+  function celebrate(s) {
+    const wow = $('#licWow');
+    $('#licWowT').textContent = s.plan === 'lifetime' ? 'Lifetime активирован' : 'Pro активирован';
+    $('#licWowS').textContent = s.plan === 'lifetime' ? 'Все разделы открыты навсегда' : s.until ? `Все разделы открыты до ${fmtDate(s.until)}` : 'Все разделы открыты';
+    wow.hidden = true; void wow.offsetWidth; wow.hidden = false;
+    clearTimeout(wow._t); wow._t = setTimeout(() => { wow.hidden = true; }, 3000);
+    const chip = $('#licChip'); chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+  }
+
+  // ---------- конец пробного периода ----------
+  function maybeEndScreen(s) {
+    if (s.paid) { store.del('licEndSeen'); return; }
+    if (s.plan !== 'lite' || !['trial-ended', 'sub-expired'].includes(s.reason)) return;
+    if (store.get('licEndSeen') === s.reason) return;
+    const sub = s.reason === 'sub-expired';
+    $('#licEndTitle').textContent = sub ? 'Подписка Pro закончилась' : 'Пробный период закончился';
+    $('#licEndText').textContent = sub
+      ? 'Вы перешли на тариф Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты» и «Донаты Каспи» вернутся после продления'
+      : 'Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты» и «Донаты Каспи» откроются с Pro';
+    $('#licEndBack').hidden = false;
+  }
+  const closeEnd = () => { $('#licEndBack').hidden = true; if (st) store.set('licEndSeen', st.reason); };
+
+  // ---------- общий вход: новое состояние ----------
+  function apply(s, meta = {}) {
+    if (!s) return;
+    const was = st;
+    st = s;
+    renderStatus(s);
+    renderChip(s);
+    const becamePaid = !!was && !was.paid && s.paid;
+    applyLocks(s, becamePaid || !!meta.activated);
+    if (becamePaid) celebrate(s);
+    if (!was || was.plan !== s.plan || was.reason !== s.reason) maybeEndScreen(s);
+  }
+
+  // ---------- события ----------
+  $('#licChip').addEventListener('click', () => goTab('license'));
+  $('#licBuy').addEventListener('click', () => openBuy('pro'));
+  $('#licBuyLife').addEventListener('click', () => openBuy('life'));
+  $('#licBuyX').addEventListener('click', closeBuy);
+  $('#licBuyBack').addEventListener('click', (e) => { if (e.target === $('#licBuyBack')) closeBuy(); });
+  $('#licActivate').addEventListener('click', () => activate({ input: '#licKeyInput', msg: '#licMsg', btn: '#licActivate' }));
+  $('#licBuyAct').addEventListener('click', () => activate({ input: '#licBuyKey', msg: '#licBuyMsg', btn: '#licBuyAct' }));
+  for (const id of ['#licKeyInput', '#licBuyKey']) {
+    const inp = $(id);
+    inp.addEventListener('input', () => { cleanKey(inp); inp.closest('.nick-field').classList.remove('err'); });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') (id === '#licKeyInput' ? $('#licActivate') : $('#licBuyAct')).click(); });
+  }
+  $('#licRefresh').addEventListener('click', async () => {
+    const b = $('#licRefresh'), label = b.textContent;
+    b.textContent = 'Проверяю…'; b.style.pointerEvents = 'none';
+    try { const s = await echo.licRefresh(); apply(s); setMsg('#licMsg', s && s.offline ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии' : 'Лицензия проверена', s && s.offline ? 'bad' : 'ok'); } catch (_) {}
+    b.textContent = label; b.style.pointerEvents = '';
+  });
+  $('#licRelease').addEventListener('click', async () => {
+    const ok = await askConfirm({ title: 'Освободить это устройство?', text: 'Лицензия отвяжется от этого компьютера, и здесь вернётся тариф Lite. Ключ можно будет ввести на другом компьютере', ok: 'Освободить', cancel: 'Отмена', danger: true });
+    if (!ok) return;
+    const r = await echo.licDeactivate();
+    if (!r || !r.ok) { setMsg('#licMsg', (r && r.message) || 'Не удалось освободить устройство', 'bad'); return; }
+    setMsg('#licMsg', 'Устройство освобождено. Ключ можно ввести на другом компьютере', 'ok');
+    if (r.state) apply(r.state);
+  });
+  $('#licEndLite').addEventListener('click', closeEnd);
+  $('#licEndPro').addEventListener('click', () => { closeEnd(); goTab('license'); openBuy('pro'); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('#licBuyBack').hidden) closeBuy();
+    else if (!$('#licEndBack').hidden) closeEnd();
+  });
+  echo.onLic((s) => apply(s, { activated: !!(s && s.justActivated) }));
+
+  // цену на карточке тарифа берём из того же файла, что и окно покупки
+  loadPurchase().then((p) => { $('#licPlanPrice').textContent = money(p.price); $('#licPlanDays').textContent = `/ ${days(p.days)}`; });
+
+  // старт и плановое обновление: срок и дни считаются в основном процессе, раз в минуту подтягиваем актуальное
+  echo.licState().then((s) => apply(s));
+  setInterval(() => echo.licState().then((s) => s && apply(s)).catch(() => {}), 60000);
+  window.addEventListener('online', () => echo.licRefresh().then((s) => s && apply(s)).catch(() => {}));
+})();

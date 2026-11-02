@@ -10,6 +10,7 @@ const load = async (name) => {
   return { ...(m.default && typeof m.default === 'object' ? m.default : {}), ...m };
 };
 
+const SELFTEST = process.argv.includes('--selftest');
 let win = null;
 let conn = null;
 let tw = null;           // подключение к чату Twitch
@@ -17,7 +18,10 @@ let wsrv = null;         // сервер виджета
 let wset = {};           // настройки виджета (приходят из окна)
 const NAME_COLORS = ['#a78bfa', '#f472b6', '#22d3ee', '#fbbf24', '#34d399', '#818cf8', '#fb7185'];
 const colorOf = (s) => NAME_COLORS[[...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % NAME_COLORS.length];
-const wmsg = (m) => wsrv && wsrv.broadcast('msg', m);
+// лицензия (license.js): в тарифе Lite вкладки «Виджеты» и «Донаты Каспи» закрыты — виджеты ничего не получают, донаты не принимаются
+let license = null;
+const locked = (tab) => !SELFTEST && !!license && license.isLocked(tab);
+const wmsg = (m) => !locked('widgets') && wsrv && wsrv.broadcast('msg', m);
 // ---- виджет «Топ лайков»: считаем лайки каждого зрителя и отдаём страницам виджета лучших (до 10, сколько показать — решает страница)
 const likesBoard = new ev.LikesBoard();
 const LIKES_MAX = 10;
@@ -26,9 +30,8 @@ const clampN = (v, a, b, d) => { v = Math.round(+v); return Number.isFinite(v) ?
 let likesTimer = null;
 function pushLikes() { // не чаще раза в 0,4 с: лайки сыплются пачками
   if (likesTimer) return;
-  likesTimer = setTimeout(() => { likesTimer = null; wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
+  likesTimer = setTimeout(() => { likesTimer = null; if (!locked('widgets')) wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
 }
-const SELFTEST = process.argv.includes('--selftest');
 if (process.platform === 'win32') app.setAppUserModelId('live.echochat.app'); // нужен для уведомлений Windows; совпадает с ярлыками установщика
 
 // ---- трей (Windows): «свернуть» прячет окно в трей, озвучка продолжает работать; крестик закрывает приложение, как раньше
@@ -497,6 +500,7 @@ ipcMain.handle('widget:check', () => new Promise((resolve) => {
 }));
 ipcMain.handle('widget:set', (_e, s) => { wset = { ...(s || {}) }; wsrv && wsrv.broadcast('settings', wset); return { ok: true }; });
 ipcMain.handle('widget:test', () => {
+  if (locked('widgets')) return { ok: false, locked: true };
   wmsg({ platform: 'tiktok', name: 'Анна', text: 'Привет из TikTok! Так выглядит чат', color: colorOf('Анна') });
   wmsg({ platform: 'twitch', name: 'Max', text: 'Привет из Twitch!', color: colorOf('Max') });
   wmsg({ platform: 'tiktok', name: 'Игорь', color: colorOf('Игорь'), gift: { name: 'Роза', count: 5 } });
@@ -509,6 +513,7 @@ ipcMain.handle('likes:set', (_e, s) => {
   return { ok: true };
 });
 ipcMain.handle('likes:test', () => {
+  if (locked('widgets')) return { ok: false, locked: true };
   const names = ['Анна', 'Max', 'Игорь', 'Дина', 'Марат', 'Света', 'Олег', 'Ксюша', 'Тимур', 'Лера'];
   wsrv && wsrv.broadcast('likes', names.map((name, i) => ({ name, avatar: '', likes: Math.max(20, 1200 - i * 97 - i * i * 5) })));
   return { ok: true };
@@ -546,6 +551,7 @@ let krx = null, krxP = null;
 const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage });
 let lastDon = { key: '', t: 0 };
 function handleDonation(d, test = false) {
+  if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };
   const don = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(d.name || 'Аноним').slice(0, 40), amount: Math.round(Number(d.amount) || 0), message: String(d.message || '').slice(0, 140), test };
   if (don.amount <= 0) return { accepted: false, reason: 'нет суммы' };
   if (!test) {
@@ -678,6 +684,34 @@ ipcMain.handle('kaspi:probe', () => new Promise((resolve) => {
   rq.end(body);
 }));
 
+// ---------- Лицензия: тарифы, пробный период, ключи (license.js; сервер — relay-worker) ----------
+const licMod = require('./license');
+const readAsset = (name) => { try { return require('fs').readFileSync(path.join(__dirname, 'assets', name)); } catch (_) { return null; } };
+const licPub = () => { const b = readAsset('license-pub.txt'); return b ? (String(b).split(/\r?\n/).map((x) => x.trim()).find((x) => /^[A-Za-z0-9_-]{40,50}$/.test(x)) || '') : ''; };
+function initLicense() {
+  license = new licMod.LicenseManager({ dir: app.getPath('userData'), getServer: relayServer, pub: licPub(), onChange: (st, meta) => send('lic:state', { ...st, justActivated: !!(meta && meta.activated) }) });
+  if (!SELFTEST) license.start();
+}
+// данные экрана покупки: assets/purchase.json (цена, текст, контакт) и assets/pay-qr.png (QR для оплаты) — правятся без изменения кода
+function purchaseInfo() {
+  let j = {};
+  try { j = JSON.parse(String(readAsset('purchase.json') || '{}')); } catch (_) {}
+  const qr = readAsset('pay-qr.png');
+  const url = String(j.contactUrl || '');
+  return {
+    price: Number(j.price) || 5000, days: Number(j.days) || 30,
+    payNote: String(j.payNote || '').slice(0, 400),
+    contactLabel: String(j.contactLabel || '').slice(0, 60),
+    contactUrl: /^https:\/\//i.test(url) ? url : '',
+    qr: qr && qr.length < 2e6 ? 'data:image/png;base64,' + qr.toString('base64') : '',
+  };
+}
+ipcMain.handle('lic:state', () => (license ? license.state() : null));
+ipcMain.handle('lic:refresh', () => (license ? license.refresh() : null));
+ipcMain.handle('lic:activate', (_e, key) => (license ? license.activate(key) : { ok: false, message: 'Лицензия недоступна' }));
+ipcMain.handle('lic:deactivate', () => (license ? license.deactivate() : { ok: false, message: 'Лицензия недоступна' }));
+ipcMain.handle('lic:purchase', () => purchaseInfo());
+
 const updater = require('./updater');
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('upd:check', async () => {
@@ -690,6 +724,7 @@ ipcMain.handle('upd:install', async () => {
 app.whenReady().then(async () => {
   if (!gotLock) return; // уже запущен другой экземпляр — он покажет своё окно
   try { wsrv = await widget.start(() => wset, 7878, { getDonate: () => donateWidgetSettings(), getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }) }); } catch (_) { wsrv = null; }
+  initLicense();
   createWindow();
   if (useTray) { try { createTray(); } catch (_) { tray = null; } }
   if (startHidden && !tray) showWindow(); // трея нет — окно всё равно должно быть видно
@@ -704,5 +739,6 @@ app.on('window-all-closed', async () => {
   stopTwitch();
   try { wsrv && wsrv.close(); } catch (_) {}
   try { krx && krx.close(); } catch (_) {}
+  try { license && license.stop(); } catch (_) {}
   app.quit();
 });
