@@ -434,7 +434,7 @@ label+.csel{margin-top:0}
 .cf-box.danger .btn.primary{background:linear-gradient(135deg,#ef4444,#f97316);box-shadow:0 10px 26px rgba(239,68,68,.3)}
 @keyframes cfpop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 
-.kc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.kc-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 10px;margin-bottom:6px}
 .kc-head .kstat{margin:0;font-size:12px;padding:4px 12px;border-radius:99px}
 .kstep{display:flex;gap:14px;padding:14px 0;border-top:1px solid rgba(255,255,255,.07)}
 .kstep:first-of-type{border-top:0}
@@ -508,6 +508,8 @@ label+.csel{margin-top:0}
 @media(max-width:1060px){#tab-settings .cols{grid-template-columns:1fr}}
 
 /* видеоинструкция: плеер в закруглённой рамке с мягким свечением */
-.guide-card h2{margin-bottom:12px}
+.guide-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.guide-head h2{margin:0}
+.ios-badge{flex:none;padding:3px 12px;border-radius:99px;background:var(--grad);font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
 .guide-box{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 40px rgba(139,92,246,.25)}
 .guide-box iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
