@@ -621,10 +621,16 @@ const buildShortcutFile = async () => { const f = signedShortcutPath(); if (!f) 
 const shortcutUrl = () => `http://${kaspiHost()}/shortcut/${dset.token}/EchoChat-Kaspi.shortcut`;
 // адрес команды и QR (SVG) для камеры iPhone; токен наружу не уходит никуда, кроме окна приложения
 ipcMain.handle('kaspi:shortcut', async () => {
-  if (!krx || !krx.port) return { ok: false, error: 'Приём выключен. Включи переключатель выше' };
+  // с сервером приёма локальный приёмник по Wi-Fi не нужен: QR можно показать и без него
+  if (!relayBaseNow && (!krx || !krx.port)) return { ok: false, error: 'Приём выключен. Включи переключатель выше' };
   const qrOf = (u) => { const q = qrcode(0, 'M'); q.addData(u); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); };
-  // есть сервер: адрес команды — адрес сервера (ссылка iCloud могла быть подписана с адресом компьютера)
-  if (relayBaseNow) { const url = `${relayBaseNow}/notify.php?token=${dset.token}`; return { ok: true, url, qr: qrOf(url), signed: false, relay: true }; }
+  // есть сервер: QR ведёт на общую команду (assets/shortcut-link.txt), адрес с токеном человек вставляет сам при установке
+  // (кнопка «Скопировать адрес»). Токен в QR и в общей ссылке не попадает. Ссылки нет — QR несёт сам адрес, команду собирают вручную
+  if (relayBaseNow) {
+    const link = await icloudLink();
+    const url = link || `${relayBaseNow}/notify.php?token=${dset.token}`;
+    return { ok: true, url, qr: qrOf(url), signed: !!link, relay: true, manual: !link };
+  }
   const link = await icloudLink(), url = link || shortcutUrl();
   return { ok: true, url, qr: qrOf(url), signed: !!link || !!signedShortcutPath() };
 });

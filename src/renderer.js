@@ -969,7 +969,8 @@ $('#kShortcut').onclick = async () => {
   const r = await window.echo.kaspiShortcut().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
   if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
   $('#kQr').innerHTML = r.qr; $('#kScUrl').value = r.url; kQrDone = r.url;
-  $('#kScNote').textContent = r.relay ? 'Сервер приёма включён: создай команду вручную. Адрес ниже — в поле URL, тело JSON с полем text = Ввод команды.' : '';
+  $('#kScNote').textContent = r.relay && r.manual ? 'Сервер приёма включён: создай команду вручную. Адрес из кнопки «Скопировать адрес» — в поле URL, тело JSON с полем text = Ввод команды.'
+    : r.relay ? 'Сервер приёма включён, общий Wi-Fi не нужен. Нажми «Скопировать адрес», наведи камеру на QR и вставь адрес, когда iOS его спросит.' : '';
 };
 $('#kScUrl').onfocus = (e) => e.target.select();
 $('#kTokCopy').onclick = async () => {
@@ -982,7 +983,7 @@ $('#kSamples').onclick = async () => {
   if (!r || !r.ok) return setKStat('Не получилось: ' + ((r && r.error) || 'нет ответа'), 'bad');
   setKStat(r.expectReject ? (r.accepted ? 'Ошибка: исходящая операция принята' : 'Тест пройден: покупка/исходящая отклонена') : (r.accepted ? 'Тест пройден: донат принят' : 'Пропущено: ' + r.reason), (r.accepted !== r.expectReject) ? 'ok' : 'bad');
 };
-setInterval(() => { if (kState && kState.running && !kQrDone) $('#kShortcut').click(); if (kState && !kState.running) kQrDone = ''; }, 1500);
+setInterval(() => { const on = kState && (kState.running || kState.relayBase); if (on && !kQrDone) $('#kShortcut').click(); if (kState && !on) kQrDone = ''; }, 1500);
 // журнал уведомлений: видно, что пришло с телефона и как приложение это поняло
 const klog = $('#kLog');
 window.echo.onKaspiLog((l) => {
