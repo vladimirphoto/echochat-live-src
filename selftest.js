@@ -329,7 +329,7 @@ async function eventTests(win) {
   let resizePrevented = false;
   win.emit('will-resize', { preventDefault: () => { resizePrevented = true; } }, { x: 0, y: 0, width: 1400, height: 900 });
   const [minW, minH] = win.getMinimumSize();
-  add('окно: можно растягивать мышью, разворачивать и на весь экран; меньше 1060×720 нельзя', !resizePrevented && win.isResizable() && win.isMaximizable() && win.isFullScreenable() && minW === 1060 && minH === 720, JSON.stringify([resizePrevented, win.isResizable(), win.isMaximizable(), win.isFullScreenable(), minW, minH]));
+  add('окно: можно растягивать мышью, разворачивать и на весь экран; меньше минимума (около 1060×720) нельзя', !resizePrevented && win.isResizable() && win.isMaximizable() && win.isFullScreenable() && minW >= 1060 && minH >= 720 && minW < 1200 && minH < 850, JSON.stringify([resizePrevented, win.isResizable(), win.isMaximizable(), win.isFullScreenable(), minW, minH])); // минимум считается вместе с рамкой окна, поэтому чуть больше 1060×720
   // вкладка «Настройки» и окно «Закрыть программу?»
   add('ui', 'вкладка «Настройки»: крестик, автозапуск, автообновление', await q("!!document.querySelector('.nav[data-tab=settings]') && !!document.querySelector('#tab-settings #closeModeSel .csel-drop') && !!document.querySelector('#setAutoUpd') && !!document.querySelector('#setAutostart') && !!document.querySelector('#setAutostartHidden')"));
   const autoUpd0 = await q('window.echo.appSettings().then((x) => x.autoUpdate)');
