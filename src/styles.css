@@ -532,6 +532,9 @@ label+.csel{margin-top:0}
 
 .lic-cols{grid-template-columns:minmax(330px,420px) minmax(0,1fr);align-items:stretch}
 .lic-cols>.col-left>.card,.lic-cols>.col-right>.card{flex:1}
+#licKeyCard{display:flex;flex-direction:column}
+#licKeyCard #licActivate{margin-bottom:18px}
+#licKeyCard .note{margin-top:auto}
 .lic-status{position:relative;overflow:hidden}
 .lic-status:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--grad);opacity:.7}
 .lic-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}
