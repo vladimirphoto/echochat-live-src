@@ -74,6 +74,7 @@
     if (s.plan === 'lifetime') return { title: 'Pro навсегда', sub: 'Бессрочная лицензия, продлевать не нужно', frac: 1 };
     if (s.plan === 'trial') return { title: 'Все функции открыты', sub: left != null ? `Пробный период: осталось ${days(left)}, до ${fmtDate(s.until)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (3 * DAY))) : 1 };
     const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают, «Виджеты» и «Донаты Каспи» откроются с Pro', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть «Виджеты» и «Донаты Каспи»', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
+    if (s.reason === 'trial-ended') return { title: 'Пробный период закончился', sub: 'Действует тариф Lite', frac: 0 };
     return { title: 'Бесплатный тариф', sub: why || 'Эфир, озвучка и фильтры. «Виджеты» и «Донаты Каспи» открываются с Pro', frac: 0 };
   }
   function renderStatus(s) {
