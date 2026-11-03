@@ -634,8 +634,9 @@ label+.csel{margin-top:0}
 
 /* плашка Pro в меню: видна, пока нет действующей лицензии Pro/Lifetime */
 .nav{white-space:nowrap}
-.nav:has(.nav-pro:not([hidden])){gap:10px;padding-right:12px}
-.nav .nav-pro{flex:none;margin-left:auto;margin-right:0;padding:2px 7px;border-radius:99px;background:var(--grad);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.7px;line-height:1.5;box-shadow:0 4px 12px rgba(139,92,246,.35);animation:fade .3s}
+.nav{position:relative}
+.nav:has(.nav-pro){gap:10px}
+.nav .nav-pro{position:absolute;right:14px;top:0;bottom:0;height:max-content;margin:auto 0;padding:2px 6px;border-radius:99px;background:var(--grad);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.5px;line-height:1.5;box-shadow:0 4px 12px rgba(139,92,246,.35);animation:fade .3s}
 .nav .nav-pro[hidden]{display:none}
 /* окно покупки: оплата и номер карты */
 .lb-pay{display:grid;gap:16px;min-width:0}
