@@ -27,7 +27,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          repository: vladimirphoto/jonny-chat-tiktok
+          token: ${{ secrets.PUBLIC_REPO_TOKEN }}
           tag_name: v${{ steps.ver.outputs.v }}
           name: ЭхоЧат LIVE ${{ steps.ver.outputs.v }}
-          target_commitish: ${{ github.sha }}
           files: dist/*.dmg

@@ -21,10 +21,12 @@ function startRelay({ getConfig, onNotification, onState }) {
     try {
       if (!c.enabled || !c.token || !isHttp(base)) { state(false, 'адрес сервера не задан'); return; }
       const url = `${base}/poll.php?token=${encodeURIComponent(c.token)}&after=${after}`;
-      const r = await fetch(url, { signal: AbortSignal.timeout(8000), cache: 'no-store' });
+      const headers = c.licToken ? { 'X-Echo-License': String(c.licToken) } : {};
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000), cache: 'no-store', headers });
       if (!r.ok) throw new Error('сервер ответил ' + r.status);
       const j = await r.json();
       if (!j || j.ok !== true || !Array.isArray(j.items)) throw new Error('неверный ответ сервера');
+      if (j.needPro) { state(false, 'донаты Каспи доступны в Pro'); return; }
       state(true);
       for (const it of j.items) {
         const id = Number(it.id) || 0;

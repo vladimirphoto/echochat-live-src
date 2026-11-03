@@ -42,7 +42,7 @@ export async function handleLicense(request, env, url) {
     const b = await readBody(request);
     if (b === null) return json(413, { ok: false, error: 'too_large' });
     const ip = request.headers.get('cf-connecting-ip') || '';
-    if (p === '/lic/status') return json(200, await call(env, 'status', b.installId));
+    if (p === '/lic/status') return json(200, await call(env, 'status', b.installId, b.mid));
     if (p === '/lic/activate') return json(200, await call(env, 'activate', b.installId, b.key, ip));
     if (p === '/lic/deactivate') return json(200, await call(env, 'deactivate', b.installId));
     return json(404, { ok: false });

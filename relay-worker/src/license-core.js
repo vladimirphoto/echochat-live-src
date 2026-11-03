@@ -21,6 +21,35 @@ export const b64u = {
   fromString(str) { return b64u.fromBytes(enc.encode(str)); },
 };
 
+const fromB64u = (s) => {
+  const t = String(s).replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(t + '='.repeat((4 - (t.length % 4)) % 4));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+};
+const pubKeys = new Map();
+
+// Проверка подписанного токена лицензии на стороне сервера (без обращения к базе): подпись, срок и тариф.
+// Возвращает данные токена, если он действителен и тариф открывает Pro-разделы (trial, pro, lifetime), иначе null.
+export async function verifyLicenseToken(token, pubX, now = Date.now()) {
+  try {
+    if (!token || !pubX) return null;
+    const [body, sig] = String(token).split('.');
+    if (!body || !sig || body.length > 2000) return null;
+    let key = pubKeys.get(pubX);
+    if (!key) {
+      key = await crypto.subtle.importKey('jwk', { kty: 'OKP', crv: 'Ed25519', x: pubX }, { name: 'Ed25519' }, false, ['verify']);
+      pubKeys.set(pubX, key);
+    }
+    if (!(await crypto.subtle.verify({ name: 'Ed25519' }, key, fromB64u(sig), enc.encode(body)))) return null;
+    const p = JSON.parse(new TextDecoder().decode(fromB64u(body)));
+    if (!p || p.v !== 1 || !(now <= p.exp)) return null;
+    if (!['trial', 'pro', 'lifetime'].includes(p.plan)) return null;
+    if (p.plan === 'pro' && p.until && now > p.until) return null;
+    if (p.plan === 'trial' && p.until && now > p.until) return null;
+    return p;
+  } catch (_) { return null; }
+}
+
 export const validInstallId = (s) => typeof s === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(s);
 
 export function normalizeKey(k) {
@@ -65,6 +94,7 @@ export class Signer {
 }
 
 const fail = (error, message) => ({ ok: false, error, message });
+const validMachineId = (m) => typeof m === 'string' && /^[a-f0-9]{64}$/.test(m);
 
 export class LicenseService {
   constructor(storage, signer, now = () => Date.now()) {
@@ -74,12 +104,23 @@ export class LicenseService {
   }
 
   // ---------- клиентские операции ----------
-  async #install(iid) {
+  async #install(iid, mid) {
+    const now = this.now();
     let inst = await this.s.get('inst:' + iid);
     if (!inst) {
-      inst = { id: iid, createdAt: this.now(), trialStart: this.now(), lastSeen: this.now() };
+      inst = { id: iid, createdAt: now, trialStart: now, lastSeen: now };
     } else {
-      inst.lastSeen = this.now();
+      inst.lastSeen = now;
+    }
+    // пробный период привязан и к компьютеру: переустановка с новым ID его не продлевает
+    if (validMachineId(mid)) {
+      const m = await this.s.get('mach:' + mid);
+      if (m) {
+        if (m.trialStart < inst.trialStart) inst.trialStart = m.trialStart;
+      } else {
+        await this.s.put('mach:' + mid, { trialStart: inst.trialStart, firstIid: iid, createdAt: now });
+      }
+      inst.mid = mid;
     }
     await this.s.put('inst:' + iid, inst);
     return inst;
@@ -126,9 +167,9 @@ export class LicenseService {
     return { ok: true, token: await this.signer.sign(payload), state: payload };
   }
 
-  async status(installId) {
+  async status(installId, mid) {
     if (!validInstallId(installId)) return fail('bad_request', 'Неверный ID установки');
-    return this.#token(await this.#install(installId));
+    return this.#token(await this.#install(installId, mid));
   }
 
   async #checkFails(iid, ip) {

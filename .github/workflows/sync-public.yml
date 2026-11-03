@@ -1,0 +1,42 @@
+name: Sync public repo (pages and addresses)
+
+# Исходники закрыты. В публичный репозиторий jonny-chat-tiktok попадают только страницы виджетов (docs/)
+# и два текстовых файла с адресами (assets/relay-url.txt, assets/shortcut-link.txt).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'assets/relay-url.txt'
+      - 'assets/shortcut-link.txt'
+      - '.github/workflows/sync-public.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-public
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: vladimirphoto/jonny-chat-tiktok
+          token: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          path: pub
+      - name: Copy public files
+        run: |
+          rm -rf pub/docs && cp -r docs pub/docs
+          mkdir -p pub/assets
+          cp assets/relay-url.txt assets/shortcut-link.txt pub/assets/
+      - name: Commit and push
+        working-directory: pub
+        run: |
+          git config user.name "EchoChat CI"
+          git config user.email "ci@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "no changes"; exit 0; }
+          git commit -m "Обновление страниц и адресов"
+          git push

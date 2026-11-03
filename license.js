@@ -68,7 +68,8 @@ function evaluate(tok, now, local) {
 
 class LicenseManager {
   // dir — папка для license.json; getServer() — адрес сервера (строка или промис); pub — закреплённый публичный ключ (может быть пустым)
-  constructor({ dir, getServer, pub = '', fetchImpl, now, onChange, timeoutMs = 8000 }) {
+  constructor({ dir, getServer, pub = '', fetchImpl, now, onChange, timeoutMs = 8000, machine }) {
+    this.machine = machine || (() => { try { return require('./machine').machineId(); } catch (_) { return ''; } });
     this.file = path.join(dir, 'license.json');
     this.getServer = getServer;
     this.pinned = String(pub || '').trim();
@@ -108,6 +109,8 @@ class LicenseManager {
   }
 
   get installId() { return this.data.installId; }
+  // подписанный токен для сервера донатов (только действующий и выданный именно этой установке)
+  rawToken() { return this.#token() ? String(this.data.token) : ''; }
   get pub() { return this.pinned || this.data.pub || ''; }
 
   // «доверенное» время: часы, отмотанные назад, не продлевают лицензию
@@ -197,7 +200,7 @@ class LicenseManager {
     this.lastCheck = this.clock();
     try {
       if (!(await this.#ensurePub())) throw new Error('нет связи с сервером лицензий');
-      const j = await this.#post('/lic/status', { installId: this.data.installId });
+      const j = await this.#post('/lic/status', { installId: this.data.installId, mid: this.machine() });
       if (!this.#accept(j)) throw new Error('сервер вернул неверную подпись');
       this.serverOk = true; this.lastError = '';
     } catch (e) {

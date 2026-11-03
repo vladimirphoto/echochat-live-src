@@ -38,7 +38,7 @@ function net(srv) {
     const b = opt.body ? JSON.parse(opt.body) : {};
     let res;
     if (u.pathname === '/lic/pubkey') res = await srv.svc.publicKey();
-    else if (u.pathname === '/lic/status') res = await srv.svc.status(b.installId);
+    else if (u.pathname === '/lic/status') res = await srv.svc.status(b.installId, b.mid);
     else if (u.pathname === '/lic/activate') res = await srv.svc.activate(b.installId, b.key, '1.2.3.4');
     else if (u.pathname === '/lic/deactivate') res = await srv.svc.deactivate(b.installId);
     return { ok: true, status: 200, json: async () => res };
@@ -269,4 +269,87 @@ test('evaluate: чистая логика тарифов', () => {
   const pro = { plan: 'pro', until: now + DAY, exp: now + DAY, trialEnd: now - DAY };
   assert.equal(evaluate(pro, now, {}).plan, 'pro');
   assert.equal(evaluate({ ...pro, until: now - 1 }, now, {}).plan, 'lite');
+});
+
+// ---- пробный период привязан к компьютеру ----
+const MID_A = 'a'.repeat(64), MID_B = 'b'.repeat(64);
+
+test('Trial: переустановка с новым ID на том же компьютере не даёт новых 3 дней', async () => {
+  const srv = server();
+  assert.equal((await srv.svc.status('aaaaaaaa-1111-2222-3333-444444444444', MID_A)).state.plan, 'trial');
+  srv.clock.t += 4 * DAY;
+  const again = await srv.svc.status('bbbbbbbb-1111-2222-3333-444444444444', MID_A);
+  assert.equal(again.state.plan, 'lite');
+  assert.equal(again.state.reason, 'trial-ended');
+});
+
+test('Trial: другой компьютер получает свой пробный период', async () => {
+  const srv = server();
+  await srv.svc.status('aaaaaaaa-1111-2222-3333-444444444444', MID_A);
+  srv.clock.t += 4 * DAY;
+  assert.equal((await srv.svc.status('cccccccc-1111-2222-3333-444444444444', MID_B)).state.plan, 'trial');
+});
+
+test('Trial: неверный отпечаток игнорируется, старые клиенты без отпечатка работают как раньше', async () => {
+  const srv = server();
+  assert.equal((await srv.svc.status('dddddddd-1111-2222-3333-444444444444', 'мусор')).state.plan, 'trial');
+  assert.equal((await srv.svc.status('eeeeeeee-1111-2222-3333-444444444444')).state.plan, 'trial');
+});
+
+test('Trial: уже существующая установка не теряет и не продлевает срок после появления отпечатка', async () => {
+  const srv = server();
+  const id = 'ffffffff-1111-2222-3333-444444444444';
+  await srv.svc.status(id);
+  srv.clock.t += 2 * DAY;
+  const s = await srv.svc.status(id, MID_A);
+  assert.equal(s.state.plan, 'trial');
+  srv.clock.t += 2 * DAY;
+  assert.equal((await srv.svc.status(id, MID_A)).state.plan, 'lite');
+});
+
+test('клиент отправляет на сервер отпечаток компьютера', async () => {
+  const srv = server(), seen = [];
+  const n = net(srv);
+  const base = n.fetchImpl;
+  n.fetchImpl = async (url, opt = {}) => { if (opt.body) seen.push(JSON.parse(opt.body)); return base(url, opt); };
+  const { m } = client(srv, n, tmp(), { machine: () => MID_A });
+  await m.refresh();
+  assert.ok(seen.some((b) => b.mid === MID_A && b.installId));
+});
+
+test('machine.js: отпечаток стабилен и выглядит как SHA-256', () => {
+  const { machineId } = require('../machine');
+  const a = machineId();
+  assert.match(a, /^[a-f0-9]{64}$/);
+  assert.equal(machineId(), a);
+});
+
+// ---- серверная проверка токена для донатов Каспи ----
+test('verifyLicenseToken: pro и trial проходят, lite, просроченный и подделанный нет', async () => {
+  const storage = memStorage();
+  const signer = new core.Signer(storage);
+  const pub = (await signer.init()).pub;
+  const now = Date.UTC(2026, 10, 3, 12, 0, 0);
+  const mk = (o) => signer.sign({ v: 1, iid: 'x'.repeat(20), plan: 'pro', until: now + DAY, exp: now + DAY, iat: now, ...o });
+  assert.ok(await core.verifyLicenseToken(await mk({}), pub, now));
+  assert.ok(await core.verifyLicenseToken(await mk({ plan: 'trial' }), pub, now));
+  assert.ok(await core.verifyLicenseToken(await mk({ plan: 'lifetime', until: null }), pub, now));
+  assert.equal(await core.verifyLicenseToken(await mk({ plan: 'lite' }), pub, now), null);
+  assert.equal(await core.verifyLicenseToken(await mk({ exp: now - 1 }), pub, now), null);
+  assert.equal(await core.verifyLicenseToken(await mk({ until: now - 1 }), pub, now), null);
+  const good = await mk({});
+  const [body, sig] = good.split('.');
+  const forged = Buffer.from(JSON.stringify({ v: 1, iid: 'x'.repeat(20), plan: 'lifetime', exp: now + DAY })).toString('base64url') + '.' + sig;
+  assert.equal(await core.verifyLicenseToken(forged, pub, now), null);
+  assert.equal(await core.verifyLicenseToken(good, 'A'.repeat(43), now), null);
+  assert.equal(await core.verifyLicenseToken('', pub, now), null);
+  assert.equal(await core.verifyLicenseToken('мусор.мусор', pub, now), null);
+});
+
+test('клиент отдаёт серверу только свой действующий токен', async () => {
+  const srv = server(), n = net(srv);
+  const { m } = client(srv, n);
+  assert.equal(m.rawToken(), '');
+  await m.refresh();
+  assert.match(m.rawToken(), /^[\w-]+\.[\w-]+$/);
 });

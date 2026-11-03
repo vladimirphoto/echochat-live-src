@@ -3,6 +3,7 @@
 // поэтому приложение менять не нужно. Очередь каждого токена лежит в своём Durable Object.
 
 import { handleLicense } from './license-router.js';
+import { verifyLicenseToken } from './license-core.js';
 export { Licenses } from './license-do.js';
 
 const MAX_BODY = 8192;        // байт на одно уведомление
@@ -15,6 +16,19 @@ const json = (status, body) =>
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
+
+// публичный ключ подписи лицензий кэшируется на 10 минут, чтобы не ходить в базу при каждом опросе
+let pubCache = { x: '', t: 0 };
+async function licensePub(env) {
+  if (pubCache.x && Date.now() - pubCache.t < 600000) return pubCache.x;
+  try {
+    const stub = env.LICENSES.get(env.LICENSES.idFromName('global'));
+    const r = await stub.fetch('https://licenses/op', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'publicKey', args: [] }) });
+    const j = await r.json();
+    if (j && j.pub) pubCache = { x: j.pub, t: Date.now() };
+  } catch (_) {}
+  return pubCache.x;
+}
 
 const validToken = (t) => /^[A-Za-z0-9_-]{16,64}$/.test(t);
 
@@ -108,6 +122,11 @@ export default {
     const stub = env.QUEUE.get(env.QUEUE.idFromName(await sha256Hex(token)));
 
     if (url.pathname === '/poll.php') {
+      // донаты Каспи входят в Pro: при ENFORCE_DONATIONS=1 события отдаются только установке с действующей лицензией
+      if (env.ENFORCE_DONATIONS === '1' && env.LICENSES) {
+        const ok = await verifyLicenseToken(request.headers.get('x-echo-license') || '', await licensePub(env));
+        if (!ok) return json(200, { ok: true, items: [], needPro: true });
+      }
       const after = Number(p.after) || 0;
       const r = await stub.fetch('https://queue/poll', {
         method: 'POST',

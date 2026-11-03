@@ -1,10 +1,11 @@
 {
   "name": "echochat-live",
-  "version": "2.0.12",
+  "version": "2.1.0",
   "description": "ЭхоЧат LIVE — озвучка чата TikTok LIVE живыми нейро-голосами",
   "main": "main.js",
   "author": "EchoChat",
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "private": true,
   "scripts": {
     "start": "electron .",
     "test": "node --test \"test/*.test.js\"",
@@ -41,6 +42,7 @@
       "widget-likes-page.js",
       "kaspi.js",
       "license.js",
+      "machine.js",
       "relay.js",
       "tts-engines.js",
       "shortcut.js",

@@ -18,6 +18,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check publish token
+        shell: bash
+        env:
+          T: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: test -n "$T" || { echo "::error::Нет секрета PUBLIC_REPO_TOKEN (Settings, Secrets and variables, Actions)"; exit 1; }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -62,11 +67,14 @@ jobs:
         id: ver
         shell: bash
         run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      # исходники закрыты: релиз с готовыми exe публикуется в отдельный публичный репозиторий
+      # (нужен секрет PUBLIC_REPO_TOKEN: токен GitHub с правом Contents: Read and write на jonny-chat-tiktok)
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          repository: vladimirphoto/jonny-chat-tiktok
+          token: ${{ secrets.PUBLIC_REPO_TOKEN }}
           tag_name: v${{ steps.ver.outputs.v }}
           name: ЭхоЧат LIVE ${{ steps.ver.outputs.v }}
-          target_commitish: ${{ github.sha }}
           body_path: selftest.md
           files: dist/EchoChat-LIVE-*.exe

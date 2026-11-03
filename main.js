@@ -593,7 +593,7 @@ async function applyRelay() {
   if (key === relayKey) return;
   if (relayRx) { relayRx.close(); relayRx = null; }
   relayKey = key; relayOk = null;
-  if (want) relayRx = relayMod.startRelay({ getConfig: () => ({ enabled: dset.enabled, token: dset.token, relayUrl: relayBaseNow }), onNotification: onKaspiText, onState: (s) => { relayOk = s; send('kaspi:relay', s); } });
+  if (want) relayRx = relayMod.startRelay({ getConfig: () => ({ enabled: dset.enabled, token: dset.token, relayUrl: relayBaseNow, licToken: license ? license.rawToken() : '' }), onNotification: onKaspiText, onState: (s) => { relayOk = s; send('kaspi:relay', s); } });
 }
 async function applyKaspi() {
   await applyRelay();
