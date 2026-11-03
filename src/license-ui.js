@@ -169,6 +169,13 @@
     const wow = $('#licWow');
     $('#licWowT').textContent = s.plan === 'lifetime' ? 'Lifetime активирован' : 'Pro активирован';
     $('#licWowS').textContent = s.plan === 'lifetime' ? 'Все разделы открыты навсегда' : s.until ? `Все разделы открыты до ${fmtDate(s.until)}` : 'Все разделы открыты';
+    const sp = $('#licSpark'), colors = ['#8b5cf6', '#ec4899', '#22d3ee', '#fbbf24', '#ffffff'];
+    sp.textContent = '';
+    for (let i = 0; i < 18; i++) {
+      const a = (Math.PI * 2 * i) / 18 + Math.random() * 0.35, r = 150 + Math.random() * 130, e = document.createElement('i');
+      e.style.cssText = `--x:${Math.round(Math.cos(a) * r * 1.25)}px;--y:${Math.round(Math.sin(a) * r * 0.8)}px;--s:${4 + Math.round(Math.random() * 5)}px;--d:${(0.25 + Math.random() * 0.35).toFixed(2)}s;--c:${colors[i % colors.length]}`;
+      sp.appendChild(e);
+    }
     wow.hidden = true; void wow.offsetWidth; wow.hidden = false;
     clearTimeout(wow._t); wow._t = setTimeout(() => { wow.hidden = true; }, 3000);
     const chip = $('#licChip'); chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');

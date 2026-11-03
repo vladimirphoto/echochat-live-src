@@ -609,21 +609,25 @@ label+.csel{margin-top:0}
 .lic-end ul{text-align:left;margin-bottom:22px}
 .lic-end .cf-row .btn.primary{margin-top:0}
 
-/* плавное открытие Pro после активации */
-.lic-wow{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.38),rgba(8,8,16,0) 62%);animation:lwbg 2.8s ease both}
+/* плавное открытие Pro после активации: затемнение с размытием, карточка, блик и искры */
+.lic-wow{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(8,8,16,.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:lwbg 2.9s ease both}
 .lic-wow[hidden]{display:none}
-.lw-ring{position:absolute;width:120px;height:120px;border-radius:50%;border:2px solid rgba(236,72,153,.85);animation:lwring 1.7s ease-out both}
-.lw-card{position:relative;text-align:center;padding:30px 44px 28px;border-radius:26px;background:linear-gradient(160deg,rgba(139,92,246,.22),rgba(236,72,153,.12)),rgba(21,21,31,.94);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.6);animation:lwpop .6s cubic-bezier(.2,.9,.3,1.2) both,lwout .5s 2.2s ease forwards}
-.lw-check{width:76px;height:76px;margin:0 auto 14px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(236,72,153,.6)}
-.lw-check svg{width:36px;height:36px;color:#fff;stroke-dasharray:30;stroke-dashoffset:30;animation:lwdraw .6s .3s ease forwards}
-.lw-card b{display:block;font-size:24px;letter-spacing:.2px}
-.lw-card small{display:block;color:var(--muted);margin-top:4px;font-size:13px}
-@keyframes lwbg{0%{opacity:0}15%{opacity:1}80%{opacity:1}100%{opacity:0}}
-@keyframes lwring{from{transform:scale(.4);opacity:1}to{transform:scale(7);opacity:0}}
-@keyframes lwpop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
-@keyframes lwout{to{opacity:0;transform:translateY(-8px)}}
+.lw-card{position:relative;overflow:hidden;text-align:center;min-width:300px;padding:30px 46px 28px;border-radius:24px;background:linear-gradient(160deg,rgba(139,92,246,.26),rgba(236,72,153,.14)),rgba(21,21,31,.96);border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 60px rgba(139,92,246,.25);animation:lwpop .65s cubic-bezier(.2,.9,.3,1.15) both,lwout .5s 2.25s ease forwards}
+.lw-card:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.24) 50%,transparent 62%);transform:translateX(-130%);animation:lwshine 1.2s .5s ease-out forwards;pointer-events:none}
+.lw-check{width:66px;height:66px;margin:0 auto 16px;border-radius:21px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 34px rgba(139,92,246,.55),0 0 0 6px rgba(255,255,255,.05)}
+.lw-check svg{width:32px;height:32px;color:#fff;stroke-dasharray:30;stroke-dashoffset:30;animation:lwdraw .55s .35s ease forwards}
+.lw-card b{display:block;font-size:23px;letter-spacing:.2px;animation:lwup .5s .4s both}
+.lw-card small{display:block;color:var(--muted);margin-top:5px;font-size:13px;animation:lwup .5s .55s both}
+.lw-spark{position:absolute;left:50%;top:50%;width:0;height:0}
+.lw-spark i{position:absolute;left:0;top:0;width:var(--s);height:var(--s);margin:calc(var(--s) / -2);border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c);opacity:0;animation:lwsp 1.5s var(--d) cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes lwbg{0%{opacity:0}14%{opacity:1}82%{opacity:1}100%{opacity:0}}
+@keyframes lwpop{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes lwout{to{opacity:0;transform:translateY(-8px) scale(.98)}}
 @keyframes lwdraw{to{stroke-dashoffset:0}}
-@media (prefers-reduced-motion:reduce){.lic-wow,.lw-ring,.lw-card,.lw-check svg,.lic-chip.bump{animation-duration:.01s!important;animation-delay:0s!important}#tab-widgets>*,#tab-kaspi>*{transition:none}}
+@keyframes lwup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes lwshine{to{transform:translateX(130%)}}
+@keyframes lwsp{0%{opacity:0;transform:translate(0,0) scale(.3)}18%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(1)}}
+@media (prefers-reduced-motion:reduce){.lic-wow,.lw-card,.lw-card:after,.lw-check svg,.lw-card b,.lw-card small,.lic-chip.bump{animation-duration:.01s!important;animation-delay:0s!important}.lw-spark{display:none}#tab-widgets>*,#tab-kaspi>*{transition:none}}
 @media(max-width:1060px){.lic-plans{grid-template-columns:1fr}.lb-body{grid-template-columns:1fr}}
 
 /* плашка Pro в меню: видна, пока нет действующей лицензии Pro/Lifetime */
