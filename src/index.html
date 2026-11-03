@@ -287,7 +287,7 @@
       <!-- НАСТРОЙКИ -->
       <!-- ЛИЦЕНЗИЯ -->
       <section class="tab" id="tab-license">
-        <div class="cols lic-cols">
+        <div class="cols lic-cols" id="licCols">
           <div class="col-left">
             <div class="card lic-status" id="licCard">
               <div class="lic-top"><span class="lic-badge" id="licBadge">—</span><span class="lic-net" id="licNet"><s></s><span id="licNetT"></span></span></div>
@@ -301,10 +301,11 @@
                 <div><span>ID установки</span><b id="licIid">—</b></div>
               </div>
               <div class="lic-btns"><button class="btn ghost" id="licRefresh" type="button">Проверить сейчас</button><button class="btn ghost" id="licRelease" type="button" hidden>Освободить устройство</button></div>
+              <div class="lic-msg lic-statmsg" id="licStatMsg" aria-live="polite"></div>
             </div>
           </div>
           <div class="col-right">
-            <div class="card">
+            <div class="card" id="licKeyCard">
               <h2>Активировать ключ</h2>
               <p class="muted">Введите ключ, который вы получили после оплаты</p>
               <div class="nick-field" id="licKeyField"><input id="licKeyInput" maxlength="29" placeholder="Введите ключ" spellcheck="false" autocomplete="off" /></div>

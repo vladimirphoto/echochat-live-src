@@ -94,6 +94,8 @@
     $('#licCheck').textContent = s.lastCheck ? (s.offline ? `${fmtTime(s.lastCheck)} · не удалась` : `сегодня, ${fmtTime(s.lastCheck)}`) : '—';
     $('#licIid').textContent = s.installShort || '—';
     $('#licRelease').hidden = !s.paid;
+    $('#licKeyCard').hidden = !!s.paid;
+    $('#licCols').classList.toggle('paid', !!s.paid);
     $('#licBuy').textContent = s.plan === 'pro' ? 'Продлить Pro' : 'Купить Pro';
     document.querySelector('.lic-plans').hidden = s.plan === 'lifetime';
   }
@@ -223,17 +225,28 @@
     inp.addEventListener('input', () => { cleanKey(inp); inp.closest('.nick-field').classList.remove('err'); });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') (id === '#licKeyInput' ? $('#licActivate') : $('#licBuyAct')).click(); });
   }
+  let statT = null;
+  function statMsg(text, kind, ms = 5000) {
+    const m = $('#licStatMsg');
+    m.textContent = text; m.className = 'lic-msg lic-statmsg' + (kind ? ' ' + kind : '');
+    clearTimeout(statT); if (text && ms) statT = setTimeout(() => { m.textContent = ''; }, ms);
+  }
   $('#licRefresh').addEventListener('click', async () => {
     const b = $('#licRefresh'), label = b.textContent;
-    b.textContent = 'Проверяю…'; b.style.pointerEvents = 'none';
-    try { const s = await echo.licRefresh(); apply(s); setMsg('#licMsg', s && s.offline ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии' : 'Лицензия проверена', s && s.offline ? 'bad' : 'ok'); } catch (_) {}
+    b.textContent = 'Проверяю…'; b.style.pointerEvents = 'none'; statMsg('');
+    try {
+      const s = await echo.licRefresh(); apply(s);
+      const off = !!(s && s.offline);
+      const text = off ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии' : `Лицензия проверена в ${fmtTime(Date.now())}`;
+      statMsg(text, off ? 'bad' : 'ok'); setMsg('#licMsg', text, off ? 'bad' : 'ok');
+    } catch (_) { statMsg('Не удалось проверить лицензию', 'bad'); }
     b.textContent = label; b.style.pointerEvents = '';
   });
   $('#licRelease').addEventListener('click', async () => {
     const ok = await askConfirm({ title: 'Освободить это устройство?', text: 'Лицензия отвяжется от этого компьютера, и здесь вернётся тариф Lite. Ключ можно будет ввести на другом компьютере', ok: 'Освободить', cancel: 'Отмена', danger: true });
     if (!ok) return;
     const r = await echo.licDeactivate();
-    if (!r || !r.ok) { setMsg('#licMsg', (r && r.message) || 'Не удалось освободить устройство', 'bad'); return; }
+    if (!r || !r.ok) { statMsg((r && r.message) || 'Не удалось освободить устройство', 'bad'); return; }
     setMsg('#licMsg', 'Устройство освобождено. Ключ можно ввести на другом компьютере', 'ok');
     if (r.state) apply(r.state);
   });

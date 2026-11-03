@@ -652,3 +652,10 @@ label+.csel{margin-top:0}
 .lb-key i svg{width:16px;height:16px}
 .lb-key b{display:block;font-size:14.5px}
 .lb-key span{display:block;color:var(--muted);font-size:13px;margin-top:2px;line-height:1.45}
+
+/* лицензия активна: ввод ключа скрыт, карточка статуса шире */
+.lic-cols.paid{grid-template-columns:minmax(330px,540px)}
+#licKeyCard[hidden]{display:none}
+.lic-statmsg{display:flex;align-items:center;gap:8px;margin-top:12px;min-height:0}
+.lic-statmsg:empty{display:none}
+.lic-statmsg.ok:before{content:"";flex:none;width:16px;height:16px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a11' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat}
