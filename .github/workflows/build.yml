@@ -72,6 +72,10 @@ jobs:
         id: ver
         shell: bash
         run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      # копия установщика с постоянным именем: ссылка .../releases/latest/download/EchoChat-LIVE-Setup.exe на сайте всегда ведёт на свежую версию
+      - name: Fixed-name installer copy
+        shell: bash
+        run: cp "dist/EchoChat-LIVE-Setup-${{ steps.ver.outputs.v }}.exe" dist/EchoChat-LIVE-Setup.exe
       # исходники закрыты: релиз с готовыми exe публикуется в отдельный публичный репозиторий
       # (нужен секрет PUBLIC_REPO_TOKEN: токен GitHub с правом Contents: Read and write на jonny-chat-tiktok)
       - name: Publish release
