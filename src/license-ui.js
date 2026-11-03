@@ -123,6 +123,7 @@
     $('#licPayNote').textContent = life ? 'Напишите автору, чтобы получить Lifetime' : (p.payNote || 'Оплатите по QR-коду');
     const card = !life && p.cardNumber ? p.cardNumber : '';
     $('#licCardBox').hidden = !card;
+    $('#licReceipt').hidden = life;
     $('#licCardNum').textContent = card;
     const cb = $('#licCardCopy'); cb.classList.remove('done'); cb.querySelector('span').textContent = 'Копировать';
     const showQr = !life && !!p.qr;
