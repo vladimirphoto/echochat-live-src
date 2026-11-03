@@ -125,6 +125,7 @@
     const card = !life && p.cardNumber ? p.cardNumber : '';
     $('#licCardBox').hidden = !card;
     $('#licReceipt').hidden = life;
+    $('#licKeySub').textContent = (life ? 'Lifetime Pro' : 'Pro') + ' откроется сразу, перезапуск не нужен';
     $('#licCardNum').textContent = card;
     const cb = $('#licCardCopy'); cb.classList.remove('done'); cb.querySelector('span').textContent = 'Копировать';
     const showQr = !life && !!p.qr;
