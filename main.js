@@ -701,6 +701,7 @@ function purchaseInfo() {
   return {
     price: Number(j.price) || 5000, days: Number(j.days) || 30,
     payNote: String(j.payNote || '').slice(0, 400),
+    cardNumber: /^[\d ]{12,23}$/.test(String(j.cardNumber || '')) ? String(j.cardNumber) : '',
     contactLabel: String(j.contactLabel || '').slice(0, 60),
     contactUrl: /^https:\/\//i.test(url) ? url : '',
     qr: qr && qr.length < 2e6 ? 'data:image/png;base64,' + qr.toString('base64') : '',

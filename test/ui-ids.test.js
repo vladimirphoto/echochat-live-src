@@ -11,3 +11,9 @@ test('все #id из renderer.js есть в index.html', () => {
   const missing = [...ids].filter((i) => !DYNAMIC.has(i) && !html.includes(`id="${i}"`));
   assert.deepEqual(missing, []);
 });
+
+test('в index.html нет повторяющихся id', () => {
+  const ids = [...html.matchAll(/\sid="([\w-]+)"/g)].map((m) => m[1]);
+  const dup = ids.filter((x, i) => ids.indexOf(x) !== i);
+  assert.deepEqual([...new Set(dup)], []);
+});

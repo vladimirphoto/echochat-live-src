@@ -117,8 +117,12 @@
     $('#licBuyBadge').textContent = life ? 'Lifetime' : 'Pro';
     $('#licBuyTitle').textContent = life ? 'Lifetime: Pro навсегда' : `Pro на ${days(p.days)}`;
     $('#licPrice').textContent = life ? 'Без продлений' : money(p.price);
-    $('#licPriceSub').textContent = life ? 'условия назовёт автор' : `за ${days(p.days)}`;
-    $('#licPayNote').textContent = life ? 'Напишите автору, он назовёт условия и пришлёт реквизиты' : (p.payNote || 'Переведите сумму автору и отправьте чек');
+    $('#licPriceSub').textContent = life ? '' : `за ${days(p.days)}`;
+    $('#licPayNote').textContent = life ? 'Напишите автору, чтобы получить Lifetime' : (p.payNote || 'Оплатите по QR-коду');
+    const card = !life && p.cardNumber ? p.cardNumber : '';
+    $('#licCardBox').hidden = !card;
+    $('#licCardNum').textContent = card;
+    const cb = $('#licCardCopy'); cb.classList.remove('done'); cb.querySelector('span').textContent = 'Копировать';
     const showQr = !life && !!p.qr;
     $('#licQrBox').hidden = !showQr;
     if (showQr) $('#licQr').src = p.qr;
@@ -130,6 +134,14 @@
     $('#licBuyKey').value = '';
     $('#licBuyBack').hidden = false;
     setTimeout(() => $('#licBuyKey').focus(), 60);
+  }
+  async function copyCard() {
+    const text = $('#licCardNum').textContent.trim();
+    if (!text) return;
+    try { await navigator.clipboard.writeText(text); } catch (_) { const t = document.createElement('input'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    const b = $('#licCardCopy');
+    b.classList.add('done'); b.querySelector('span').textContent = 'Скопировано';
+    clearTimeout(b._t); b._t = setTimeout(() => { b.classList.remove('done'); b.querySelector('span').textContent = 'Копировать'; }, 1800);
   }
   const closeBuy = () => { $('#licBuyBack').hidden = true; };
 
@@ -183,6 +195,7 @@
     st = s;
     renderStatus(s);
     renderChip(s);
+    document.querySelectorAll('.nav-pro').forEach((b) => { b.hidden = !!s.paid; });
     const becamePaid = !!was && !was.paid && s.paid;
     applyLocks(s, becamePaid || !!meta.activated);
     if (becamePaid) celebrate(s);
@@ -194,6 +207,7 @@
   $('#licBuy').addEventListener('click', () => openBuy('pro'));
   $('#licBuyLife').addEventListener('click', () => openBuy('life'));
   $('#licBuyX').addEventListener('click', closeBuy);
+  $('#licCardCopy').addEventListener('click', copyCard);
   $('#licBuyBack').addEventListener('click', (e) => { if (e.target === $('#licBuyBack')) closeBuy(); });
   $('#licActivate').addEventListener('click', () => activate({ input: '#licKeyInput', msg: '#licMsg', btn: '#licActivate' }));
   $('#licBuyAct').addEventListener('click', () => activate({ input: '#licBuyKey', msg: '#licBuyMsg', btn: '#licBuyAct' }));

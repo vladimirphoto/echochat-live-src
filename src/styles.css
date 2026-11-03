@@ -625,3 +625,26 @@ label+.csel{margin-top:0}
 @keyframes lwdraw{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.lic-wow,.lw-ring,.lw-card,.lw-check svg,.lic-chip.bump{animation-duration:.01s!important;animation-delay:0s!important}#tab-widgets>*,#tab-kaspi>*{transition:none}}
 @media(max-width:1060px){.lic-plans{grid-template-columns:1fr}.lb-body{grid-template-columns:1fr}}
+
+/* плашка Pro в меню: видна, пока нет действующей лицензии Pro/Lifetime */
+.nav{white-space:nowrap}
+.nav .nav-pro{flex:none;margin-left:auto;margin-right:-6px;padding:2px 7px;border-radius:99px;background:var(--grad);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.7px;line-height:1.5;box-shadow:0 4px 12px rgba(139,92,246,.35);animation:fade .3s}
+.nav .nav-pro[hidden]{display:none}
+/* окно покупки: оплата и номер карты */
+.lb-pay{display:grid;gap:16px;min-width:0}
+.lb-paytxt{font-size:14.5px;line-height:1.45}
+.lb-paytxt:empty{display:none}
+.lb-card{padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.lbc-l{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.lbc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.lbc-row b{font:600 20px/1.2 Consolas,"Cascadia Mono",monospace;letter-spacing:1.5px;user-select:all;white-space:nowrap}
+.lbc-copy{all:unset;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;font-weight:600;transition:.2s}
+.lbc-copy:hover{background:rgba(255,255,255,.1)}
+.lbc-copy:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+.lbc-copy svg{width:15px;height:15px}
+.lbc-copy.done{color:var(--ok);border-color:rgba(52,211,153,.5)}
+.lb-key{display:flex;gap:14px;align-items:flex-start}
+.lb-key i{flex:none;width:30px;height:30px;border-radius:9px;background:rgba(139,92,246,.22);border:1px solid rgba(139,92,246,.5);display:flex;align-items:center;justify-content:center}
+.lb-key i svg{width:16px;height:16px}
+.lb-key b{display:block;font-size:14.5px}
+.lb-key span{display:block;color:var(--muted);font-size:13px;margin-top:2px;line-height:1.45}
