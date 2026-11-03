@@ -86,9 +86,12 @@
     $('#licBar').style.width = Math.round(d.frac * 100) + '%';
     const net = $('#licNet');
     net.classList.toggle('off', !!s.offline);
+    net.classList.toggle('idle', !s.paid && !s.offline);
+    // зелёная точка и «активна» только у активированного ключа; без ключа это просто тариф Lite
     $('#licNetT').textContent = s.offline
       ? (s.paid && s.graceUntil ? `Нет связи. Офлайн-доступ до ${fmtDate(s.graceUntil)}` : 'Нет связи с сервером лицензий')
-      : (s.lastCheck ? 'Лицензия проверена' : 'Проверяем…');
+      : !s.paid ? 'Лицензия Lite'
+      : s.lastCheck ? `Лицензия ${s.plan === 'lifetime' ? 'Lifetime' : 'Pro'} активна` : 'Проверяем…';
     $('#licKey').textContent = s.keyMasked || '—';
     $('#licDev').textContent = s.paid && s.maxDevices ? `${s.devices} из ${s.maxDevices}` : '—';
     $('#licCheck').textContent = s.lastCheck ? (s.offline ? `${fmtTime(s.lastCheck)} · не удалась` : `сегодня, ${fmtTime(s.lastCheck)}`) : '—';
@@ -240,8 +243,12 @@
     try {
       const s = await echo.licRefresh(); apply(s);
       const off = !!(s && s.offline);
-      const text = off ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии' : `Лицензия проверена в ${fmtTime(Date.now())}`;
-      statMsg(text, off ? 'bad' : 'ok'); setMsg('#licMsg', text, off ? 'bad' : 'ok');
+      const paid = !!(s && s.paid);
+      const text = off ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии'
+        : paid ? `Лицензия ${s.plan === 'lifetime' ? 'Lifetime' : 'Pro'} активна, проверена в ${fmtTime(Date.now())}`
+        : s && s.plan === 'trial' ? 'Ключ не активирован. Идёт пробный период'
+        : 'Ключ не активирован. Действует тариф Lite';
+      statMsg(text, off ? 'bad' : paid ? 'ok' : ''); setMsg('#licMsg', off ? text : '', off ? 'bad' : '');
     } catch (_) { statMsg('Не удалось проверить лицензию', 'bad'); }
     b.textContent = label; b.style.pointerEvents = '';
   });

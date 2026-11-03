@@ -541,6 +541,7 @@ label+.csel{margin-top:0}
 .lic-net{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
 .lic-net s{width:7px;height:7px;border-radius:50%;background:var(--ok);display:block}
 .lic-net.off s{background:#fbbf24}
+.lic-net.idle s{background:var(--muted);opacity:.7}
 .lic-title{font-size:22px;font-weight:700;letter-spacing:.2px}
 .lic-sub{color:var(--muted);margin-top:4px;font-size:13px;min-height:19px;line-height:1.4}
 .lic-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.08);margin:16px 0 4px;overflow:hidden}
