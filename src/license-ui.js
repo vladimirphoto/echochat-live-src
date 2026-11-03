@@ -238,20 +238,23 @@
     m.textContent = text; m.className = 'lic-msg lic-statmsg' + (kind ? ' ' + kind : '');
     clearTimeout(statT); if (text && ms) statT = setTimeout(() => { m.textContent = ''; }, ms);
   }
+  // результат проверки показывается прямо в кнопке и через пару секунд возвращается к «Проверить сейчас»
+  const REFRESH_LABEL = 'Проверить сейчас';
   $('#licRefresh').addEventListener('click', async () => {
-    const b = $('#licRefresh'), label = b.textContent;
+    const b = $('#licRefresh');
+    clearTimeout(b._t); b.className = 'btn ghost';
     b.textContent = 'Проверяю…'; b.style.pointerEvents = 'none'; statMsg('');
+    let text, kind = '';
     try {
       const s = await echo.licRefresh(); apply(s);
-      const off = !!(s && s.offline);
-      const paid = !!(s && s.paid);
-      const text = off ? 'Сервер лицензий недоступен. Работаем по сохранённой лицензии'
-        : paid ? `Лицензия ${s.plan === 'lifetime' ? 'Lifetime' : 'Pro'} активна, проверена в ${fmtTime(Date.now())}`
-        : s && s.plan === 'trial' ? 'Ключ не активирован. Идёт пробный период'
-        : 'Ключ не активирован. Действует тариф Lite';
-      statMsg(text, off ? 'bad' : paid ? 'ok' : ''); setMsg('#licMsg', off ? text : '', off ? 'bad' : '');
-    } catch (_) { statMsg('Не удалось проверить лицензию', 'bad'); }
-    b.textContent = label; b.style.pointerEvents = '';
+      const off = !!(s && s.offline), paid = !!(s && s.paid);
+      if (off) { text = 'Нет связи, работаем офлайн'; kind = 'bad'; setMsg('#licMsg', 'Сервер лицензий недоступен. Работаем по сохранённой лицензии', 'bad'); }
+      else if (paid) { text = `Лицензия ${s.plan === 'lifetime' ? 'Lifetime' : 'Pro'} активна`; kind = 'ok'; setMsg('#licMsg', ''); }
+      else { text = s && s.plan === 'trial' ? 'Ключ не активирован. Идёт пробный период' : 'Ключ не активирован. Действует тариф Lite'; setMsg('#licMsg', ''); }
+    } catch (_) { text = 'Не удалось проверить лицензию'; kind = 'bad'; }
+    b.textContent = text; b.style.pointerEvents = '';
+    if (kind) b.classList.add('res-' + kind);
+    b._t = setTimeout(() => { b.textContent = REFRESH_LABEL; b.classList.remove('res-ok', 'res-bad'); }, 4000);
   });
   $('#licRelease').addEventListener('click', async () => {
     const ok = await askConfirm({ title: 'Освободить это устройство?', text: 'Лицензия отвяжется от этого компьютера, и здесь вернётся тариф Lite. Ключ можно будет ввести на другом компьютере', ok: 'Освободить', cancel: 'Отмена', danger: true });
