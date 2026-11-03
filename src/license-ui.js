@@ -117,10 +117,11 @@
     const p = await loadPurchase();
     const life = kind === 'life';
     $('#licBuyBadge').textContent = life ? 'Lifetime' : 'Pro';
-    $('#licBuyTitle').textContent = life ? 'Lifetime: Pro навсегда' : `Pro на ${days(p.days)}`;
-    $('#licPrice').textContent = life ? 'Без продлений' : money(p.price);
+    $('#licBuyTitle').textContent = life ? 'Lifetime Pro — партнёрская лицензия' : `Pro на ${days(p.days)}`;
+    $('.lb-price').hidden = life;
+    $('#licPrice').textContent = life ? '' : money(p.price);
     $('#licPriceSub').textContent = life ? '' : `за ${days(p.days)}`;
-    $('#licPayNote').textContent = life ? 'Напишите автору, чтобы получить Lifetime' : (p.payNote || 'Оплатите по QR-коду');
+    $('#licPayNote').textContent = life ? 'Получите полную версию Pro навсегда бесплатно за продвижение программы на своих площадках (TikTok, Twitch и других).\nУсловия получения согласовываются индивидуально.' : (p.payNote || 'Оплатите по QR-коду');
     const card = !life && p.cardNumber ? p.cardNumber : '';
     $('#licCardBox').hidden = !card;
     $('#licReceipt').hidden = life;

@@ -570,6 +570,7 @@ label+.csel{margin-top:0}
 #tab-widgets>*,#tab-kaspi>*{transition:filter .9s cubic-bezier(.2,.8,.2,1),opacity .9s ease}
 .tab.is-locked,.tab.unlocking{position:relative;overflow:hidden}
 .lic-plans[hidden]{display:none}
+.lb-price[hidden]{display:none}
 .tab.is-locked>*:not(.lock-ov){filter:blur(9px) saturate(.75);opacity:.55;pointer-events:none;user-select:none}
 .lock-ov{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;transition:opacity .7s ease}
 .lock-ov.out{opacity:0;pointer-events:none}
@@ -640,7 +641,7 @@ label+.csel{margin-top:0}
 .nav .nav-pro[hidden]{display:none}
 /* окно покупки: оплата и номер карты */
 .lb-pay{display:grid;gap:16px;min-width:0}
-.lb-paytxt{font-size:14.5px;line-height:1.45}
+.lb-paytxt{font-size:14.5px;line-height:1.45;white-space:pre-line}
 .lb-paytxt:empty{display:none}
 .lb-card{padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
 .lbc-l{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}
