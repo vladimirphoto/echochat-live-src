@@ -1,6 +1,6 @@
 {
   "name": "echochat-live",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "ЭхоЧат LIVE — озвучка чата TikTok LIVE живыми нейро-голосами",
   "main": "main.js",
   "author": "EchoChat",
