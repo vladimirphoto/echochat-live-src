@@ -129,13 +129,21 @@ function giftOf(d) {
   };
 }
 
-// Подписка на стримера: событие follow либо social с признаком подписки
-function isFollowSocial(d) {
+// Что за social-событие: подписка, репост («поделился») или другое. Репост нельзя принимать за подписку:
+// в его тексте бывает слово «followers» («поделился с N followers»), раньше по нему срабатывало «спасибо за подписку».
+function socialKind(d) {
   d = d || {};
-  if (pick(d.action) === 1) return true;
-  const text = [d.displayType, d.label, d.common && d.common.displayText && JSON.stringify(d.common.displayText)]
+  const type = String(d.displayType || '').toLowerCase();
+  if (/share|repost/.test(type)) return 'share';
+  if (/follow/.test(type)) return 'follow';
+  if (pick(d.action) === 1) return 'follow';
+  const text = [d.label, d.common && d.common.displayText && JSON.stringify(d.common.displayText)]
     .filter(Boolean).join(' ').toLowerCase();
-  return /follow/.test(text);
+  if (/share|repost|поделил|репост/.test(text)) return 'share';
+  if (/follow(?!ers|ing)|подписал/.test(text)) return 'follow';
+  return 'other';
 }
+const isFollowSocial = (d) => socialKind(d) === 'follow';
+const isShareSocial = (d) => socialKind(d) === 'share';
 
-module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, likesOf, likerOf, LikesBoard, giftOf, isFollowSocial };
+module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, likesOf, likerOf, LikesBoard, giftOf, isFollowSocial, isShareSocial, socialKind };

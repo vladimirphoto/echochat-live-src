@@ -287,7 +287,7 @@ async function doConnect(rawName) {
     if (seenFollow.size > 500) seenFollow.clear();
     send('tt:follow', u);
   };
-  c.on(WebcastEvent.FOLLOW || 'follow', onFollow);
+  c.on(WebcastEvent.FOLLOW || 'follow', (d) => { if (!ev.isShareSocial(d)) onFollow(d); }); // репост — не подписка
   c.on(WebcastEvent.SOCIAL || 'social', (d) => { if (ev.isFollowSocial(d)) onFollow(d); });
   c.on(WebcastEvent.LIKE || 'like', (d) => {
     if (!alive()) return;

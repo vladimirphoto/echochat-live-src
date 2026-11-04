@@ -50,6 +50,14 @@ test('подписка из social', () => {
   assert.equal(E.isFollowSocial({ action: 1 }), true);
   assert.equal(E.isFollowSocial({ displayType: 'pm_main_share_message' }), false);
   assert.equal(E.isFollowSocial({ common: { displayText: { key: 'pm_main_follow_message_viewer_2' } } }), true);
+  // репост не должен считаться подпиской
+  assert.equal(E.isFollowSocial({ label: '{0:user} shared the LIVE with 5 followers' }), false);
+  assert.equal(E.isFollowSocial({ displayType: 'pm_mt_guidance_share_following' }), false);
+  assert.equal(E.isFollowSocial({ displayType: 'pm_main_repost_message', label: 'reposted to followers' }), false);
+  assert.equal(E.isShareSocial({ displayType: 'pm_mt_guidance_share_following' }), true);
+  assert.equal(E.isFollowSocial({ label: '{0:user} followed the host' }), true);
+  assert.equal(E.isFollowSocial({ action: 1, label: 'x' }), true);
+  assert.equal(E.isFollowSocial({}), false);
 });
 
 test('подписчик канала: followInfo, followRole, isFollower, неизвестно', () => {
