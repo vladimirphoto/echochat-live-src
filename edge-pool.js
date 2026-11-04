@@ -25,11 +25,12 @@ function createEdgeSynth(opts) {
     forgetMs = 10 * 60 * 1000,     // голос не подтверждали (окно напоминает об используемых голосах раз в 5 мин) — перестаём держать для него соединение
     idleMax = 2,
     pingFailLimit = 3,             // столько отправленных пингов без единого ответа — сервер пингам не отвечает, проверку отключаем
+    pendingWaitMs = 1500,          // готового соединения нет, но оно уже открывается в фоне: ждём его не дольше этого, потом открываем своё
   } = opts || {};
 
   const idle = new Map();   // голос -> [{ tts, at }]
   const known = new Map();  // голос -> когда использовался последний раз
-  const pending = new Set(); // голоса, для которых прямо сейчас открывается соединение
+  const pending = new Map(); // голос -> Promise: соединение для него открывается в фоне прямо сейчас
   let pinned = new Set();    // голоса, выбранные в настройках: для них готовое соединение держим всегда, пока работает приложение
   let pingsSent = 0, pongs = 0, pingOk = true;
   let lib = null, timer = null, closed = false;
@@ -46,16 +47,30 @@ function createEdgeSynth(opts) {
     return { tts, at: Date.now() };
   }
 
-  async function acquire(voice) {
-    const list = idle.get(voice) || [];
-    while (list.length) {
-      const c = list.pop();
-      if (Date.now() - c.at > reuseMaxAgeMs) { kill(c); continue; }
-      try {
-        const m = await getLib();
-        await c.tts.setMetadata(voice, fmtOf(m)); // соединение живо — вернётся сразу; закрылось — переподключится
-        return c;
-      } catch (_) { kill(c); }
+  // wait=false — для повторных (страхующих) попыток: они нужны как раз тогда, когда ждать нельзя, поэтому открывают своё соединение сразу
+  async function acquire(voice, wait = true) {
+    for (let spin = 0; spin < 3; spin++) {
+      const list = idle.get(voice) || [];
+      while (list.length) {
+        const c = list.pop();
+        if (Date.now() - c.at > reuseMaxAgeMs) { kill(c); continue; }
+        // забрали последнее готовое соединение выбранного голоса — сразу открываем запасное: звук готовится на несколько фраз вперёд
+        // (prefetch), и следующая фраза пачки не должна ждать рукопожатия
+        if (!list.length && !closed && pinned.has(voice)) refill(voice);
+        try {
+          const m = await getLib();
+          await c.tts.setMetadata(voice, fmtOf(m)); // соединение живо — вернётся сразу; закрылось — переподключится
+          return c;
+        } catch (_) { kill(c); }
+      }
+      // готового нет, но соединение для этого голоса уже открывается в фоне (только что сменили голос или забрали последнее готовое).
+      // Оно стартовало раньше, чем стартовало бы своё, — ждём его, а не открываем второе параллельно. Но недолго: вдруг подключение зависло.
+      const p = pending.get(voice);
+      if (!wait || closed || !p) break;
+      let t;
+      const ok = await Promise.race([p, new Promise((res) => { t = setTimeout(() => res(false), pendingWaitMs); })]);
+      clearTimeout(t);
+      if (!ok) break;
     }
     return open(voice);
   }
@@ -86,8 +101,8 @@ function createEdgeSynth(opts) {
     watch(voice, c);
   }
 
-  async function once(text, voice, rate, pitch) {
-    const c = await acquire(voice);
+  async function once(text, voice, rate, pitch, wait) {
+    const c = await acquire(voice, wait);
     let ok = false, res = null, t;
     try {
       res = await c.tts.toStream(escapeSsml(text), { rate: Number(rate) || 1, pitch: pitch || '+0Hz' });
@@ -128,7 +143,7 @@ function createEdgeSynth(opts) {
       function launch() {
         if (done || started >= maxAttempts) return;
         started++;
-        once(text, voice, rate, pitch).then((buf) => finish(resolve, buf)).catch((err) => {
+        once(text, voice, rate, pitch, started === 1).then((buf) => finish(resolve, buf)).catch((err) => {
           last = err; failed++;
           if (failed >= maxAttempts) return finish(reject, last);
           if (failed >= started) schedule(Math.min(150 * failed, 600)); // ничего не в работе — следующая попытка почти сразу
@@ -141,9 +156,14 @@ function createEdgeSynth(opts) {
 
   // держим для голоса готовое соединение: открываем в фоне, не дублируя уже идущее подключение
   function refill(voice) {
-    if (closed || pending.has(voice)) return;
-    pending.add(voice);
-    open(voice).then((c) => release(voice, c)).catch(() => {}).finally(() => pending.delete(voice));
+    if (closed) return null;
+    if (pending.has(voice)) return pending.get(voice);
+    const p = open(voice)
+      .then((c) => { release(voice, c); return true; })
+      .catch(() => false)
+      .finally(() => { if (pending.get(voice) === p) pending.delete(voice); });
+    pending.set(voice, p);
+    return p;
   }
 
   // заранее открыть соединение для голосов, чтобы первая фраза эфира не ждала рукопожатия

@@ -215,7 +215,7 @@ function renderVoices() {
       <button class="mini play" title="Прослушать">${ICON_PLAY}</button>
       ${p.builtin ? '' : '<button class="mini del" title="Удалить голос">✕</button>'}
       ${p.id === S.selected ? `<div class="vroute"><span>Озвучивает чат:</span><button class="rbtn tt${S.ttVoice === p.id ? ' on' : ''}" data-r="tt" title="Озвучивать чат TikTok этим голосом">TikTok</button><button class="rbtn tw${S.twVoice === p.id ? ' on' : ''}" data-r="tw" title="Озвучивать чат Twitch этим голосом">Twitch</button></div>` : ''}`;
-    d.onclick = () => { S.selected = p.id; save(); renderVoices(); refreshRate(); refreshPitch(); syncControls(); };
+    d.onclick = () => { S.selected = p.id; save(); renderVoices(); refreshRate(); refreshPitch(); syncControls(); warmVoices(); }; // следом человек жмёт TikTok/Twitch — соединение для голоса к тому времени уже готово
     $('.play', d).onclick = (e) => { e.stopPropagation(); previewPreset(p); };
     $$('.rbtn', d).forEach((btn) => { // закрепить этот голос за платформой: у платформы всегда есть голос, поэтому «снять» нельзя — только назначить другой
       btn.onclick = (e) => { e.stopPropagation(); const k = btn.dataset.r === 'tt' ? 'ttVoice' : 'twVoice', was = S[k]; S[k] = p.id; save(); renderVoices(); if (was !== p.id) dropForVoiceChange(); };
@@ -246,7 +246,7 @@ const routeSelects = [
 function fillVoiceSelects() { ensureRouteVoices(); routeSelects.forEach((r) => r()); }
 const eventPreset = () => S.presets.find((p) => p.id === S.eventVoice) || ttPreset();
 // заранее открыть соединения с сервером озвучки для голосов чата, Twitch и событий: первая фраза эфира не ждёт подключения
-function warmVoices() { try { window.echo.warm([...new Set([ttPreset(), twPreset(), eventPreset()].map((p) => p && p.voice).filter(Boolean))]); } catch (_) {} }
+function warmVoices() { try { window.echo.warm([...new Set([ttPreset(), twPreset(), eventPreset(), selectedPreset()].map((p) => p && p.voice).filter(Boolean))]); } catch (_) {} }
 setTimeout(warmVoices, 2500);
 setInterval(warmVoices, 5 * 60 * 1000); // голоса подарков и подписок звучат редко — напоминаем серверу-пулу, что они нужны
 
@@ -1171,6 +1171,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.1.7': ['Озвучка: голос выбранной карточки прогревается сразу при клике, поэтому после нажатия TikTok/Twitch первая фраза нового голоса (в том числе мужского) идёт без задержки', 'Озвучка: фраза ждёт уже открывающееся соединение вместо того, чтобы открывать второе, а для выбранного голоса всегда держится запасное соединение — пачка фраз подряд не ждёт подключения'],
   '2.1.6': ['Смена голоса: соединение для нового голоса открывается сразу при выборе, поэтому первая фраза новым голосом идёт без задержки'],
   '2.1.5': ['Смена голоса: при выборе нового голоса чата (TikTok, Twitch) или голоса подарков и подписок очередь не дочитывается старым голосом, играющая фраза обрывается, и следующее же сообщение звучит новым голосом'],
   '2.1.4': ['Подарки, подписки и донаты озвучиваются вне очереди чата — сразу после текущей фразы', 'Озвучка: постоянное готовое соединение для выбранных голосов держится всегда (в том числе без подключения к эфиру), мёртвые соединения обнаруживаются заранее, а фразы подарков и подписок не ждут повторной попытки'],

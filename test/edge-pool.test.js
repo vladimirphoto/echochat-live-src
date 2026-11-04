@@ -14,6 +14,7 @@ function fakeLib(script) {
       if (this.closed) throw new Error('closed');
       this.connects = (this.connects || 0) + 1;
       if (!this._ws) {
+        if (log.connectDelay) await new Promise((r) => setTimeout(r, log.connectDelay)); // рукопожатие с сервером
         const ws = this._ws = new EventEmitter();
         ws.readyState = 1;
         ws.pings = 0;
@@ -186,7 +187,59 @@ test('пинг: соединение, не ответившее pong, счита
   assert.equal(log.instances.length, 2);
   assert.equal(log.instances[0].closed, true);
   await e.synth('привет', 'v1', 1, '+0Hz');
-  assert.equal(log.instances.length, 2, 'фраза идёт по готовому соединению');
+  await wait(20);
+  assert.equal(log.instances.length, 3, 'фраза взяла готовое (2-е), а запасное (3-е) открылось фоном');
+  assert.equal(log.instances[1].connects, 2, 'фраза шла по готовому соединению, а не по новому');
+  e.close();
+});
+
+test('смена голоса: фраза ждёт уже открывающееся соединение и не открывает второе', async () => {
+  const { e, log } = mk(() => 'ok');
+  log.connectDelay = 60;
+  e.setPinned(['v2']); // как при выборе карточки: соединение открывается в фоне
+  const t0 = Date.now();
+  const buf = await e.synth('привет', 'v2', 1, '+0Hz');
+  assert.equal(buf.toString(), 'mp3data');
+  assert.ok(Date.now() - t0 < 400);
+  assert.equal(log.instances.filter((i) => i.n === 0).length, 1);
+  assert.ok(log.instances.length <= 2, 'второе соединение не открывается параллельно: ' + log.instances.length);
+  e.close();
+});
+
+test('зависшее фоновое соединение: ждём не дольше pendingWaitMs, потом открываем своё', async () => {
+  const { e, log } = mk(() => 'ok', { pendingWaitMs: 40 });
+  log.connectDelay = 300;
+  e.setPinned(['v3']);
+  await wait(5);
+  log.connectDelay = 0; // первое (фоновое) уже «зависло», своё откроется быстро
+  const t0 = Date.now();
+  await e.synth('привет', 'v3', 1, '+0Hz');
+  assert.ok(Date.now() - t0 < 200, 'не ждёт долгое подключение целиком: ' + (Date.now() - t0));
+  e.close();
+});
+
+test('выбранному голосу после взятия последнего готового сразу открывается запасное; чужому — нет', async () => {
+  const { e, log } = mk(() => 'ok');
+  e.setPinned(['v1']);
+  await wait(20);
+  await e.synth('раз', 'v1', 1, '+0Hz');
+  await wait(20);
+  assert.equal(log.instances.length, 2, 'запасное открыто');
+  assert.equal(e._idle.get('v1').length, 2);
+  await e.synth('два', 'v9', 1, '+0Hz');
+  await wait(20);
+  assert.equal(log.instances.filter((i, k) => k >= 2).length, 1, 'для невыбранного голоса запасного нет');
+  e.close();
+});
+
+test('пачка фраз сразу после смены голоса: все озвучены, лишних соединений нет', async () => {
+  const { e, log } = mk(() => 'ok');
+  log.connectDelay = 30;
+  e.setPinned(['v1']);
+  const r = await Promise.all([1, 2, 3].map((i) => e.synth('фраза ' + i, 'v1', 1, '+0Hz')));
+  assert.ok(r.every((b) => b.toString() === 'mp3data'));
+  await wait(60);
+  assert.ok(log.instances.length <= 4, 'соединений: ' + log.instances.length);
   e.close();
 });
 
