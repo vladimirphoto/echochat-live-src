@@ -13,9 +13,10 @@ test('dropForVoiceChange: очередь очищается, фразы поме
   const ended = [];
   const queue = [{ id: 1, onEnd: () => ended.push(1) }, { id: 2 }, { id: 3, onEnd: () => { throw new Error('сбой'); } }];
   const items = [...queue];
-  let skipped = 0;
-  const fn = new Function('queue', 'skipPhrase', m[0] + '; return dropForVoiceChange;')(queue, () => { skipped++; });
+  let skipped = 0, warmed = 0;
+  const fn = new Function('queue', 'skipPhrase', 'warmVoices', m[0] + '; return dropForVoiceChange;')(queue, () => { skipped++; }, () => { warmed++; });
   fn();
+  assert.equal(warmed, 1, 'соединение для нового голоса открывается сразу');
   assert.equal(queue.length, 0);
   assert.ok(items.every((i) => i.cancelled === true));
   assert.deepEqual(ended, [1]);

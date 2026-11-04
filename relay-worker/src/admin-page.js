@@ -31,6 +31,7 @@ label{display:block;color:var(--muted);font-size:12.5px;margin:0 0 7px}
 .btn:active{transform:none}
 .btn.ghost{background:var(--panel);border:1px solid var(--line);box-shadow:none;font-weight:500}
 .btn.ghost:hover{background:var(--panel2)}
+.btn.ghost.done{color:var(--ok);border-color:rgba(52,211,153,.55);background:rgba(52,211,153,.1)}
 .btn.danger{background:linear-gradient(135deg,#ef4444,#be123c);box-shadow:0 8px 22px rgba(239,68,68,.25)}
 .btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
 .btn.icon{padding:7px 9px}
@@ -169,6 +170,7 @@ var data=null,filter='all',query='',plan='pro';
 var ICONS={
  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
 };
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
@@ -179,6 +181,11 @@ function left(t){return Math.max(0,Math.ceil((t-Date.now())/86400000))}
 function plural(n,a,b,c){var m=n%100,k=n%10;if(m>10&&m<20)return c;if(k===1)return a;if(k>1&&k<5)return b;return c}
 function dn(n){return n+' '+plural(n,'день','дня','дней')}
 function copy(t){try{var p=navigator.clipboard&&navigator.clipboard.writeText(t);if(p&&p.catch)p.catch(function(){})}catch(e){}}
+/* кнопка копирования: нажали, и на ней на пару секунд зелёное «Скопировано» (без уведомления в углу) */
+function makeCopy(b,label,getText){
+ b.textContent='';var ic=ico('copy'),tx=el('span',null,label);b.appendChild(ic);b.appendChild(tx);
+ b.onclick=function(){copy(getText());ic.innerHTML=ICONS.check;tx.textContent='Скопировано';b.classList.add('done');clearTimeout(b._t);
+  b._t=setTimeout(function(){ic.innerHTML=ICONS.copy;tx.textContent=label;b.classList.remove('done')},1800)}}
 function toast(t,bad){var b=el('div','toast'+(bad?' bad':''),t);$('toasts').appendChild(b);setTimeout(function(){b.remove()},3200)}
 function statusOf(l){
  if(l.revoked)return 'revoked';
@@ -244,8 +251,7 @@ function card(l){
  c.appendChild(main);
 
  var acts=el('div','acts');
- var cp=el('button','btn ghost sm');cp.type='button';cp.appendChild(ico('copy'));cp.appendChild(document.createTextNode('Копировать'));
- cp.onclick=function(){copy(l.key);toast('Ключ скопирован')};acts.appendChild(cp);
+ var cp=el('button','btn ghost sm');cp.type='button';makeCopy(cp,'Копировать',function(){return l.key});acts.appendChild(cp);
  if(!life){var ex=el('button','btn ghost sm','Продлить');ex.type='button';ex.onclick=function(){
   ask({title:'Продлить ключ',text:l.key,chips:[30,90,180,365],input:{type:'number',label:'На сколько дней продлить',value:30,min:1,max:3650},ok:'Продлить'}).then(function(v){if(v)run('extend',{key:l.key,days:Number(v)},'Срок продлён')})};acts.appendChild(ex)}
  var w=el('div','mwrap'),more=el('button','btn ghost sm icon');more.type='button';more.setAttribute('aria-label','Другие действия');more.appendChild(ico('more'));
@@ -308,8 +314,8 @@ $('create').onclick=function(){
  if(plan!=='lifetime'&&!(d>=1&&d<=3650)){toast('Срок: от 1 до 3650 дней',true);return}
  api('create',{plan:plan,days:d,maxDevices:Number($('md').value),note:$('note').value}).then(function(j){
   if(!j.ok){toast(j.message||j.error||'Ошибка',true);return}
-  var k=j.license.key;$('newKey').textContent=k;$('newBox').classList.remove('hide');$('newCopy').onclick=function(){copy(k);toast('Ключ скопирован')};
-  copy(k);toast('Ключ создан и скопирован');$('note').value='';load()
+  var k=j.license.key;$('newKey').textContent=k;$('newBox').classList.remove('hide');makeCopy($('newCopy'),'Скопировать ещё раз',function(){return k});
+  copy(k);$('note').value='';load()
  }).catch(function(){toast('Нет связи с сервером',true)})};
 
 /* вход и выход */
