@@ -240,6 +240,9 @@ const routeSelects = [
 ];
 function fillVoiceSelects() { ensureRouteVoices(); routeSelects.forEach((r) => r()); }
 const eventPreset = () => S.presets.find((p) => p.id === S.eventVoice) || ttPreset();
+// заранее открыть соединения с сервером озвучки для голосов чата, Twitch и событий: первая фраза эфира не ждёт подключения
+function warmVoices() { try { window.echo.warm([...new Set([ttPreset(), twPreset(), eventPreset()].map((p) => p && p.voice).filter(Boolean))]); } catch (_) {} }
+setTimeout(warmVoices, 2500);
 
 // Оставляем только голоса, которые реально есть у сервиса Microsoft
 const BASE_IDS = ['b-svetlana', 'b-dmitry'];
@@ -381,8 +384,11 @@ const queue = [];
 let chimeStop = null; // обрывает играющий звук доната
 let busy = false, cur = null, curUrl = null, curEl = null, curResolve = null, curItem = null;
 
-const QUEUE_MAX = 8;       // длиннее очередь — больше отставание от эфира
-const STALE_MS = 25000;    // сообщение старше этого времени уже не озвучиваем
+const QUEUE_MAX = 12;      // длиннее очередь — больше отставание от эфира (самое старое отбрасывается)
+const STALE_MS = 40000;    // сообщение старше этого времени уже не озвучиваем
+// чем длиннее очередь, тем чуть быстрее читаем (тон не меняется): так не отстаём от эфира и меньше теряем. Поставь false — всегда обычная скорость
+const CATCH_UP = true;
+const catchUpRate = () => { if (!CATCH_UP) return 1; const n = queue.length; return n >= 6 ? 1.3 : n >= 4 ? 1.2 : n >= 2 ? 1.1 : 1; };
 function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук готовится заранее, пока говорит предыдущая фраза
 
 let voiceCalls = 0; // сколько раз пытались озвучить (для автотеста)
@@ -403,12 +409,14 @@ function stopCurrent() {
   if (curResolve) { const r = curResolve; curResolve = null; r(); }
 }
 
-function playBlob(b64) {
+function playBlob(b64, rate = 1) {
   return new Promise((resolve, reject) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     curUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
     cur = new Audio(curUrl);
     cur.volume = S.vol / 100;
+    cur.preservesPitch = true;
+    cur.playbackRate = rate;
     curResolve = resolve;
     cur.onended = () => { curResolve = null; resolve(); };
     cur.onerror = () => { curResolve = null; reject(new Error('audio')); };
@@ -463,10 +471,26 @@ function playChime() {
 
 async function speakItem(item) {
   if (item.chime) { await playChime(); return; }
-  const r = await ensureSynth(item);
+  let r = await ensureSynth(item);
   if (item.cancelled) return; // нажали паузу, пока звук готовился
-  // не получилось озвучить — молча пропускаем сообщение: без системного голоса Windows и без уведомлений
-  if (r && r.ok) { try { await playBlob(r.audio); } catch (_) {} }
+  // синтез не вышел — одна повторная попытка (если фраза ещё не устарела), потом молча пропускаем: без системного голоса Windows и без уведомлений
+  if (!(r && r.ok) && (item.force || Date.now() - item.t < STALE_MS - 8000)) {
+    item.p = null;
+    r = await ensureSynth(item);
+    if (item.cancelled) return;
+  }
+  if (r && r.ok) {
+    const rate = item.force ? 1 : catchUpRate();
+    try { await playBlob(r.audio, rate); }
+    catch (_) {
+      // звук не проигрался (битый кусок, сбой устройства) — один раз синтезируем заново и играем ещё раз
+      if (item.cancelled) return;
+      item.p = null;
+      const r2 = await ensureSynth(item);
+      if (item.cancelled) return;
+      if (r2 && r2.ok) { try { await playBlob(r2.audio, rate); } catch (_) {} }
+    }
+  }
 }
 
 async function pump() {
@@ -687,6 +711,7 @@ btn.onclick = async () => {
     $('#sViewers').textContent = '—';
     if (!twLive) resetEmpty();
     sys(`Ищем активный эфир @${nick}…`);
+    warmVoices(); // соединения с сервером озвучки открываются, пока ищется эфир
     const r = await window.echo.connect(nick);
     if (!r || !r.ok) {
       setStatus(false, 'Не в эфире');
@@ -1130,6 +1155,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.1.1': ['Озвучка: соединение с сервером голосов теперь постоянное, фразы стартуют быстрее', 'Озвучка: сообщения с символами « & », « < », « > » больше не пропадают', 'Озвучка: при сбое синтеза или воспроизведения фраза пробуется ещё раз, очередь стала длиннее, а при большой очереди голос читает чуть быстрее'],
   '2.1.0': ['Защита: пробный период привязан к компьютеру, переустановка не даёт новых 3 дней', 'Защита: донаты Каспи можно проверять на сервере по лицензии (включается отдельно)'],
   '2.0.12': ['Вкладка «Лицензия»: синяя подсказка про перенос ключа опущена вниз и стоит на одном уровне с кнопкой «Проверить сейчас»'],
   '2.0.11': ['Вкладка «Лицензия»: результат проверки показывается прямо в кнопке «Проверить сейчас» и через несколько секунд возвращается к её названию, блок больше не растягивается'],

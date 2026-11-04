@@ -146,7 +146,7 @@ ipcMain.handle('app:settings:set', (_e, patch) => {
 
 // ---- крестик: спрашиваем «свернуть в трей или закрыть» (или делаем по сохранённому выбору)
 let quitting = false, askPending = false;
-app.on('before-quit', () => { quitting = true; });
+app.on('before-quit', () => { quitting = true; try { edgePool.close(); } catch (_) {} });
 function onWindowClose(e) {
   if (quitting || !useTray || !tray || appSet.closeMode === 'quit') return; // обычное закрытие
   if (win.webContents.isLoading()) return;
@@ -367,52 +367,16 @@ ipcMain.handle('tts:voices', async () => {
   return { ok: false, voices: FALLBACK_VOICES, all: [] };
 });
 
-async function edgeSynthOnce(text, voice, rate, pitch, timeoutMs = 8000) {
-  let tts = null;
-  try {
-    const { MsEdgeTTS, OUTPUT_FORMAT } = await load('msedge-tts');
-    tts = new MsEdgeTTS();
-    const fmt = OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3 || OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3;
-    await tts.setMetadata(voice || 'ru-RU-SvetlanaNeural', fmt);
-    const res = await tts.toStream(text, { rate: Number(rate) || 1, pitch: pitch || '+0Hz' });
-    const chunks = [];
-    await Promise.race([
-      new Promise((resolve, reject) => {
-        res.audioStream.on('data', (ch) => chunks.push(ch));
-        res.audioStream.on('end', resolve);
-        res.audioStream.on('close', resolve);
-        res.audioStream.on('error', reject);
-      }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('tts timeout')), timeoutMs)),
-    ]);
-    const buf = Buffer.concat(chunks);
-    if (!buf.length) throw new Error('empty audio');
-    return buf;
-  } finally {
-    try { tts && tts.close && tts.close(); } catch (_) {}
-  }
-}
-
-// Сервер Microsoft иногда отвечает медленно или обрывает поток. Если ответа нет за HEDGE_MS,
-// параллельно запускается ещё одна попытка (до 3), берём первую успешную — без многосекундных пауз.
-function edgeSynth(text, voice, rate, pitch) {
-  const MAX = 3, HEDGE_MS = 2500;
-  return new Promise((resolve, reject) => {
-    let done = false, started = 0, failed = 0, last, timer;
-    const finish = (fn, v) => { if (done) return; done = true; clearTimeout(timer); fn(v); };
-    const launch = () => {
-      if (done || started >= MAX) return;
-      started++;
-      edgeSynthOnce(text, voice, rate, pitch).then((buf) => finish(resolve, buf)).catch((err) => {
-        last = err; failed++;
-        if (failed >= MAX) finish(reject, last); else launch(); // оборвалось — сразу следующая попытка
-      });
-      clearTimeout(timer);
-      if (started < MAX) timer = setTimeout(launch, HEDGE_MS);
-    };
-    launch();
-  });
-}
+// Озвучка Edge: постоянные соединения с сервером Microsoft (edge-pool.js), без нового подключения на каждую фразу
+const edgePool = require('./edge-pool').createEdgeSynth({
+  loadTts: async () => { const { MsEdgeTTS, OUTPUT_FORMAT } = await load('msedge-tts'); return { MsEdgeTTS, OUTPUT_FORMAT }; },
+});
+const edgeSynth = (text, voice, rate, pitch) => edgePool.synth(text, voice, rate, pitch);
+// окно просит заранее открыть соединения для выбранных голосов (при запуске и при подключении к эфиру)
+ipcMain.handle('tts:warm', (_e, voices) => {
+  edgePool.warm((Array.isArray(voices) ? voices : []).filter((v) => typeof v === 'string' && /^[\w-]{3,80}$/.test(v)).slice(0, 6));
+  return true;
+});
 
 // выбранный движок и его настройки; ключ Google хранится только здесь и в логи не попадает
 const te = require('./tts-engines');
@@ -731,7 +695,7 @@ app.whenReady().then(async () => {
   if (startHidden && !tray) showWindow(); // трея нет — окно всё равно должно быть видно
   if (appSet.autostart) applyAutostart(); // путь в автозапуске обновляется, если программу переместили или обновили
   if (!SELFTEST) { netTick(); setInterval(netTick, 8000); }
-  // прогрев: модуль, DNS и TLS-соединение готовы до первой фразы эфира
+  // прогрев: модуль, DNS и TLS-соединение готовы до первой фразы эфира (соединение остаётся в пуле)
   edgeSynth('Привет', 'ru-RU-SvetlanaNeural', 1, '+0Hz').catch(() => {});
   if (SELFTEST) require('./selftest').run(win, app);
 });
