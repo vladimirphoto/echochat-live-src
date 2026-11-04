@@ -81,7 +81,12 @@ delete S.chat;
 // голоса платформ: у тех, кто обновился, остаётся прежний голос чата
 const ensureRouteVoices = () => ['ttVoice', 'twVoice'].forEach((k) => { if (!S.presets.some((p) => p.id === S[k])) S[k] = S.presets.some((p) => p.id === S.selected) ? S.selected : BUILTIN[0].id; });
 ensureRouteVoices();
-const save = () => { try { localStorage.setItem('echochat2', JSON.stringify(S)); } catch (_) {} };
+let warmT = null;
+const save = () => {
+  try { localStorage.setItem('echochat2', JSON.stringify(S)); } catch (_) {}
+  // поменяли голос (в том числе для подарков и подписок) — соединение для него открываем сразу, а не на первой фразе
+  clearTimeout(warmT); warmT = setTimeout(() => { try { warmVoices(); } catch (_) {} }, 1200);
+};
 const selectedPreset = () => S.presets.find((p) => p.id === S.selected) || S.presets[0];
 const ttPreset = () => S.presets.find((p) => p.id === S.ttVoice) || selectedPreset();
 const twPreset = () => S.presets.find((p) => p.id === S.twVoice) || selectedPreset();
@@ -243,6 +248,7 @@ const eventPreset = () => S.presets.find((p) => p.id === S.eventVoice) || ttPres
 // заранее открыть соединения с сервером озвучки для голосов чата, Twitch и событий: первая фраза эфира не ждёт подключения
 function warmVoices() { try { window.echo.warm([...new Set([ttPreset(), twPreset(), eventPreset()].map((p) => p && p.voice).filter(Boolean))]); } catch (_) {} }
 setTimeout(warmVoices, 2500);
+setInterval(warmVoices, 5 * 60 * 1000); // голоса подарков и подписок звучат редко — напоминаем серверу-пулу, что они нужны
 
 // Оставляем только голоса, которые реально есть у сервиса Microsoft
 const BASE_IDS = ['b-svetlana', 'b-dmitry'];
@@ -386,8 +392,8 @@ let busy = false, cur = null, curUrl = null, curEl = null, curResolve = null, cu
 
 const QUEUE_MAX = 12;      // длиннее очередь — больше отставание от эфира (самое старое отбрасывается)
 const STALE_MS = 40000;    // сообщение старше этого времени уже не озвучиваем
-// чем длиннее очередь, тем чуть быстрее читаем (тон не меняется): так не отстаём от эфира и меньше теряем. Поставь false — всегда обычная скорость
-const CATCH_UP = true;
+// при длинной очереди можно читать чуть быстрее (true). По умолчанию выключено — скорость всегда как в настройках голоса
+const CATCH_UP = false; // выключено: ускорение голоса раздражало
 const catchUpRate = () => { if (!CATCH_UP) return 1; const n = queue.length; return n >= 6 ? 1.3 : n >= 4 ? 1.2 : n >= 2 ? 1.1 : 1; };
 function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук готовится заранее, пока говорит предыдущая фраза
 
@@ -1155,6 +1161,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.1.2': ['Озвучка: убрано ускорение голоса при длинной очереди — скорость всегда как в настройках голоса', 'Озвучка: соединение для голоса подарков и подписок держится постоянно и открывается сразу при смене голоса, без задержки на первой фразе'],
   '2.1.1': ['Озвучка: соединение с сервером голосов теперь постоянное, фразы стартуют быстрее', 'Озвучка: сообщения с символами « & », « < », « > » больше не пропадают', 'Озвучка: при сбое синтеза или воспроизведения фраза пробуется ещё раз, очередь стала длиннее, а при большой очереди голос читает чуть быстрее'],
   '2.1.0': ['Защита: пробный период привязан к компьютеру, переустановка не даёт новых 3 дней', 'Защита: донаты Каспи можно проверять на сервере по лицензии (включается отдельно)'],
   '2.0.12': ['Вкладка «Лицензия»: синяя подсказка про перенос ключа опущена вниз и стоит на одном уровне с кнопкой «Проверить сейчас»'],

@@ -99,3 +99,39 @@ test('close() закрывает все простаивающие соедин�
   e.close();
   assert.ok(log.instances.every((i) => i.closed));
 });
+
+test('оборвавшееся простаивающее соединение заменяется фоном, до первой фразы', async () => {
+  const { e, log } = mk(() => 'ok', { refreshAfterMs: 1e9 });
+  e.warm(['v1']);
+  await new Promise((r) => setTimeout(r, 20));
+  log.instances[0]._ws = { readyState: 3 }; // сервер закрыл соединение
+  e._tick();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(log.instances.length, 2);
+  assert.equal(log.instances[0].closed, true);
+  await e.synth('привет', 'v1', 1, '+0Hz');
+  assert.equal(log.instances.length, 2, 'фраза не открывает своё соединение');
+  e.close();
+});
+
+test('обновление: новое открывается до закрытия старого, готовое всегда есть', async () => {
+  const { e, log } = mk(() => 'ok', { refreshAfterMs: 5 });
+  e.warm(['v1']);
+  await new Promise((r) => setTimeout(r, 20));
+  e._tick();
+  assert.equal(log.instances[0].closed, false, 'старое ещё живо, пока открывается новое');
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(log.instances.length, 2);
+  assert.equal(log.instances[0].closed, true);
+  assert.equal(log.instances[1].closed, false);
+  e.close();
+});
+
+test('голос, о котором давно не напоминали, забывается', async () => {
+  const { e, log } = mk(() => 'ok', { forgetMs: 5 });
+  e.warm(['v1']);
+  await new Promise((r) => setTimeout(r, 20));
+  e._tick();
+  assert.equal(log.instances[0].closed, true);
+  e.close();
+});

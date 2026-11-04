@@ -21,18 +21,20 @@ function createEdgeSynth(opts) {
     timeoutMs = 6000,              // одна попытка без данных дольше этого — обрыв
     reuseMaxAgeMs = 90000,         // простаивавшее дольше соединение при выдаче заменяется новым
     refreshAfterMs = 40000,        // фоновая проверка обновляет простаивающие дольше этого
-    tickMs = 30000,
-    forgetMs = 20 * 60 * 1000,     // голос не использовался — перестаём держать для него соединение
+    tickMs = 10000,
+    forgetMs = 10 * 60 * 1000,     // голос не подтверждали (окно напоминает об используемых голосах раз в 5 мин) — перестаём держать для него соединение
     idleMax = 2,
   } = opts || {};
 
   const idle = new Map();   // голос -> [{ tts, at }]
   const known = new Map();  // голос -> когда использовался последний раз
+  const pending = new Set(); // голоса, для которых прямо сейчас открывается соединение
   let lib = null, timer = null, closed = false;
 
   const getLib = async () => lib || (lib = await loadTts());
   const fmtOf = (m) => m.OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3 || m.OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3;
   const kill = (c) => { try { c.tts.close(); } catch (_) {} };
+  const isOpen = (tts) => { const ws = tts && tts._ws; return !ws || ws.readyState === 1; }; // не знаем — считаем живым
 
   async function open(voice) {
     const m = await getLib();
@@ -113,26 +115,41 @@ function createEdgeSynth(opts) {
     });
   }
 
+  // держим для голоса готовое соединение: открываем в фоне, не дублируя уже идущее подключение
+  function refill(voice) {
+    if (closed || pending.has(voice)) return;
+    pending.add(voice);
+    open(voice).then((c) => release(voice, c)).catch(() => {}).finally(() => pending.delete(voice));
+  }
+
   // заранее открыть соединение для голосов, чтобы первая фраза эфира не ждала рукопожатия
   function warm(voices) {
     for (const v of voices || []) {
       if (!v || closed) continue;
       known.set(v, Date.now());
-      if ((idle.get(v) || []).length) continue;
-      open(v).then((c) => release(v, c)).catch(() => {});
+      if (!(idle.get(v) || []).some((c) => isOpen(c.tts))) refill(v);
     }
     startTimer();
   }
 
+  // раз в несколько секунд: убираем оборвавшиеся соединения и обновляем простаивающие.
+  // Новое открываем ДО закрытия старого — у готового соединения нет «окна», когда фразе пришлось бы подключаться самой.
   function tick() {
     const now = Date.now();
     for (const [voice, used] of [...known]) {
-      const list = idle.get(voice) || [];
+      let list = idle.get(voice) || [];
       if (now - used > forgetMs) { known.delete(voice); list.forEach(kill); idle.delete(voice); continue; }
-      const fresh = list.filter((c) => now - c.at <= refreshAfterMs);
-      list.filter((c) => now - c.at > refreshAfterMs).forEach(kill);
-      idle.set(voice, fresh);
-      if (!fresh.length) open(voice).then((c) => release(voice, c)).catch(() => {});
+      const dead = list.filter((c) => !isOpen(c.tts));
+      if (dead.length) { dead.forEach(kill); list = list.filter((c) => !dead.includes(c)); idle.set(voice, list); }
+      if (!list.length) { refill(voice); continue; }
+      for (const old of list.filter((c) => now - c.at > refreshAfterMs && !c.renewing)) {
+        old.renewing = true;
+        open(voice).then((n) => {
+          const l = idle.get(voice) || [];
+          if (l.includes(old)) { idle.set(voice, l.filter((x) => x !== old)); kill(old); }
+          release(voice, n);
+        }).catch(() => { old.renewing = false; });
+      }
     }
   }
   function startTimer() {
@@ -148,7 +165,7 @@ function createEdgeSynth(opts) {
     idle.clear(); known.clear();
   }
 
-  return { synth, warm, close, _idle: idle };
+  return { synth, warm, close, _idle: idle, _tick: tick };
 }
 
 module.exports = { createEdgeSynth, escapeSsml };
