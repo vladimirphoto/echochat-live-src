@@ -24,11 +24,14 @@ function createEdgeSynth(opts) {
     tickMs = 10000,
     forgetMs = 10 * 60 * 1000,     // голос не подтверждали (окно напоминает об используемых голосах раз в 5 мин) — перестаём держать для него соединение
     idleMax = 2,
+    pingFailLimit = 3,             // столько отправленных пингов без единого ответа — сервер пингам не отвечает, проверку отключаем
   } = opts || {};
 
   const idle = new Map();   // голос -> [{ tts, at }]
   const known = new Map();  // голос -> когда использовался последний раз
   const pending = new Set(); // голоса, для которых прямо сейчас открывается соединение
+  let pinned = new Set();    // голоса, выбранные в настройках: для них готовое соединение держим всегда, пока работает приложение
+  let pingsSent = 0, pongs = 0, pingOk = true;
   let lib = null, timer = null, closed = false;
 
   const getLib = async () => lib || (lib = await loadTts());
@@ -57,12 +60,30 @@ function createEdgeSynth(opts) {
     return open(voice);
   }
 
+  const wsOf = (c) => c && c.tts && c.tts._ws;
+
+  // следим за простаивающим соединением: сервер закрыл — убираем и сразу открываем новое, не дожидаясь проверки
+  function watch(voice, c) {
+    const ws = wsOf(c);
+    if (!ws || typeof ws.on !== 'function' || c.watchedWs === ws) return;
+    c.watchedWs = ws;
+    ws.on('pong', () => { c.pongAt = Date.now(); pongs++; });
+    ws.on('close', () => {
+      const l = idle.get(voice) || [];
+      const i = l.indexOf(c);
+      if (i < 0) return;
+      l.splice(i, 1); kill(c);
+      if (!closed && (pinned.has(voice) || known.has(voice))) refill(voice);
+    });
+  }
+
   function release(voice, c) {
     c.at = Date.now();
     const list = idle.get(voice) || [];
     idle.set(voice, list);
     if (closed || list.length >= idleMax) return kill(c);
     list.push(c);
+    watch(voice, c);
   }
 
   async function once(text, voice, rate, pitch) {
@@ -93,8 +114,11 @@ function createEdgeSynth(opts) {
 
   // Сервер Microsoft иногда отвечает медленно или обрывает поток. Нет ответа за hedgeMs — параллельно новая попытка
   // (уже на другом соединении), берём первую успешную.
-  function synth(text, voice, rate, pitch) {
+  // opts.urgent (подарки, подписки, донаты): вторая попытка стартует сразу и параллельно, не ждёт hedgeMs —
+  // если готовое соединение вдруг мёртвое, фраза не ждёт его тайм-аут.
+  function synth(text, voice, rate, pitch, o) {
     voice = voice || 'ru-RU-SvetlanaNeural';
+    const hedge = o && o.urgent ? 0 : hedgeMs;
     known.set(voice, Date.now());
     startTimer();
     return new Promise((resolve, reject) => {
@@ -109,7 +133,7 @@ function createEdgeSynth(opts) {
           if (failed >= maxAttempts) return finish(reject, last);
           if (failed >= started) schedule(Math.min(150 * failed, 600)); // ничего не в работе — следующая попытка почти сразу
         });
-        schedule(hedgeMs);
+        schedule(hedge);
       }
       launch();
     });
@@ -132,16 +156,34 @@ function createEdgeSynth(opts) {
     startTimer();
   }
 
-  // раз в несколько секунд: убираем оборвавшиеся соединения и обновляем простаивающие.
+  // голоса из настроек: соединение для них держим всегда (не «забывается» через время), независимо от подключения к эфиру
+  function setPinned(voices) {
+    pinned = new Set((voices || []).filter(Boolean));
+    for (const v of pinned) {
+      known.set(v, Date.now());
+      if (!(idle.get(v) || []).some((c) => isOpen(c.tts))) refill(v);
+    }
+    startTimer();
+  }
+
+  // раз в несколько секунд: проверяем готовые соединения пингом (молча умершее — через NAT, Wi-Fi, сервер — иначе
+  // обнаруживается только на первой фразе), убираем оборвавшиеся и обновляем старые.
   // Новое открываем ДО закрытия старого — у готового соединения нет «окна», когда фразе пришлось бы подключаться самой.
   function tick() {
     const now = Date.now();
-    for (const [voice, used] of [...known]) {
+    if (pingOk && pingsSent >= pingFailLimit && pongs === 0) pingOk = false; // сервер на пинги не отвечает — судим только по возрасту
+    for (const voice of new Set([...known.keys(), ...pinned])) {
       let list = idle.get(voice) || [];
-      if (now - used > forgetMs) { known.delete(voice); list.forEach(kill); idle.delete(voice); continue; }
-      const dead = list.filter((c) => !isOpen(c.tts));
+      const used = known.get(voice) || 0;
+      if (!pinned.has(voice) && now - used > forgetMs) { known.delete(voice); list.forEach(kill); idle.delete(voice); continue; }
+      const dead = list.filter((c) => !isOpen(c.tts) || (pingOk && c.pingSent && (c.pongAt || 0) < c.pingSent));
       if (dead.length) { dead.forEach(kill); list = list.filter((c) => !dead.includes(c)); idle.set(voice, list); }
       if (!list.length) { refill(voice); continue; }
+      for (const c of list) {
+        const ws = wsOf(c);
+        if (!pingOk || !ws || typeof ws.ping !== 'function') continue;
+        try { c.pingSent = now; pingsSent++; ws.ping(); } catch (_) { c.pingSent = now; c.pongAt = 0; }
+      }
       for (const old of list.filter((c) => now - c.at > refreshAfterMs && !c.renewing)) {
         old.renewing = true;
         open(voice).then((n) => {
@@ -165,7 +207,7 @@ function createEdgeSynth(opts) {
     idle.clear(); known.clear();
   }
 
-  return { synth, warm, close, _idle: idle, _tick: tick };
+  return { synth, warm, setPinned, close, _idle: idle, _tick: tick };
 }
 
 module.exports = { createEdgeSynth, escapeSsml };

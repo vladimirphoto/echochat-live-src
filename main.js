@@ -371,10 +371,10 @@ ipcMain.handle('tts:voices', async () => {
 const edgePool = require('./edge-pool').createEdgeSynth({
   loadTts: async () => { const { MsEdgeTTS, OUTPUT_FORMAT } = await load('msedge-tts'); return { MsEdgeTTS, OUTPUT_FORMAT }; },
 });
-const edgeSynth = (text, voice, rate, pitch) => edgePool.synth(text, voice, rate, pitch);
+const edgeSynth = (text, voice, rate, pitch, o) => edgePool.synth(text, voice, rate, pitch, o);
 // окно просит заранее открыть соединения для выбранных голосов (при запуске и при подключении к эфиру)
 ipcMain.handle('tts:warm', (_e, voices) => {
-  edgePool.warm((Array.isArray(voices) ? voices : []).filter((v) => typeof v === 'string' && /^[\w-]{3,80}$/.test(v)).slice(0, 6));
+  edgePool.setPinned((Array.isArray(voices) ? voices : []).filter((v) => typeof v === 'string' && /^[\w-]{3,80}$/.test(v)).slice(0, 6));
   return true;
 });
 
@@ -408,7 +408,7 @@ ipcMain.handle('tts:synth', async (_e, o) => {
       try { const b = cfg.engine === 'piper' ? await te.piperSynth(app.getPath('userData'), cfg, text, o.rate) : await te.googleSynth(cfg, text, o.rate); return { ok: true, audio: b.toString('base64'), chars: text.length }; }
       catch (err) { console.warn('[tts] ' + cfg.engine + ' не сработал, откат на Edge:', String((err && err.message) || err).replace(cfg.googleKey || '\u0000', '***')); }
     }
-    const buf = await edgeSynth(text, o.voice, o.rate, o.pitch);
+    const buf = await edgeSynth(text, o.voice, o.rate, o.pitch, { urgent: !!o.urgent });
     return { ok: true, audio: buf.toString('base64'), chars: text.length };
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };

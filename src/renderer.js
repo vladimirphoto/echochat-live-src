@@ -398,12 +398,15 @@ const catchUpRate = () => { if (!CATCH_UP) return 1; const n = queue.length; ret
 function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук готовится заранее, пока говорит предыдущая фраза
 
 let voiceCalls = 0; // сколько раз пытались озвучить (для автотеста)
+// подарки, подписки и донаты озвучиваются вне очереди чата (сразу после текущей фразы), а при переполнении отбрасывается самое старое сообщение чата
+const PRIO_SRC = new Set(['gifts', 'follows', 'donateSound', 'donateVoice']);
 function enqueue(item, force = false) {
   voiceCalls++; // пауза относится только к ленте чата: озвучка идёт по настройкам на странице «Озвучка»
-  if (queue.length >= QUEUE_MAX) queue.shift();
+  if (queue.length >= QUEUE_MAX) { const i = queue.findIndex((q) => !PRIO_SRC.has(q.src)); queue.splice(i < 0 ? 0 : i, 1); }
   item.preset = item.preset || selectedPreset();
   item.t = Date.now(); item.force = force;
-  queue.push(item);
+  if (PRIO_SRC.has(item.src)) { let at = 0; while (at < queue.length && PRIO_SRC.has(queue[at].src)) at++; queue.splice(at, 0, item); }
+  else queue.push(item);
   prefetch();   // синтез стартует сразу при появлении сообщения
   pump();
 }
@@ -430,9 +433,9 @@ function playBlob(b64, rate = 1) {
   });
 }
 
-function synthFor(text, p) {
+function synthFor(text, p, urgent) {
   return window.echo.synth({
-    text, voice: p.voice,
+    text, voice: p.voice, urgent: !!urgent,
     rate: Math.max(0.5, 1 + (p.rate || 0) / 100),
     pitch: ((p.pitch || 0) >= 0 ? '+' : '') + (p.pitch || 0) + 'Hz',
   }).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
@@ -441,7 +444,7 @@ function synthFor(text, p) {
 // синтез стартует заранее, пока играет предыдущая фраза — без пауз между сообщениями
 function ensureSynth(item) {
   if (item.chime) return null; // у звука доната нет синтеза речи
-  if (!item.p) item.p = synthFor(item.say, item.preset);
+  if (!item.p) item.p = synthFor(item.say, item.preset, PRIO_SRC.has(item.src));
   return item.p;
 }
 
@@ -1161,6 +1164,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.1.4': ['Подарки, подписки и донаты озвучиваются вне очереди чата — сразу после текущей фразы', 'Озвучка: постоянное готовое соединение для выбранных голосов держится всегда (в том числе без подключения к эфиру), мёртвые соединения обнаруживаются заранее, а фразы подарков и подписок не ждут повторной попытки'],
   '2.1.3': ['Исправлено: репост эфира больше не озвучивается как «спасибо за подписку»'],
   '2.1.2': ['Озвучка: убрано ускорение голоса при длинной очереди — скорость всегда как в настройках голоса', 'Озвучка: соединение для голоса подарков и подписок держится постоянно и открывается сразу при смене голоса, без задержки на первой фразе'],
   '2.1.1': ['Озвучка: соединение с сервером голосов теперь постоянное, фразы стартуют быстрее', 'Озвучка: сообщения с символами « & », « < », « > » больше не пропадают', 'Озвучка: при сбое синтеза или воспроизведения фраза пробуется ещё раз, очередь стала длиннее, а при большой очереди голос читает чуть быстрее'],

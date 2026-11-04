@@ -2,14 +2,25 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { Readable } = require('node:stream');
+const { EventEmitter } = require('node:events');
 const { createEdgeSynth, escapeSsml } = require('../edge-pool');
 
 // поддельная библиотека: считает соединения, ведёт себя по сценарию
 function fakeLib(script) {
-  const log = { instances: [], inputs: [] };
+  const log = { instances: [], inputs: [], silent: new Set(), noPongs: false };
   class FakeTTS {
     constructor() { this.closed = false; this.n = log.instances.length; log.instances.push(this); }
-    async setMetadata() { if (this.closed) throw new Error('closed'); this.connects = (this.connects || 0) + 1; }
+    async setMetadata() {
+      if (this.closed) throw new Error('closed');
+      this.connects = (this.connects || 0) + 1;
+      if (!this._ws) {
+        const ws = this._ws = new EventEmitter();
+        ws.readyState = 1;
+        ws.pings = 0;
+        // как настоящий WebSocket: на пинг приходит pong; «молчащее» соединение не отвечает
+        ws.ping = () => { ws.pings++; if (!log.noPongs && !log.silent.has(this.n)) setImmediate(() => ws.emit('pong')); };
+      }
+    }
     toStream(input) {
       log.inputs.push(input);
       const mode = script(this.n, log.inputs.length) || 'ok';
@@ -19,7 +30,7 @@ function fakeLib(script) {
       // 'stuck' — молчит
       return { audioStream };
     }
-    close() { this.closed = true; }
+    close() { this.closed = true; if (this._ws && this._ws.readyState === 1) { this._ws.readyState = 3; this._ws.emit('close'); } }
   }
   return { loadTts: async () => ({ MsEdgeTTS: FakeTTS, OUTPUT_FORMAT: { AUDIO_24KHZ_96KBITRATE_MONO_MP3: 'mp3' } }), log };
 }
@@ -133,5 +144,73 @@ test('голос, о котором давно не напоминали, заб
   await new Promise((r) => setTimeout(r, 20));
   e._tick();
   assert.equal(log.instances[0].closed, true);
+  e.close();
+});
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+test('urgent (подарки/подписки): вторая попытка стартует сразу, не ждёт hedgeMs', async () => {
+  const { e, log } = mk((inst) => (inst === 0 ? 'stuck' : 'ok'), { hedgeMs: 2000, timeoutMs: 5000 });
+  const t0 = Date.now();
+  const buf = await e.synth('спасибо', 'v1', 1, '+0Hz', { urgent: true });
+  assert.equal(buf.toString(), 'mp3data');
+  assert.ok(Date.now() - t0 < 300, 'не должно ждать 2 секунды');
+  assert.equal(log.instances.length, 2);
+  e.close();
+});
+
+test('сервер закрыл простаивающее соединение — новое открывается сразу, без ожидания проверки', async () => {
+  const { e, log } = mk(() => 'ok');
+  e.setPinned(['v1']);
+  await wait(20);
+  assert.equal(log.instances.length, 1);
+  log.instances[0].close(); // как если бы сервер оборвал связь
+  await wait(20);
+  assert.equal(log.instances.length, 2);
+  assert.equal(log.instances[1].closed, false);
+  e.close();
+});
+
+test('пинг: соединение, не ответившее pong, считается мёртвым и заменяется до первой фразы', async () => {
+  const { e, log } = mk(() => 'ok', { refreshAfterMs: 1e9 });
+  e.setPinned(['v1']);
+  await wait(20);
+  e._tick(); // отправлен пинг, ответ пришёл
+  await wait(10);
+  assert.equal(log.instances.length, 1, 'живое соединение остаётся');
+  log.silent.add(0); // соединение «замолчало» (NAT/Wi-Fi), но формально открыто
+  e._tick(); // пинг без ответа
+  await wait(10);
+  e._tick(); // ответа так и нет — заменяем
+  await wait(20);
+  assert.equal(log.instances.length, 2);
+  assert.equal(log.instances[0].closed, true);
+  await e.synth('привет', 'v1', 1, '+0Hz');
+  assert.equal(log.instances.length, 2, 'фраза идёт по готовому соединению');
+  e.close();
+});
+
+test('сервер вообще не отвечает на пинги — проверку отключаем, соединения не мельтешат', async () => {
+  const { e, log } = mk(() => 'ok', { refreshAfterMs: 1e9 });
+  log.noPongs = true;
+  e.setPinned(['v1']);
+  await wait(20);
+  for (let i = 0; i < 8; i++) { e._tick(); await wait(5); }
+  assert.ok(log.instances.length <= 4, 'без ответов на пинги не должно быть бесконечной замены: ' + log.instances.length);
+  const n = log.instances.length;
+  for (let i = 0; i < 5; i++) { e._tick(); await wait(5); }
+  assert.equal(log.instances.length, n, 'после отключения проверки замены прекращаются');
+  e.close();
+});
+
+test('выбранный голос не «забывается», даже если им давно не говорили', async () => {
+  const { e, log } = mk(() => 'ok', { forgetMs: 5 });
+  e.setPinned(['v1']);
+  await wait(30);
+  e._tick();
+  await wait(10);
+  assert.ok(log.instances.some((i) => !i.closed), 'готовое соединение осталось');
+  await e.synth('привет', 'v1', 1, '+0Hz');
+  assert.equal(log.instances.filter((i) => !i.closed).length >= 1, true);
   e.close();
 });
