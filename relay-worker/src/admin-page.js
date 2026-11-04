@@ -37,6 +37,7 @@ label{display:block;color:var(--muted);font-size:12.5px;margin:0 0 7px}
 .btn.icon{padding:7px 9px}
 .btn:focus-visible,.chip:focus-visible,.mi:focus-visible,.seg button:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
 .ico{display:inline-flex;width:16px;height:16px}.ico svg{width:100%;height:100%}
+.cpt{display:inline-grid;justify-items:center}.cpt>span{grid-area:1/1;white-space:nowrap}.cpt>span.off{visibility:hidden}
 
 .login{max-width:420px;margin:9vh auto 0;text-align:center}
 .login .lock{width:54px;height:54px;border-radius:16px;margin:0 auto 14px;background:var(--grad);display:grid;place-items:center;box-shadow:0 12px 32px rgba(139,92,246,.4)}
@@ -183,9 +184,11 @@ function dn(n){return n+' '+plural(n,'день','дня','дней')}
 function copy(t){try{var p=navigator.clipboard&&navigator.clipboard.writeText(t);if(p&&p.catch)p.catch(function(){})}catch(e){}}
 /* кнопка копирования: нажали, и на ней на пару секунд зелёное «Скопировано» (без уведомления в углу) */
 function makeCopy(b,label,getText){
- b.textContent='';var ic=ico('copy'),tx=el('span',null,label);b.appendChild(ic);b.appendChild(tx);
- b.onclick=function(){copy(getText());ic.innerHTML=ICONS.check;tx.textContent='Скопировано';b.classList.add('done');clearTimeout(b._t);
-  b._t=setTimeout(function(){ic.innerHTML=ICONS.copy;tx.textContent=label;b.classList.remove('done')},1800)}}
+ /* обе надписи лежат друг на друге, видна одна: кнопка всегда шириной с более длинную, поэтому после нажатия строка ключа не перестраивается */
+ b.textContent='';var ic=ico('copy'),tx=el('span','cpt'),a=el('span',null,label),d=el('span','off','Скопировано');
+ tx.appendChild(a);tx.appendChild(d);b.appendChild(ic);b.appendChild(tx);
+ b.onclick=function(){copy(getText());ic.innerHTML=ICONS.check;a.className='off';d.className='';b.classList.add('done');clearTimeout(b._t);
+  b._t=setTimeout(function(){ic.innerHTML=ICONS.copy;a.className='';d.className='off';b.classList.remove('done')},1800)}}
 function toast(t,bad){var b=el('div','toast'+(bad?' bad':''),t);$('toasts').appendChild(b);setTimeout(function(){b.remove()},3200)}
 function statusOf(l){
  if(l.revoked)return 'revoked';
