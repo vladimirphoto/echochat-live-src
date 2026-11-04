@@ -161,7 +161,7 @@ test('urgent (подарки/подписки): вторая попытка ст
 });
 
 test('сервер закрыл простаивающее соединение — новое открывается сразу, без ожидания проверки', async () => {
-  const { e, log } = mk(() => 'ok');
+  const { e, log } = mk(() => "ok", { poolSize: 1 });
   e.setPinned(['v1']);
   await wait(20);
   assert.equal(log.instances.length, 1);
@@ -173,7 +173,7 @@ test('сервер закрыл простаивающее соединение 
 });
 
 test('пинг: соединение, не ответившее pong, считается мёртвым и заменяется до первой фразы', async () => {
-  const { e, log } = mk(() => 'ok', { refreshAfterMs: 1e9 });
+  const { e, log } = mk(() => 'ok', { refreshAfterMs: 1e9, poolSize: 1 });
   e.setPinned(['v1']);
   await wait(20);
   e._tick(); // отправлен пинг, ответ пришёл
@@ -194,7 +194,7 @@ test('пинг: соединение, не ответившее pong, счита
 });
 
 test('смена голоса: фраза ждёт уже открывающееся соединение и не открывает второе', async () => {
-  const { e, log } = mk(() => 'ok');
+  const { e, log } = mk(() => "ok", { poolSize: 1 });
   log.connectDelay = 60;
   e.setPinned(['v2']); // как при выборе карточки: соединение открывается в фоне
   const t0 = Date.now();
@@ -207,7 +207,7 @@ test('смена голоса: фраза ждёт уже открывающее
 });
 
 test('зависшее фоновое соединение: ждём не дольше pendingWaitMs, потом открываем своё', async () => {
-  const { e, log } = mk(() => 'ok', { pendingWaitMs: 40 });
+  const { e, log } = mk(() => 'ok', { pendingWaitMs: 40, poolSize: 1 });
   log.connectDelay = 300;
   e.setPinned(['v3']);
   await wait(5);
@@ -219,7 +219,7 @@ test('зависшее фоновое соединение: ждём не дол
 });
 
 test('выбранному голосу после взятия последнего готового сразу открывается запасное; чужому — нет', async () => {
-  const { e, log } = mk(() => 'ok');
+  const { e, log } = mk(() => "ok", { poolSize: 1 });
   e.setPinned(['v1']);
   await wait(20);
   await e.synth('раз', 'v1', 1, '+0Hz');
@@ -233,7 +233,7 @@ test('выбранному голосу после взятия последне
 });
 
 test('пачка фраз сразу после смены голоса: все озвучены, лишних соединений нет', async () => {
-  const { e, log } = mk(() => 'ok');
+  const { e, log } = mk(() => "ok", { poolSize: 1 });
   log.connectDelay = 30;
   e.setPinned(['v1']);
   const r = await Promise.all([1, 2, 3].map((i) => e.synth('фраза ' + i, 'v1', 1, '+0Hz')));
@@ -265,5 +265,26 @@ test('выбранный голос не «забывается», даже ес
   assert.ok(log.instances.some((i) => !i.closed), 'готовое соединение осталось');
   await e.synth('привет', 'v1', 1, '+0Hz');
   assert.equal(log.instances.filter((i) => !i.closed).length >= 1, true);
+  e.close();
+});
+
+test('закреплённый голос держит poolSize готовых соединений и открывает их параллельно', async () => {
+  const { e, log } = mk(() => 'ok', { poolSize: 3 });
+  e.setPinned(['v1']);
+  await wait(20);
+  assert.equal(log.instances.length, 3);
+  assert.ok(log.instances.every((i) => !i.closed));
+  e.close();
+});
+
+test('пачка из трёх фраз сразу: все берут готовые соединения, без открытия по одному', async () => {
+  const { e, log } = mk(() => 'ok', { poolSize: 3, refreshAfterMs: 1e9 });
+  e.setPinned(['v1']);
+  await wait(20);
+  const base = log.instances.length;
+  const bufs = await Promise.all([e.synth('a', 'v1', 1, '+0Hz'), e.synth('b', 'v1', 1, '+0Hz'), e.synth('c', 'v1', 1, '+0Hz')]);
+  assert.equal(bufs.length, 3);
+  await wait(20);
+  assert.equal(log.instances.length - base, 3, 'после пачки пул снова полный (замены открыты в фоне)');
   e.close();
 });
