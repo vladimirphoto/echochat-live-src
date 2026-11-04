@@ -218,7 +218,7 @@ function renderVoices() {
     d.onclick = () => { S.selected = p.id; save(); renderVoices(); refreshRate(); refreshPitch(); syncControls(); };
     $('.play', d).onclick = (e) => { e.stopPropagation(); previewPreset(p); };
     $$('.rbtn', d).forEach((btn) => { // закрепить этот голос за платформой: у платформы всегда есть голос, поэтому «снять» нельзя — только назначить другой
-      btn.onclick = (e) => { e.stopPropagation(); S[btn.dataset.r === 'tt' ? 'ttVoice' : 'twVoice'] = p.id; save(); renderVoices(); };
+      btn.onclick = (e) => { e.stopPropagation(); const k = btn.dataset.r === 'tt' ? 'ttVoice' : 'twVoice', was = S[k]; S[k] = p.id; save(); renderVoices(); if (was !== p.id) dropForVoiceChange(); };
     });
     const del = $('.del', d);
     if (del) del.onclick = (e) => {
@@ -240,7 +240,7 @@ const routeSelects = [
   makeSelect('eventVoiceSel', {
     options: () => [{ v: '', label: 'Как у чата TikTok' }, ...voiceOpts()],
     get: () => (S.presets.some((p) => p.id === S.eventVoice) ? S.eventVoice : ''),
-    set: (v) => { S.eventVoice = v; save(); },
+    set: (v) => { const was = S.eventVoice; S.eventVoice = v; save(); if (was !== v) dropForVoiceChange(); },
   }),
 ];
 function fillVoiceSelects() { ensureRouteVoices(); routeSelects.forEach((r) => r()); }
@@ -530,6 +530,12 @@ function dropSrc(src) {
   if (curItem && curItem.src === src) skipPhrase();
 }
 function silence() { queue.forEach((it) => { it.cancelled = true; }); skipPhrase(); }
+// поменяли голос чата или подарков: старая очередь старым голосом не дочитывается, играющая фраза обрывается,
+// и следующее же сообщение звучит новым голосом (функции объявлены выше по файлу, вызывается только по клику, когда всё уже загружено)
+function dropForVoiceChange() {
+  while (queue.length) { const it = queue.shift(); it.cancelled = true; try { it.onEnd && it.onEnd(); } catch (_) {} }
+  skipPhrase();
+}
 
 // значок в трее показывает и меняет основные переключатели озвучки: окно сообщает их состояние, трей присылает команды
 const TRAY_KEYS = ['ttChat', 'gifts', 'follows', 'twChat'];
@@ -1164,6 +1170,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.1.5': ['Смена голоса: при выборе нового голоса чата (TikTok, Twitch) или голоса подарков и подписок очередь не дочитывается старым голосом, играющая фраза обрывается, и следующее же сообщение звучит новым голосом'],
   '2.1.4': ['Подарки, подписки и донаты озвучиваются вне очереди чата — сразу после текущей фразы', 'Озвучка: постоянное готовое соединение для выбранных голосов держится всегда (в том числе без подключения к эфиру), мёртвые соединения обнаруживаются заранее, а фразы подарков и подписок не ждут повторной попытки'],
   '2.1.3': ['Исправлено: репост эфира больше не озвучивается как «спасибо за подписку»'],
   '2.1.2': ['Озвучка: убрано ускорение голоса при длинной очереди — скорость всегда как в настройках голоса', 'Озвучка: соединение для голоса подарков и подписок держится постоянно и открывается сразу при смене голоса, без задержки на первой фразе'],
