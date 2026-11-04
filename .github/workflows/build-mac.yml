@@ -17,6 +17,30 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run dist:mac
+
+      # Автотест собранного приложения: запускаем его на самом macOS, как это делает Windows-сборка.
+      # Заодно печатаем, что про приложение думает Gatekeeper, и причину, если оно не стартовало.
+      - name: Self-test packaged app
+        continue-on-error: true
+        run: |
+          APP="$(ls -d dist/mac-arm64/*.app | head -1)"
+          echo "Testing $APP"
+          echo "::notice title=MAC INFO::macOS $(sw_vers -productVersion) $(uname -m) | codesign: $(codesign --verify --deep --strict "$APP" 2>&1 | tr '\n' ' ' | head -c 300) | spctl: $(spctl --assess --type execute -vv "$APP" 2>&1 | tr '\n' ' ' | head -c 300)"
+          OUT="$PWD/selftest.json"
+          BIN="$(ls "$APP"/Contents/MacOS/* | head -1)"
+          "$BIN" --selftest "--out=$OUT" > selftest.stdout 2>&1 &
+          PID=$!
+          for i in $(seq 1 90); do kill -0 $PID 2>/dev/null || break; sleep 2; done
+          kill $PID 2>/dev/null || true
+          if [ -f "$OUT" ]; then
+            node tools/selftest-report.js "$OUT"
+          else
+            echo "::error title=SELFTEST::no result file - app failed to start or crashed"
+            echo "::error title=APP OUTPUT::$(tr '\n' ' ' < selftest.stdout | head -c 1500)"
+            CR="$(ls -t ~/Library/Logs/DiagnosticReports/*EchoChat* 2>/dev/null | head -1)"
+            if [ -n "$CR" ]; then echo "::error title=CRASH REPORT::$(head -c 1500 "$CR" | tr '\n' ' ')"; fi
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: EchoChat-LIVE-dmg
@@ -25,6 +49,7 @@ jobs:
         id: ver
         run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Publish release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           repository: vladimirphoto/jonny-chat-tiktok
