@@ -5,6 +5,7 @@
   const api = window.overlay;
   const feed = $('#feed'), emptyEl = $('#empty'), down = $('#down'), pop = $('#pop');
   const MAX_ROWS = 120;
+  let RETURN_MS = 5000; // через сколько после прокрутки вверх лента сама возвращается вниз
   const STICK_PX = 48; // ближе этого к низу — лента «прилипает» и сама прокручивается к новым сообщениям
 
   const ICON = {
@@ -89,7 +90,20 @@
     syncDown();
   }
   function clearFeed() { feed.innerHTML = ''; unread = 0; clearJoin(); syncEmpty(); syncDown(); }
-  feed.addEventListener('scroll', () => { stuck = nearBottom(); syncDown(); }, { passive: true });
+  // если ленту пролистали вверх, через RETURN_MS она сама возвращается к последнему сообщению (пока текст выделен — не мешаем)
+  let returnT = null;
+  function scheduleReturn() {
+    clearTimeout(returnT); returnT = null;
+    if (nearBottom()) return;
+    returnT = setTimeout(() => {
+      returnT = null;
+      if (nearBottom()) return;
+      const sel = window.getSelection && window.getSelection();
+      if (sel && !sel.isCollapsed && feed.contains(sel.anchorNode)) return scheduleReturn(); // человек выделил текст — подождём ещё
+      toBottom(); stuck = true; unread = 0; syncDown();
+    }, RETURN_MS);
+  }
+  feed.addEventListener('scroll', () => { stuck = nearBottom(); syncDown(); scheduleReturn(); }, { passive: true });
   // строка действий внизу выезжает и уезжает: лента меняет высоту, и последнее сообщение должно оставаться у самого низа (над строкой)
   if (typeof ResizeObserver === 'function') new ResizeObserver(() => { if (stuck) toBottom(); syncDown(); }).observe(feed);
   down.onclick = () => { toBottom(); unread = 0; syncDown(); };
@@ -287,5 +301,5 @@
     toBottom(); unread = 0; syncDown();
   }).catch(() => {});
   syncEmpty(); syncDown(); tick();
-  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: showLike, setTiming: (t) => Object.assign(T, t), bar: () => ({ cur: cur ? cur.kind : null, queue: queue.map((x) => x.kind) }), get SET() { return SET; } }; // для автотестов
+  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: showLike, setTiming: (t) => Object.assign(T, t), setReturnMs: (v) => { RETURN_MS = v; }, bar: () => ({ cur: cur ? cur.kind : null, queue: queue.map((x) => x.kind) }), get SET() { return SET; } }; // для автотестов
 })();
