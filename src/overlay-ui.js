@@ -3,13 +3,14 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const api = window.overlay;
-  const feed = $('#feed'), emptyEl = $('#empty'), down = $('#down');
+  const feed = $('#feed'), emptyEl = $('#empty'), down = $('#down'), pop = $('#pop');
   const MAX_ROWS = 120;
   const STICK_PX = 48; // ближе этого к низу — лента «прилипает» и сама прокручивается к новым сообщениям
 
   const ICON = {
     tiktok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></svg>',
     twitch: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2 2.5 6v14H8v2.5h3L13.5 20H18l3.5-3.5V2H4zm15.5 13-2.5 2.5h-4.5L10 20v-2.5H6V4h13.5v11zM16 7.5h-2v5h2v-5zm-5 0H9v5h2v-5z"/></svg>',
+    join: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
     follow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></svg>',
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8c-1.5-4-6-4-6-1.5S10 8 12 8zm0 0c1.5-4 6-4 6-1.5S14 8 12 8z"/></svg>',
   };
@@ -47,6 +48,15 @@
       nm.appendChild(el('span', '', e.name));
       b.appendChild(nm); b.appendChild(el('div', 'tx', e.text));
       row.appendChild(b);
+      return row;
+    }
+    if (e.kind === 'join') { // кто-то зашёл на эфир
+      row.classList.add('jn');
+      const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', ICON.join);
+      row.appendChild(ic);
+      const b = el('div', 'body'), tx = el('div', 'tx');
+      tx.appendChild(el('b', '', e.name)); tx.appendChild(document.createTextNode(' — теперь с нами'));
+      b.appendChild(tx); row.appendChild(b);
       return row;
     }
     // подписка / подарок: серый круг со значком и одна строка
@@ -94,6 +104,7 @@
     $('#vTt').textContent = fmtNum(s.ttViewers);
     $('#stTw').hidden = !s.twOn; // онлайн Twitch виден, только пока Twitch подключён
     $('#vTw').textContent = fmtShort(s.twViewers); $('#vTw').title = fmtNum(s.twViewers);
+    $('#vViews').textContent = fmtShort(s.views); $('#vViews').title = fmtNum(s.views);
     $('#vGifts').textContent = fmtNum(s.gifts);
     $('#vFollows').textContent = fmtNum(s.follows);
     $('#vLikes').textContent = fmtNum(s.likes);
@@ -102,7 +113,7 @@
   setInterval(tick, 1000);
 
   /* ---------- настройки (меняются во вкладке «Оверлей чата» приложения; здесь только замок) ---------- */
-  let SET = { opacity: 100, onTop: true, locked: false, events: true, stats: true };
+  let SET = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true };
   const SHACKLE = { closed: 'M8 10.5V7.5a4 4 0 0 1 8 0v3', open: 'M8 10.5V7.5a4 4 0 0 1 7.6-1.7' };
   function applySettings(s) {
     if (!s || typeof s !== 'object') return;
@@ -111,6 +122,10 @@
     document.documentElement.style.setProperty('--a', String(Math.max(0.02, Math.min(1, SET.opacity / 100))));
     document.body.classList.toggle('locked', !!SET.locked);
     feed.classList.toggle('no-ev', !SET.events);
+    feed.classList.toggle('no-jn', !SET.joins);
+    if (document.activeElement !== $('#sOpacity')) $('#sOpacity').value = SET.opacity;
+    $('#sOpacityV').textContent = SET.opacity + '%';
+    $('#sOnTop').checked = !!SET.onTop; $('#sEvents').checked = !!SET.events; $('#sJoins').checked = !!SET.joins; $('#sStats').checked = !!SET.stats;
     $('#stats').hidden = !SET.stats;
     $('#btnLock').classList.toggle('on', !!SET.locked);
     $('#btnLock').title = SET.locked ? 'Окно заблокировано. Нажмите, чтобы разблокировать' : 'Заблокировать положение и размер окна';
@@ -118,6 +133,19 @@
     const stick = nearBottom(); syncDown(); if (stick) toBottom();
   }
   $('#btnLock').onclick = () => { const locked = !SET.locked; applySettings({ locked }); try { api.set({ locked }); } catch (_) {} };
+  // шестерёнка: прозрачность фона и переключатели; те же настройки есть во вкладке «Оверлей чата» приложения
+  // изменения копятся и уходят одним пакетом, поэтому две быстрые правки подряд не затирают друг друга
+  let sendT = null, pending = {};
+  const push = (patch) => { applySettings(patch); pending = { ...pending, ...patch }; clearTimeout(sendT); sendT = setTimeout(() => { const p = pending; pending = {}; try { api.set(p); } catch (_) {} }, 60); };
+  $('#sOpacity').addEventListener('input', (e) => push({ opacity: +e.target.value }));
+  $('#sOnTop').addEventListener('change', (e) => push({ onTop: e.target.checked }));
+  $('#sEvents').addEventListener('change', (e) => push({ events: e.target.checked }));
+  $('#sJoins').addEventListener('change', (e) => push({ joins: e.target.checked }));
+  $('#sStats').addEventListener('change', (e) => push({ stats: e.target.checked }));
+  $('#btnSet').onclick = (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; };
+  $('#btnClear').onclick = () => { try { api.clear(); } catch (_) {} pop.hidden = true; };
+  document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target) && !$('#btnSet').contains(e.target)) pop.hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pop.hidden = true; });
   $('#btnClose').onclick = () => { try { api.close(); } catch (_) {} };
 
   /* ---------- растягивание за края (при замке ручки скрыты) ---------- */

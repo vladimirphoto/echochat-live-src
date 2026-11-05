@@ -429,7 +429,7 @@ async function eventTests(win) {
   try {
     const { BrowserWindow } = require('electron');
     const ovWin = () => BrowserWindow.getAllWindows().find((w) => w !== win && !w.isDestroyed());
-    add('оверлей: отдельная вкладка с переключателем, кнопками и настройками', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset', '#ovOpacity', '#ovLock', '#ovOnTop', '#ovEvents', '#ovStats'].every((i) => !!document.querySelector('#tab-overlay ' + i)) && !document.querySelector('#tab-widgets #ovToggle')"));
+    add('оверлей: отдельная вкладка с переключателем, кнопками и настройками', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset', '#ovOpacity', '#ovLock', '#ovOnTop', '#ovJoins', '#ovEvents', '#ovStats'].every((i) => !!document.querySelector('#tab-overlay ' + i)) && !document.querySelector('#tab-widgets #ovToggle')"));
     const on = await q('window.echo.overlayToggle(true)');
     await wait(1200);
     const w = ovWin();
@@ -443,7 +443,16 @@ async function eventTests(win) {
       add('оверлей: лента показывает и TikTok, и Twitch', /tiktok[^|]*\|.*Анна/.test(rows) && /twitch[^|]*\|.*Max/.test(rows), rows.slice(0, 200));
       add('оверлей: подписка и подарок в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows));
       const head = await qo("[document.querySelector('#badge').textContent, !!document.querySelector('#time'), document.querySelectorAll('#stats .st').length].join()");
-      add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,5$/.test(head), head);
+      add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,6$/.test(head), head);
+      const gear = await qo("[!!document.querySelector('#btnSet'), !!document.querySelector('#stViews'), document.querySelector('#stTw svg path[d^=\"M4 2\"]') === null, getComputedStyle(document.querySelector('#stTw')).color === getComputedStyle(document.querySelector('#stViews')).color].join()");
+      add('оверлей: шестерёнка, счётчик просмотров, у Twitch нет логотипа и цвет такой же', gear === 'true,true,true,true', gear);
+      await qo("document.querySelector('#btnSet').click()");
+      const pop1 = await qo("!document.querySelector('#pop').hidden && ['#sOpacity', '#sOnTop', '#sEvents', '#sJoins', '#sStats', '#btnClear'].every((i) => !!document.querySelector(i))");
+      await qo("document.querySelector('#btnSet').click()");
+      add('оверлей: шестерёнка открывает настройки', pop1 === true);
+      await qo("window.__overlay.addEntry({ platform: 'tiktok', kind: 'join', name: 'Новенький' }, false)");
+      const jn = await qo("[...document.querySelectorAll('.row.jn')].map((r) => r.innerText.replace(/\\s+/g, ' ')).join('|')");
+      add('оверлей: «ник — теперь с нами» в ленте', /Новенький — теперь с нами/.test(jn), jn);
       // замок: окно нельзя сдвинуть, пока он закрыт; прозрачность убирает только фон
       const bg = () => qo("getComputedStyle(document.querySelector('.panel')).backgroundColor");
       await q('window.echo.overlaySet({ locked: true, opacity: 0 })');

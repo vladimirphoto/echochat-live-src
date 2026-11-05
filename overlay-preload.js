@@ -7,6 +7,7 @@ const on = (channel) => (cb) => { if (typeof cb === 'function') ipcRenderer.on(c
 contextBridge.exposeInMainWorld('overlay', {
   state: () => ipcRenderer.invoke('ov:state'),      // { settings, stats, feed }
   set: (patch) => ipcRenderer.invoke('ov:set', patch),
+  clear: () => ipcRenderer.invoke('ov:clear'),
   grip: (m) => ipcRenderer.send('ov:grip', m),      // растягивание за край: { phase: start|move|end, dir, dx, dy }
   close: () => ipcRenderer.send('ov:close'),
   onMsg: on('ov:msg'),

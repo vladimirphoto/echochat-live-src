@@ -7,9 +7,9 @@ const AREA = { x: 0, y: 0, width: 1920, height: 1040 };
 const clock = (t0 = 1000) => { let t = t0; const f = () => t; f.set = (v) => { t = v; }; return f; };
 
 test('оверлей: настройки по умолчанию и ограничение чисел', () => {
-  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, stats: true });
+  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true });
   const s = ov.cleanSettings({ opacity: -5, scale: 9999, onTop: false, locked: true, events: false, stats: false });
-  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, stats: false }); // масштаба больше нет
+  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, joins: true, stats: false }); // масштаба больше нет
   assert.equal(ov.cleanSettings({ opacity: 500 }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 'мусор' }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 64.6 }).opacity, 65);
@@ -61,7 +61,8 @@ test('модель: сообщения TikTok и Twitch попадают в ле
   assert.equal(b.entry.platform, 'twitch');
   assert.equal(m.feed().length, 2);
   assert.ok(b.entry.id > a.entry.id);
-  assert.equal(a.stats, false); // чат счётчики не трогает
+  assert.equal(b.stats, false); // чат Twitch счётчики не трогает
+  assert.equal(m.stats().likes, 0); assert.equal(m.stats().gifts, 0);
 });
 
 test('модель: пустые сообщения и неизвестные каналы игнорируются', () => {
@@ -168,4 +169,47 @@ test('модель: Twitch отключён — его онлайн сбрасы
 test('примеры для «Теста» содержат обе платформы, подарок и подписку', () => {
   const k = new Set(ov.SAMPLE.map((e) => e.platform + ':' + e.kind));
   for (const x of ['tiktok:chat', 'twitch:chat', 'tiktok:gift', 'tiktok:follow']) assert.ok(k.has(x), x);
+});
+
+test('оверлей: «ник теперь с нами» — один раз на зрителя, просмотры за эфир считаются без повторов', () => {
+  const m = new ov.OverlayModel({ now: clock() });
+  const a = m.track('tt:join', { id: 'anna', name: 'Анна' });
+  assert.equal(a.entry.kind, 'join');
+  assert.equal(a.entry.name, 'Анна');
+  assert.equal(m.track('tt:join', { id: 'anna', name: 'Анна' }).entry, null); // вернулся — не повторяем
+  m.track('tt:join', { id: 'bob', name: 'Боб' });
+  assert.equal(m.stats().views, 2);
+  m.track('tt:chat', { id: 'anna', name: 'Анна', text: 'привет' }); // уже учтена
+  m.track('tt:chat', { id: 'kate', name: 'Катя', text: 'привет' }); // зашла раньше, чем мы подключились
+  assert.equal(m.stats().views, 3);
+  assert.equal(m.track('tt:join', { name: 'Гость' }).entry, null); // без имени не показываем
+});
+
+test('оверлей: просмотры — число от TikTok, если оно больше собственного счёта; сбрасываются с эфиром', () => {
+  const m = new ov.OverlayModel({ now: clock() });
+  m.track('tt:status', { state: 'live' });
+  m.track('tt:join', { id: 'a', name: 'А' });
+  m.track('tt:views', { count: 340 });
+  assert.equal(m.stats().views, 340);
+  m.track('tt:views', { count: 12 }); // число от TikTok не уменьшается
+  assert.equal(m.stats().views, 340);
+  m.track('tt:status', { state: 'offline' });
+  assert.equal(m.stats().views, null);
+  assert.equal(m.track('tt:join', { id: 'a', name: 'А' }).entry.kind, 'join'); // новый эфир — снова «с нами»
+});
+
+test('оверлей: настройка «кто зашёл на эфир» включена по умолчанию и отключается', () => {
+  assert.equal(ov.cleanSettings({}).joins, true);
+  assert.equal(ov.cleanSettings({ joins: false }).joins, false);
+});
+
+test('оверлей: «В угол экрана» сохраняет выбранный размер, а не возвращает 100%', () => {
+  const c = ov.cornerBounds(AREA, { x: 50, y: 50, width: 640, height: 900 });
+  assert.equal(c.width, 640); assert.equal(c.height, 900);
+  assert.equal(c.x, 1920 - 640 - 24); assert.equal(c.y, 1040 - 900 - 24);
+  const small = ov.cornerBounds({ x: 0, y: 0, width: 500, height: 600 }, { width: 900, height: 900 }); // больше экрана — вписывается
+  assert.ok(small.width <= 500 && small.height <= 600 && small.x >= 0 && small.y >= 0);
+  const min = ov.cornerBounds(AREA, { width: 10, height: 10 }); // слишком мало — минимальный размер
+  assert.equal(min.width, ov.SIZE.minW); assert.equal(min.height, ov.SIZE.minH);
+  assert.equal(ov.cornerBounds(AREA, null).width, ov.SIZE.defW); // размера нет — стандартный
 });

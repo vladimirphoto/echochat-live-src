@@ -118,8 +118,8 @@ function setOverlay(on) {
 // окно оверлея обращается только за своим: чужие окна эти каналы не используют
 const fromOv = (e) => ovOpen() && e.sender === ovWin.webContents;
 ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed() } : null));
-// из самого окна меняется только замок; остальные настройки — во вкладке «Оверлей чата» главного окна
-ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch && typeof patch.locked === 'boolean' ? { locked: patch.locked } : {}, false).settings : null));
+// из самого окна (замок и шестерёнка) настройки меняются так же, как во вкладке «Оверлей чата» главного окна: обе стороны видят одно и то же
+ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
 // растягивание окна за края: страница присылает смещение курсора, окно меняет размер (при замке — никак)
 let ovGrip = null;
 ipcMain.on('ov:grip', (e, m) => {
@@ -142,8 +142,12 @@ ipcMain.handle('overlay:toggle', (_e, on) => setOverlay(!!on));
 ipcMain.handle('overlay:set', (_e, patch) => ovUpdate(patch));
 ipcMain.handle('overlay:clear', () => { ovClear(); return { ok: true }; });
 ipcMain.handle('overlay:reset-pos', () => {
-  ovBounds = null; ovSave();
-  if (ovOpen()) { try { ovWin.setBounds(ovMod.defaultBounds(screen.getPrimaryDisplay().workArea)); } catch (_) {} }
+  // «В угол экрана» двигает окно, но размер остаётся тем, который выбрал пользователь
+  const area = screen.getPrimaryDisplay().workArea;
+  const cur = ovOpen() ? ovWin.getBounds() : ovBounds;
+  const b = cur ? ovMod.cornerBounds(area, cur) : ovMod.defaultBounds(area);
+  ovBounds = b; ovSave();
+  if (ovOpen()) { try { ovWin.setBounds(b); } catch (_) {} }
   return { ok: true };
 });
 // «Тест»: показывает примеры (открывает оверлей, если он выключен). В историю они не попадают: исчезают при очистке и перезапуске окна
@@ -433,6 +437,14 @@ async function doConnect(rawName) {
     if (!alive()) return;
     const count = ev.viewersOf(d);
     if (count !== null) send('tt:viewers', { count });
+    const views = ev.totalViewsOf(d);
+    if (views !== null) send('tt:views', { count: views });
+  });
+  // кто-то зашёл на эфир: в оверлее «ник — теперь с нами» и счётчик просмотров за эфир
+  c.on(WebcastEvent.MEMBER || 'member', (d) => {
+    if (!alive()) return;
+    const u = ev.userOf(d);
+    if (u.name !== 'Гость' || u.id) send('tt:join', u);
   });
   c.on(WebcastEvent.STREAM_END || 'streamEnd', () => alive() && send('tt:status', { state: 'ended' }));
   c.on(EV.DISCONNECTED || 'disconnected', () => alive() && send('tt:status', { state: 'offline' }));

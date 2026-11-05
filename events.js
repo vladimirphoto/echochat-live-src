@@ -78,6 +78,12 @@ function viewersOf(d) {
   return pick(d.viewerCount, d.total, d.totalUser, d.totalUserCount);
 }
 
+// Сколько человек зашло за весь эфир (не онлайн): отдельное поле события roomUser; null — TikTok числа не прислал
+function totalViewsOf(d) {
+  d = d || {};
+  return pick(d.totalUser, d.totalUserCount, d.totalViewers, d.totalViewerCount);
+}
+
 function likesOf(d) {
   d = d || {};
   const total = pick(d.totalLikeCount, d.total);
@@ -146,4 +152,4 @@ function socialKind(d) {
 const isFollowSocial = (d) => socialKind(d) === 'follow';
 const isShareSocial = (d) => socialKind(d) === 'share';
 
-module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, likesOf, likerOf, LikesBoard, giftOf, isFollowSocial, isShareSocial, socialKind };
+module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, totalViewsOf, likesOf, likerOf, LikesBoard, giftOf, isFollowSocial, isShareSocial, socialKind };

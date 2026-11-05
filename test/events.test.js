@@ -121,3 +121,10 @@ test('топ лайков: суммирует лайки по зрителям, 
   b.clear();
   assert.deepEqual(b.top(5), []);
 });
+
+test('события: просмотры за весь эфир отдельно от онлайна', () => {
+  const ev2 = require('../events');
+  assert.equal(ev2.totalViewsOf({ viewerCount: 50, totalUser: 1200 }), 1200);
+  assert.equal(ev2.totalViewsOf({ viewerCount: 50 }), null); // числа нет — считаем сами
+  assert.equal(ev2.viewersOf({ viewerCount: 50, totalUser: 1200 }), 50);
+});
