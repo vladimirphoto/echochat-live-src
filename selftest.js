@@ -440,7 +440,7 @@ async function eventTests(win) {
       await q('window.echo.overlayTest()');
       await wait(2200);
       const rows = await qo("[...document.querySelectorAll('#feed .row')].map((r) => r.className + '|' + r.innerText.replace(/\\s+/g, ' ')).join(' // ')");
-      add('оверлей: лента показывает и TikTok, и Twitch', /tiktok\|.*Анна/.test(rows) && /twitch\|.*Max/.test(rows), rows.slice(0, 200));
+      add('оверлей: лента показывает и TikTok, и Twitch', /tiktok[^|]*\|.*Анна/.test(rows) && /twitch[^|]*\|.*Max/.test(rows), rows.slice(0, 200));
       add('оверлей: подписка и подарок в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows));
       const head = await qo("[document.querySelector('#badge').textContent, !!document.querySelector('#time'), document.querySelectorAll('#stats .st').length].join()");
       add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,5$/.test(head), head);
