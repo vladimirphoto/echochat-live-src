@@ -441,7 +441,7 @@ async function eventTests(win) {
       await wait(2200);
       const rows = await qo("[...document.querySelectorAll('#feed .row')].map((r) => r.className + '|' + r.innerText.replace(/\\s+/g, ' ')).join(' // ')");
       add('оверлей: лента показывает и TikTok, и Twitch', /tiktok[^|]*\|.*Анна/.test(rows) && /twitch[^|]*\|.*Max/.test(rows), rows.slice(0, 200));
-      add('оверлей: подписка, подарок с количеством и репост в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows) && /Рустам — поделился/.test(rows), rows.slice(0, 300));
+      add('оверлей: подписка остаётся строкой в ленте, а подарок и репост — только на нижней строке', /Игорь — подписался/.test(rows) && !/Роза/.test(rows) && !/Рустам — поделился/.test(rows), rows.slice(0, 300));
       // значок Twitch появляется при подключённом Twitch и идущем стриме и пропадает, когда стрима нет
       await qo("window.__overlay.applyStats({ since: 0, ttOn: false, twOn: true, twLive: true, twViewers: 12, ttViewers: null, views: null, gifts: 0, follows: 0, likes: 0 })");
       const twOn1 = await qo("getComputedStyle(document.querySelector('#stTw')).display !== 'none' && document.querySelector('#vTw').textContent");
@@ -462,18 +462,44 @@ async function eventTests(win) {
       const pop1 = await qo("!document.querySelector('#pop').hidden && ['#sOpacity', '#sOnTop', '#sEvents', '#sJoins', '#sHearts', '#sStats', '#btnClear'].every((i) => !!document.querySelector(i))");
       await qo("document.querySelector('#btnSet').click()");
       add('оверлей: шестерёнка открывает настройки', pop1 === true);
-      // «ник — теперь с нами»: одна строка внизу, новая заменяет прежнюю, потом исчезает; в ленте записей нет
-      await qo("window.__overlay.join({ name: 'Первый' }); window.__overlay.join({ name: 'Новенький' })");
-      const jn = await qo("[document.querySelectorAll('#joinBar .jb').length, document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' '), document.querySelectorAll('#feed .row.jn').length, [...document.querySelectorAll('#feed .row')].some((r) => /теперь с нами/.test(r.innerText))].join('|')");
-      add('оверлей: «ник — теперь с нами» — одна строка внизу, новая заменяет прежнюю, в ленте не остаётся', /^1\|Новенький — теперь с нами\|0\|false$/.test(jn), jn);
-      await wait(5900);
-      add('оверлей: строка «кто зашёл» исчезает через несколько секунд', (await qo("document.querySelectorAll('#joinBar .jb').length")) === 0);
-      // та же строка показывает, кто ставит лайки: лайки одного человека складываются, а свежее «зашёл» они не вытесняют
-      await qo("window.__overlay.liker({ name: 'Лайкер', count: 3 }); window.__overlay.liker({ name: 'Лайкер', count: 2 })");
-      const lk1 = await qo("[document.querySelectorAll('#joinBar .jb').length, document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ')].join('|')");
-      await qo("window.__overlay.join({ name: 'Вошёл' }); window.__overlay.liker({ name: 'Другой', count: 1 })");
-      const lk2 = await qo("document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ')");
-      add('оверлей: строка внизу показывает, кто ставит лайки (лайки одного человека складываются, «зашёл» не вытесняется)', /^1\|Лайкер — поставил\(а\) лайки ×5$/.test(lk1) && /^Вошёл — теперь с нами$/.test(lk2), lk1 + ' // ' + lk2);
+      // действия зрителей на нижней строке вместо чата: репост, подарок, «зашёл», лайк
+      await q('window.echo.overlayClear()');
+      await wait(300);
+      await qo("window.__overlay.setTiming({ line: 700, min: 150, out: 120 }); for (let i = 1; i <= 30; i++) window.__overlay.addEntry({ platform: 'tiktok', kind: 'chat', name: 'Чат', text: 'сообщение ' + i }, false); window.__overlay.addEntry({ platform: 'tiktok', kind: 'chat', name: 'Чат', text: 'последнее' }, false)");
+      await wait(300);
+      const geo = async () => JSON.parse(await qo("(() => { const f = document.querySelector('#feed .row:last-child').getBoundingClientRect(); const b = document.querySelector('#joinBar'); const r = b.getBoundingClientRect(); return JSON.stringify({ bottom: Math.round(f.bottom), barTop: Math.round(r.top), barH: Math.round(r.height), text: b.innerText.replace(/\\s+/g, ' ').trim() }); })()"));
+      const g0 = await geo();
+      await qo("window.__overlay.addEntry({ platform: 'tiktok', kind: 'share', name: 'Рустам' }, true)");
+      await wait(500);
+      const g1 = await geo();
+      add('оверлей: репост встаёт на нижнюю строку вместо чата, а чат поднимается на вторую строку', g0.barH === 0 && g1.barH >= 40 && g1.text === 'Рустам — поделился(ась) эфиром' && g1.bottom < g0.bottom - 30 && g1.bottom <= g1.barTop, JSON.stringify([g0, g1]));
+      add('оверлей: репост не остаётся записью в ленте', (await qo("[...document.querySelectorAll('#feed .row')].some((r) => /поделился/.test(r.innerText))")) === false);
+      await qo("window.__overlay.addEntry({ platform: 'tiktok', kind: 'chat', name: 'Чат', text: 'новое пока идёт репост' }, true)");
+      await wait(300);
+      const g1b = await geo();
+      add('оверлей: новое сообщение чата во время действия встаёт прямо над строкой действия', g1b.bottom <= g1b.barTop && g1b.barTop - g1b.bottom < 30, JSON.stringify(g1b));
+      await wait(900);
+      const g2 = await geo();
+      add('оверлей: действие уходит само, место под строку возвращается, и чат снова на нижней строке', g2.barH === 0 && g2.text === '' && g2.bottom >= g0.bottom - 2, JSON.stringify(g2));
+      // порядок: подарок важнее «зашёл» и лайка, лайки одного человека складываются, «зашёл» и лайк в очереди не копятся
+      const q0 = await qo("window.__overlay.join({ name: 'Алина' }); window.__overlay.liker({ name: 'Тимур', count: 3 }); window.__overlay.liker({ name: 'Тимур', count: 2 }); window.__overlay.join({ name: 'Вторая' }); window.__overlay.addEntry({ platform: 'tiktok', kind: 'gift', name: 'Дина', gift: { name: 'Роза', count: 5, image: '' } }, true); JSON.stringify(window.__overlay.bar())");
+      add('оверлей: очередь действий: показывается первое, в очереди лайк, самый свежий «зашёл» и подарок', q0 === '{"cur":"join","queue":["like","join","gift"]}', q0);
+      await wait(600);
+      const gf = await qo("document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ').trim()");
+      add('оверлей: подарок вытесняет «зашёл» и показывается с количеством', gf === 'Дина — отправил(а) «Роза» ×5', gf);
+      await wait(840);
+      const lk3 = await qo("document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ').trim()");
+      add('оверлей: после подарка — «зашёл» важнее лайка', lk3 === 'Вторая — теперь с нами', lk3);
+      await wait(820);
+      const lk4 = await qo("document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ').trim()");
+      add('оверлей: лайки одного человека складываются в одну строку', lk4 === 'Тимур — поставил(а) лайки ×5', lk4);
+      await wait(1000);
+      add('оверлей: когда действий не осталось, строка внизу исчезает', (await geo()).barH === 0);
+      // строку внизу выключили — подарок остаётся обычной строкой ленты
+      await qo("window.__overlay.applySettings({ joins: false }); window.__overlay.addEntry({ platform: 'tiktok', kind: 'gift', name: 'Лена', gift: { name: 'Корона', count: 2, image: '' } }, true)");
+      const fbk = await qo("[...document.querySelectorAll('#feed .row.gift')].map((r) => r.innerText.replace(/\\s+/g, ' ')).join('|') + '|' + document.querySelector('#joinBar').offsetHeight");
+      add('оверлей: если строку внизу выключить, подарок остаётся строкой в ленте', /Лена — отправил\(а\) «Корона» ×2\|0$/.test(fbk), fbk);
+      await qo("window.__overlay.applySettings({ joins: true }); window.__overlay.setTiming({ line: 5000, min: 1200, out: 380 })");
       // замок: окно нельзя сдвинуть, пока он закрыт; прозрачность убирает только фон
       const bg = () => qo("getComputedStyle(document.querySelector('.panel')).backgroundColor");
       await q('window.echo.overlaySet({ locked: true, opacity: 0 })');

@@ -81,11 +81,13 @@ body.locked .top{-webkit-app-region:no-drag}
 .clear{width:100%;margin-top:8px;padding:8px;border:1px solid #3a3a43;border-radius:9px;background:transparent;color:#d9d9e1;font-weight:600;font-size:13px}
 .clear:hover{background:var(--hov)}
 
-/* «ник — теперь с нами»: одна строка под лентой (как в TikTok), на несколько секунд; новая заменяет прежнюю, в ленте записей нет.
-   Место под строку занято всегда, поэтому лента не прыгает, когда строка появляется и исчезает */
-.joinbar{flex:none;height:50px;padding:0 14px 6px;display:flex;align-items:center;overflow:hidden}
+/* действия зрителей (подарок, репост, «ник — теперь с нами», лайк): одна строка под лентой на 5 секунд, в ленте записей нет.
+   Пока действий нет, места под строку нет вовсе — нижняя строка принадлежит чату. Появилось действие — строка плавно выезжает,
+   чат поднимается на вторую строку; действие ушло — строка уезжает, и чат снова внизу */
+.joinbar{flex:none;height:0;padding:0 14px;display:flex;align-items:center;overflow:hidden;transition:height .22s ease}
+.joinbar.on{height:50px}
 body.no-jn .joinbar{display:none}
-.jb{display:flex;align-items:center;gap:10px;min-width:0;width:100%;animation:jbin .2s ease-out}
+.jb{display:flex;align-items:center;gap:10px;min-width:0;width:100%;margin-bottom:6px;animation:jbin .2s ease-out}
 .jb.out{animation:jbout .35s ease-in forwards}
 .jb .av{background:#2a2a30;color:#c4c4cd;width:34px;height:34px}
 .jb .av svg{width:18px;height:18px}
@@ -93,6 +95,8 @@ body.no-jn .joinbar{display:none}
 .jb.lk .av svg{width:17px;height:17px;fill:currentColor}
 .jb .tx{margin:0;min-width:0;font-weight:600;color:#dcdce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jb .tx b{font-weight:700;color:#fff}
+.jb .cnt{font-weight:800;color:#ffd166;font-variant-numeric:tabular-nums} /* сколько подарков: «×5» */
+.jb img.gi{width:24px;height:24px;object-fit:contain;vertical-align:middle;margin-left:6px}
 @keyframes jbin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes jbout{from{opacity:1}to{opacity:0}}
 

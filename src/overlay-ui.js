@@ -25,6 +25,7 @@
 
   /* ---------- лента ---------- */
   let unread = 0;
+  let stuck = true; // лента «прилипла» к низу: так остаётся, пока человек сам не прокрутил вверх
   const nearBottom = () => feed.scrollHeight - feed.scrollTop - feed.clientHeight <= STICK_PX;
   const toBottom = () => { feed.scrollTop = feed.scrollHeight; };
   function syncEmpty() { emptyEl.hidden = !!feed.querySelector('.row'); }
@@ -70,9 +71,15 @@
   }
   function addEntry(e, animate) {
     if (!e || typeof e !== 'object') return;
-    if (e.kind === 'like') { if (animate) { burst(e.count); if (e.name) showLine('like', e); } return; } // лайки — не строка ленты, а летящие сердечки и строка внизу
+    if (e.kind === 'like') { if (animate) { burst(e.count); if (e.name) showLike(e); } return; } // лайки — не строка ленты, а летящие сердечки и строка внизу
     if (e.kind === 'join') { if (animate) showJoin(e); return; } // «теперь с нами» — не строка ленты, а временная строка внизу
-    const stick = nearBottom();
+    // подарок и репост — тоже действие: на 5 секунд занимает нижнюю строку вместо чата (чат на это время поднимается на вторую строку).
+    // Если строку внизу выключили, они остаются обычными строками ленты. При открытии окна старые подарки и репосты заново не показываются
+    if ((e.kind === 'gift' || e.kind === 'share') && SET.joins !== false) {
+      if (animate) pushAction(e.kind === 'gift' ? { kind: 'gift', name: String(e.name || 'Гость'), gift: e.gift || { name: 'подарок', count: 1, image: '' } } : { kind: 'share', name: String(e.name || 'Гость') });
+      return;
+    }
+    const stick = stuck || nearBottom();
     const row = rowOf(e);
     if (animate) row.classList.add('in');
     feed.appendChild(row);
@@ -82,41 +89,77 @@
     syncDown();
   }
   function clearFeed() { feed.innerHTML = ''; unread = 0; clearJoin(); syncEmpty(); syncDown(); }
-  feed.addEventListener('scroll', syncDown, { passive: true });
+  feed.addEventListener('scroll', () => { stuck = nearBottom(); syncDown(); }, { passive: true });
+  // строка действий внизу выезжает и уезжает: лента меняет высоту, и последнее сообщение должно оставаться у самого низа (над строкой)
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => { if (stuck) toBottom(); syncDown(); }).observe(feed);
   down.onclick = () => { toBottom(); unread = 0; syncDown(); };
   window.addEventListener('resize', () => { syncDown(); });
 
-  /* ---------- строка внизу: «ник — теперь с нами» и «ник — поставил(а) лайк»; на несколько секунд, новая заменяет прежнюю, в ленте ничего не остаётся ---------- */
+  /* ---------- строка внизу: действия зрителей (подарок, репост, «зашёл», лайк) ----------
+     Обычно эта строка — чат: места под действия нет, лента занимает всё окно. Пришло действие — оно на 5 секунд встаёт на нижнюю строку,
+     а чат поднимается на вторую; действие ушло — чат снова на нижней строке. Действия идут по очереди; важные (подарок, репост)
+     вытесняют менее важные («зашёл», лайк), а когда «зашёл» и лайков много, ждёт только самый свежий из них. */
   const joinBar = $('#joinBar');
-  const LINE_MS = 5000;
-  const HOLD_JOIN = 1500, HOLD_LIKE = 800; // лайков очень много: они не вытесняют только что показанное «зашёл» и не мелькают чаще раза в 0,8 с
-  let lineT = null, lineOutT = null, cur = null; // cur — что сейчас на строке: { kind, name, count, at, row, rest }
-  function clearJoin() { clearTimeout(lineT); clearTimeout(lineOutT); cur = null; if (joinBar) joinBar.replaceChildren(); }
+  const T = { line: 5000, min: 1200, out: 380 }; // сколько показывать, сколько минимум, прежде чем уступить более важному, длительность затухания
+  const MAX_Q = 8;
+  const PRIO = { gift: 0, share: 0, join: 1, like: 2 };
+  let queue = [], cur = null; // cur — что сейчас на строке: { kind, name, count, at, row, rest, timer, leaving }
   const likeText = (n) => (n > 1 ? ' — поставил(а) лайки ×' + n : ' — поставил(а) лайк');
-  function armLine(row) {
-    clearTimeout(lineT); clearTimeout(lineOutT);
-    lineT = setTimeout(() => { row.classList.add('out'); lineOutT = setTimeout(() => { if (row.isConnected) row.remove(); if (cur && cur.row === row) cur = null; }, 380); }, LINE_MS);
-  }
-  function showLine(kind, e) {
-    if (!joinBar || SET.joins === false) return;
-    const name = String((e && e.name) || 'Гость');
-    const now = Date.now();
-    const count = kind === 'like' ? Math.max(1, Math.round(Number(e && e.count)) || 1) : 0;
-    if (kind === 'like' && cur && cur.row.isConnected) {
-      // лайки от того же человека складываются в одну строку («×12»), а не мелькают каждый раз заново
-      if (cur.kind === 'like' && cur.name === name) { cur.count += count; cur.rest.textContent = likeText(cur.count); armLine(cur.row); return; }
-      if (now - cur.at < (cur.kind === 'join' ? HOLD_JOIN : HOLD_LIKE)) return;
-    }
-    const row = el('div', 'jb' + (kind === 'like' ? ' lk' : ''));
-    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', kind === 'like' ? ICON.heart : ICON.join);
-    const tx = el('div', 'tx'); tx.appendChild(el('b', '', name));
-    const rest = document.createTextNode(kind === 'like' ? likeText(count) : ' — теперь с нами'); tx.appendChild(rest);
+
+  function lineRow(a) {
+    const row = el('div', 'jb' + (a.kind === 'like' ? ' lk' : a.kind === 'gift' ? ' gf' : ''));
+    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', a.kind === 'like' ? ICON.heart : a.kind === 'gift' ? ICON.gift : a.kind === 'share' ? ICON.share : ICON.join);
+    const tx = el('div', 'tx'); tx.appendChild(el('b', '', a.name));
+    let rest = null;
+    if (a.kind === 'gift') {
+      tx.appendChild(document.createTextNode(' — отправил(а) «' + a.gift.name + '» '));
+      tx.appendChild(el('span', 'cnt', '×' + a.gift.count));
+      if (isUrl(a.gift.image)) { const gi = new Image(); gi.className = 'gi'; gi.alt = ''; gi.referrerPolicy = 'no-referrer'; gi.src = a.gift.image; gi.onerror = () => gi.remove(); tx.appendChild(gi); }
+    } else if (a.kind === 'share') tx.appendChild(document.createTextNode(' — поделился(ась) эфиром'));
+    else if (a.kind === 'join') tx.appendChild(document.createTextNode(' — теперь с нами'));
+    else { rest = document.createTextNode(likeText(a.count)); tx.appendChild(rest); }
     row.appendChild(ic); row.appendChild(tx);
-    joinBar.replaceChildren(row); // заменяет предыдущую сразу: если заходит много людей, строка быстро меняется
-    cur = { kind, name, count, at: now, row, rest };
-    armLine(row);
+    return { row, rest };
   }
-  const showJoin = (e) => showLine('join', e);
+  function clearJoin() { if (cur) clearTimeout(cur.timer); cur = null; queue = []; if (joinBar) { joinBar.replaceChildren(); joinBar.classList.remove('on'); } }
+  function endIn(ms) { if (!cur || cur.leaving) return; clearTimeout(cur.timer); cur.timer = setTimeout(finish, ms); }
+  function finish() {
+    const c = cur;
+    if (!c || c.leaving) return;
+    c.leaving = true; c.row.classList.add('out');
+    c.timer = setTimeout(() => { if (cur !== c) return; cur = null; c.row.remove(); next(); }, T.out);
+  }
+  function next() {
+    if (cur || !joinBar) return;
+    if (!queue.length) { joinBar.classList.remove('on'); return; } // действий больше нет: место под строку возвращается чату
+    let b = 0;
+    for (let i = 1; i < queue.length; i++) if (PRIO[queue[i].kind] < PRIO[queue[b].kind]) b = i; // самое важное, а среди равных — пришедшее раньше
+    const a = queue.splice(b, 1)[0];
+    const { row, rest } = lineRow(a);
+    joinBar.replaceChildren(row); joinBar.classList.add('on');
+    cur = { ...a, row, rest, at: Date.now(), leaving: false, timer: null };
+    cur.timer = setTimeout(finish, T.line);
+  }
+  function pushAction(a) {
+    if (!joinBar || SET.joins === false) return;
+    if (a.kind === 'like') {
+      // лайки от одного человека складываются в одну строку («×12»), 5 секунд при этом не продлеваются
+      if (cur && !cur.leaving && cur.kind === 'like' && cur.name === a.name) { cur.count += a.count; cur.rest.textContent = likeText(cur.count); return; }
+      const same = queue.find((x) => x.kind === 'like' && x.name === a.name);
+      if (same) { same.count += a.count; return; }
+      queue = queue.filter((x) => x.kind !== 'like'); // лайков очень много: в очереди ждёт только самый свежий
+    } else if (a.kind === 'join') queue = queue.filter((x) => x.kind !== 'join'); // и «зашёл» — тоже только самый свежий
+    queue.push(a);
+    while (queue.length > MAX_Q) { // переполнение: уходит самое неважное, а среди равных — самое старое
+      let w = 0;
+      for (let i = 1; i < queue.length; i++) if (PRIO[queue[i].kind] > PRIO[queue[w].kind]) w = i;
+      queue.splice(w, 1);
+    }
+    if (!cur) next();
+    else if (!cur.leaving && PRIO[a.kind] < PRIO[cur.kind]) endIn(Math.max(0, T.min - (Date.now() - cur.at))); // подарок или репост не ждут конца лайка или «зашёл»
+  }
+  const showJoin = (e) => pushAction({ kind: 'join', name: String((e && e.name) || 'Гость') });
+  const showLike = (e) => pushAction({ kind: 'like', name: String((e && e.name) || 'Гость'), count: Math.max(1, Math.round(Number(e && e.count)) || 1) });
 
   /* ---------- лайки: сердечки летят вверх от правого нижнего угла и плавно исчезают ---------- */
   const heartsEl = $('#hearts');
@@ -233,7 +276,7 @@
   api.onMsg((e) => addEntry(e, true));
   api.onLike((p) => burst(p && p.count));
   api.onJoin((p) => showJoin(p || {}));
-  api.onLiker((p) => showLine('like', p || {}));
+  api.onLiker((p) => showLike(p || {}));
   api.onStats(applyStats);
   api.onSettings(applySettings);
   api.onClear(clearFeed);
@@ -244,5 +287,5 @@
     toBottom(); unread = 0; syncDown();
   }).catch(() => {});
   syncEmpty(); syncDown(); tick();
-  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: (e) => showLine('like', e), get SET() { return SET; } }; // для автотестов
+  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: showLike, setTiming: (t) => Object.assign(T, t), bar: () => ({ cur: cur ? cur.kind : null, queue: queue.map((x) => x.kind) }), get SET() { return SET; } }; // для автотестов
 })();
