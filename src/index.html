@@ -317,6 +317,15 @@
               <label class="sw"><input type="checkbox" id="ovHearts" checked /><i></i><span>Лайки: сердечки летят вверх от правого угла</span></label>
               <label class="sw"><input type="checkbox" id="ovStats" checked /><i></i><span>Счётчики эфира</span></label>
             </div>
+            <div class="ctl" style="margin-top:12px">
+              <div class="row"><label>Горячие клавиши: открыть и закрыть оверлей</label></div>
+              <div class="wbtn-row" style="margin-top:6px">
+                <button class="btn wbtn ghost" id="ovHotkey" type="button" title="Нажмите и затем нужное сочетание клавиш">Ctrl+Alt+I</button>
+                <button class="btn wbtn ghost" id="ovHotkeyReset" type="button">По умолчанию</button>
+              </div>
+              <p class="muted" style="margin:6px 0 0" id="ovHotkeyHint">Нажмите на кнопку и затем сочетание, например Ctrl+Alt+I. Backspace — выключить, Esc — отмена. Работает из любой программы, пока открыт ЭхоЧат LIVE (можно свернуть в трей).</p>
+              <div class="wstat bad" id="ovHotkeyErr" hidden>Это сочетание занято другой программой. Выберите другое.</div>
+            </div>
           </div>
         </div>
       </section>

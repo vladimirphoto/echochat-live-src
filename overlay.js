@@ -8,11 +8,37 @@
 // joins — строка действий внизу окна: подарок, репост, лайк и «ник — теперь с нами» (на 5 секунд вместо чата, чат на это время поднимается на вторую строку)
 // events — подписки (и подарки с репостами, если строку внизу выключили) показываются строками в ленте
 // hearts — лайки зрителей: сердечки плавно летят вверх от правого нижнего угла и исчезают
-const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true };
+// hotkey — глобальное сочетание клавиш, которое открывает и закрывает оверлей (формат Electron: «Ctrl+Alt+I»); пустая строка — сочетание выключено
+const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true, hotkey: 'Ctrl+Alt+I' };
 const LIMITS = { opacity: [0, 100] };
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
 const clampInt = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d; };
+
+// Сочетание клавиш: «Модификаторы+клавиша» в каноническом виде (Ctrl, Alt, Shift, Meta и одна клавиша). Функциональные клавиши F1–F24 можно и без модификатора.
+// '' — выключено; всё, что не подходит, — null (тогда остаётся прежнее значение)
+const MODS = ['Ctrl', 'Alt', 'Shift', 'Meta'];
+const MOD_ALIAS = { ctrl: 'Ctrl', control: 'Ctrl', alt: 'Alt', option: 'Alt', shift: 'Shift', meta: 'Meta', cmd: 'Meta', command: 'Meta', win: 'Meta', super: 'Meta' };
+const KEY_NAMES = ['Space', 'Tab', 'Enter', 'Up', 'Down', 'Left', 'Right', 'Home', 'End', 'PageUp', 'PageDown', 'Insert'];
+function cleanHotkey(v) {
+  if (typeof v !== 'string') return null;
+  const parts = v.split('+').map((x) => x.trim());
+  if (parts.length === 1 && parts[0] === '') return '';
+  if (parts.some((x) => !x)) return null;
+  const mods = new Set(); let key = null;
+  for (const raw of parts) {
+    const m = MOD_ALIAS[raw.toLowerCase()];
+    if (m) { mods.add(m); continue; }
+    if (key) return null; // клавиша одна
+    const up = raw.length === 1 ? raw.toUpperCase() : raw;
+    if (/^[A-Z0-9]$/.test(up)) key = up;
+    else if (/^[Ff](?:[1-9]|1\d|2[0-4])$/.test(raw)) key = 'F' + raw.slice(1);
+    else { const n = KEY_NAMES.find((k) => k.toLowerCase() === raw.toLowerCase()); if (!n) return null; key = n; }
+  }
+  if (!key) return null;
+  if (!mods.size && !/^F\d+$/.test(key)) return null; // одиночная буква перехватила бы набор текста везде
+  return [...MODS.filter((m) => mods.has(m)), key].join('+');
+}
 
 // Настройки из любого входа: неизвестные поля отбрасываются, числа ограничиваются, а то, чего нет, берётся из base
 function cleanSettings(o, base = DEFAULTS) {
@@ -20,7 +46,10 @@ function cleanSettings(o, base = DEFAULTS) {
   const out = { ...DEFAULTS, ...base };
   out.opacity = clampInt(o.opacity !== undefined ? o.opacity : out.opacity, LIMITS.opacity[0], LIMITS.opacity[1], DEFAULTS.opacity);
   for (const k of ['onTop', 'locked', 'events', 'joins', 'stats', 'hearts']) out[k] = typeof o[k] === 'boolean' ? o[k] : !!out[k];
-  return { opacity: out.opacity, onTop: out.onTop, locked: out.locked, events: out.events, joins: out.joins, stats: out.stats, hearts: out.hearts };
+  const hk = o.hotkey !== undefined ? cleanHotkey(o.hotkey) : null;
+  const prev = cleanHotkey(out.hotkey);
+  const hotkey = hk !== null ? hk : prev !== null ? prev : DEFAULTS.hotkey;
+  return { opacity: out.opacity, onTop: out.onTop, locked: out.locked, events: out.events, joins: out.joins, stats: out.stats, hearts: out.hearts, hotkey };
 }
 
 // Положение окна, которое можно восстановить: размеры в разумных пределах и окно хотя бы частично на каком-то экране
@@ -171,4 +200,4 @@ const SAMPLE = [
   { platform: 'tiktok', kind: 'like', name: 'Тимур', count: 4 }, // сердечки и ник в строке внизу
 ];
 
-module.exports = { DEFAULTS, LIMITS, SIZE, cleanSettings, fitBounds, defaultBounds, cornerBounds, OverlayModel, SAMPLE };
+module.exports = { DEFAULTS, LIMITS, SIZE, cleanSettings, cleanHotkey, fitBounds, defaultBounds, cornerBounds, OverlayModel, SAMPLE };

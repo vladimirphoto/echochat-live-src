@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -42,7 +42,24 @@ let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null
 const OV_FILE = () => path.join(app.getPath('userData'), 'overlay.json');
 try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; } catch (_) {}
 const ovOpen = () => !!(ovWin && !ovWin.isDestroyed());
-const ovPublic = (on) => ({ on: on === undefined ? ovOpen() : !!on, settings: ovSet, locked: locked('widgets') });
+const ovPublic = (on) => ({ on: on === undefined ? ovOpen() : !!on, settings: ovSet, locked: locked('widgets'), hotkeyBusy: ovHotkeyBusy });
+// Глобальное сочетание клавиш: открывает и закрывает оверлей из любой программы (в том числе из игры в оконном режиме).
+// ovHotkeyBusy — сочетание не удалось занять (его уже держит другая программа), в настройках показывается подсказка
+let ovHotkeyBusy = false, ovHotkeyReg = '';
+function ovHotkeyOff() { if (ovHotkeyReg) { try { globalShortcut.unregister(ovHotkeyReg); } catch (_) {} ovHotkeyReg = ''; } }
+function ovHotkeyOn() {
+  ovHotkeyOff(); ovHotkeyBusy = false;
+  const k = ovSet.hotkey;
+  if (!k || SELFTEST) return;
+  try {
+    const ok = globalShortcut.register(k, () => {
+      const r = setOverlay(!ovOpen());
+      if (r.locked) toast('Оверлей чата входит в тариф Pro');
+      else if (!r.ok) toast('Не удалось открыть оверлей чата');
+    });
+    if (ok) ovHotkeyReg = k; else ovHotkeyBusy = true;
+  } catch (_) { ovHotkeyBusy = true; }
+}
 function ovSave() {
   clearTimeout(ovSaveT);
   ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds })); } catch (_) {} }, 300);
@@ -70,7 +87,9 @@ function ovApply(echo = true) {
 // переключатель в приложении и пункт трея всегда показывают настоящее состояние
 function ovNotify(on) { send('overlay:state', ovPublic(on)); rebuildTrayMenu(); }
 function ovUpdate(patch, echo = true) {
+  const was = ovSet.hotkey;
   ovSet = ovMod.cleanSettings(patch, ovSet);
+  if (ovSet.hotkey !== was) ovHotkeyOn();
   ovSave(); ovApply(echo); ovNotify();
   return ovPublic();
 }
@@ -143,6 +162,8 @@ function ovClear() { ovModel.clearFeed(); if (ovOpen()) ovWin.webContents.send('
 ipcMain.handle('overlay:state', () => ovPublic());
 ipcMain.handle('overlay:toggle', (_e, on) => setOverlay(!!on));
 ipcMain.handle('overlay:set', (_e, patch) => ovUpdate(patch));
+// пока человек в настройках записывает новое сочетание, старое не должно срабатывать (иначе его не нажать повторно)
+ipcMain.handle('overlay:hotkey-capture', (_e, on) => { if (on) ovHotkeyOff(); else ovHotkeyOn(); ovNotify(); return ovPublic(); });
 ipcMain.handle('overlay:clear', () => { ovClear(); return { ok: true }; });
 ipcMain.handle('overlay:reset-pos', () => {
   // «В угол экрана» двигает окно, но размер остаётся тем, который выбрал пользователь
@@ -285,7 +306,7 @@ ipcMain.handle('app:settings:set', (_e, patch) => {
 
 // ---- крестик: спрашиваем «свернуть в трей или закрыть» (или делаем по сохранённому выбору)
 let quitting = false, askPending = false;
-app.on('before-quit', () => { quitting = true; try { edgePool.close(); } catch (_) {} });
+app.on('before-quit', () => { quitting = true; ovHotkeyOff(); try { edgePool.close(); } catch (_) {} });
 function onWindowClose(e) {
   if (quitting || !useTray || !tray || appSet.closeMode === 'quit') return; // обычное закрытие
   if (win.webContents.isLoading()) return;
@@ -853,6 +874,7 @@ ipcMain.handle('upd:install', async () => {
 
 app.whenReady().then(async () => {
   if (!gotLock) return; // уже запущен другой экземпляр — он покажет своё окно
+  ovHotkeyOn();
   try { wsrv = await widget.start(() => wset, 7878, { getDonate: () => donateWidgetSettings(), getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }) }); } catch (_) { wsrv = null; }
   initLicense();
   createWindow();

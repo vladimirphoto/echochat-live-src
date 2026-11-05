@@ -7,9 +7,9 @@ const AREA = { x: 0, y: 0, width: 1920, height: 1040 };
 const clock = (t0 = 1000) => { let t = t0; const f = () => t; f.set = (v) => { t = v; }; return f; };
 
 test('оверлей: настройки по умолчанию и ограничение чисел', () => {
-  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true });
+  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true, hotkey: 'Ctrl+Alt+I' });
   const s = ov.cleanSettings({ opacity: -5, scale: 9999, onTop: false, locked: true, events: false, stats: false });
-  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, joins: true, stats: false, hearts: true }); // масштаба больше нет
+  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, joins: true, stats: false, hearts: true, hotkey: 'Ctrl+Alt+I' }); // масштаба больше нет
   assert.equal(ov.cleanSettings({ opacity: 500 }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 'мусор' }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 64.6 }).opacity, 65);
@@ -281,4 +281,25 @@ test('оверлей: лайк с известным ником отдаёт е�
   assert.equal(m.track('tt:like', { name: 'x'.repeat(300), count: 1 }).liker.name.length, 60);
   assert.equal(m.track('tt:like', { name: 'Аня' }).liker.count, 1);
   assert.equal(m.track('tt:chat', { name: 'A', text: 'hi' }).liker, null);
+});
+
+test('оверлей: горячая клавиша по умолчанию Ctrl+Alt+I, своё сочетание приводится к каноническому виду', () => {
+  assert.equal(ov.DEFAULTS.hotkey, 'Ctrl+Alt+I');
+  assert.equal(ov.cleanSettings({}).hotkey, 'Ctrl+Alt+I');
+  assert.equal(ov.cleanSettings({ hotkey: 'shift+ctrl+o' }).hotkey, 'Ctrl+Shift+O');
+  assert.equal(ov.cleanSettings({ hotkey: 'Alt+F9' }).hotkey, 'Alt+F9');
+  assert.equal(ov.cleanSettings({ hotkey: 'F8' }).hotkey, 'F8'); // функциональная клавиша можно и без модификатора
+  assert.equal(ov.cleanSettings({ hotkey: 'Ctrl+Alt+Up' }).hotkey, 'Ctrl+Alt+Up');
+  assert.equal(ov.cleanSettings({ hotkey: 'Ctrl+Ctrl+K' }).hotkey, 'Ctrl+K');
+});
+
+test('оверлей: пустое сочетание выключает горячую клавишу, мусор не принимается', () => {
+  assert.equal(ov.cleanSettings({ hotkey: '' }).hotkey, '');
+  const base = ov.cleanSettings({ hotkey: 'Ctrl+Shift+L' });
+  for (const bad of ['I', 'Ctrl+', 'Ctrl+Alt', 'Ctrl+A+B', 'Ctrl+Alt+<script>', 'Ctrl+Alt+F25', 123, null, {}]) {
+    assert.equal(ov.cleanSettings({ hotkey: bad }, base).hotkey, 'Ctrl+Shift+L', String(bad)); // остаётся прежнее
+  }
+  assert.equal(ov.cleanSettings({ opacity: 50 }, base).hotkey, 'Ctrl+Shift+L'); // другие настройки сочетание не трогают
+  assert.equal(ov.cleanSettings({ opacity: 50 }, { opacity: 100 }).hotkey, 'Ctrl+Alt+I'); // в старом overlay.json сочетания нет — берётся по умолчанию
+  assert.equal(ov.cleanSettings({}, ov.cleanSettings({ hotkey: '' })).hotkey, ''); // выключенное остаётся выключенным
 });

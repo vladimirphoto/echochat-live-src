@@ -1005,7 +1005,48 @@ function ovShow(st) {
   if (document.activeElement !== $('#ovOpacity') && Number.isFinite(c.opacity)) $('#ovOpacity').value = c.opacity;
   if (Number.isFinite(c.opacity)) $('#ovOpacityVal').textContent = c.opacity + '%';
   [['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovJoins', 'joins'], ['ovEvents', 'events'], ['ovHearts', 'hearts'], ['ovStats', 'stats']].forEach(([id, k]) => { if (typeof c[k] === 'boolean') $('#' + id).checked = c[k]; });
+  if (typeof c.hotkey === 'string' && !ovCapturing) { ovHotkeyVal = c.hotkey; $('#ovHotkey').textContent = c.hotkey || 'Выключено'; }
+  $('#ovHotkeyErr').hidden = !(st.hotkeyBusy && c.hotkey);
 }
+// горячие клавиши: кнопка записывает следующее нажатое сочетание (глобальное, поэтому пока идёт запись, старое сочетание снимается)
+let ovCapturing = false, ovHotkeyVal = 'Ctrl+Alt+I';
+const OV_KEYNAME = { Space: 'Space', Tab: 'Tab', Enter: 'Enter', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown', Insert: 'Insert', NumpadEnter: 'Enter' };
+function ovKeyOf(e) {
+  const c = e.code || '';
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3);
+  if (/^Digit\d$/.test(c)) return c.slice(5);
+  if (/^F([1-9]|1\d|2[0-4])$/.test(c)) return c;
+  return OV_KEYNAME[c] || '';
+}
+function ovCaptureStop(apply) {
+  if (!ovCapturing) return;
+  ovCapturing = false;
+  document.removeEventListener('keydown', ovCaptureKey, true);
+  $('#ovHotkey').classList.remove('on');
+  $('#ovHotkey').textContent = ovHotkeyVal || 'Выключено';
+  window.echo.overlayHotkeyCapture(false).then(ovShow).catch(() => {});
+  if (apply !== undefined) window.echo.overlaySet({ hotkey: apply }).then(ovShow).catch(() => {});
+}
+function ovCaptureKey(e) {
+  e.preventDefault(); e.stopPropagation();
+  if (e.key === 'Escape') return ovCaptureStop();
+  if (e.key === 'Backspace' || e.key === 'Delete') { ovHotkeyVal = ''; return ovCaptureStop(''); }
+  const key = ovKeyOf(e);
+  if (!key) return; // нажата только Ctrl/Alt/Shift или неподходящая клавиша — ждём дальше
+  const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Meta'].filter(Boolean);
+  if (!mods.length && !/^F\d+$/.test(key)) return; // одиночная буква перехватила бы набор текста везде
+  ovHotkeyVal = [...mods, key].join('+');
+  ovCaptureStop(ovHotkeyVal);
+}
+$('#ovHotkey').onclick = () => {
+  if (ovCapturing) return ovCaptureStop();
+  ovCapturing = true;
+  $('#ovHotkey').classList.add('on'); $('#ovHotkey').textContent = 'Нажмите сочетание…';
+  window.echo.overlayHotkeyCapture(true).catch(() => {});
+  document.addEventListener('keydown', ovCaptureKey, true);
+};
+$('#ovHotkey').addEventListener('blur', () => ovCaptureStop());
+$('#ovHotkeyReset').onclick = () => { ovCaptureStop(); ovHotkeyVal = 'Ctrl+Alt+I'; window.echo.overlaySet({ hotkey: 'Ctrl+Alt+I' }).then(ovShow).catch(() => {}); };
 $('#ovToggle').addEventListener('change', async (e) => {
   const r = await window.echo.overlayToggle(e.target.checked).catch(() => null);
   ovShow(r || { on: false, error: 'нет ответа от приложения' });
@@ -1214,6 +1255,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.3.4': ['Оверлей чата: горячие клавиши — оверлей открывается и закрывается сочетанием из любой программы (по умолчанию Ctrl+Alt+I); своё сочетание задаётся во вкладке «Оверлей чата» в настройках окна, Backspace выключает его, «По умолчанию» возвращает Ctrl+Alt+I'],
   '2.3.3': ['Оверлей чата: если пролистать ленту вверх, через 5 секунд она сама возвращается к последнему сообщению (пока выделен текст — не мешает)'],
   '2.3.2': ['Оверлей чата: нижняя строка теперь принадлежит чату, а действия зрителей — подарок, репост, лайк и «ник — теперь с нами» — на 5 секунд занимают её вместо чата, пока они на экране, чат стоит на второй строке, потом возвращается на нижнюю', 'Оверлей чата: действия идут по очереди — подарок и репост важнее лайка и «зашёл»; подписки по-прежнему строкой в ленте', 'Оверлей чата: пустого места внизу больше нет — когда действий нет, чат занимает всё окно'],
   '2.3.1': ['Оверлей чата: кто ставит лайки — «ник — поставил(а) лайк» в той же строке внизу, где «кто зашёл» (лайки от одного человека складываются: ×12; «зашёл» не вытесняется лайками первые полторы секунды)'],

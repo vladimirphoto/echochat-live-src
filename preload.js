@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('echo', {
   overlaySet: (patch) => ipcRenderer.invoke('overlay:set', patch),
   overlayTest: () => ipcRenderer.invoke('overlay:test'),
   overlayClear: () => ipcRenderer.invoke('overlay:clear'),
+  overlayHotkeyCapture: (on) => ipcRenderer.invoke('overlay:hotkey-capture', !!on),
   overlayResetPos: () => ipcRenderer.invoke('overlay:reset-pos'),
   onOverlayState: on('overlay:state'),
   likesSet: (s) => ipcRenderer.invoke('likes:set', s),
