@@ -23,8 +23,10 @@ body.locked .top{-webkit-app-region:no-drag}
 .stats{display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;padding:2px 14px 12px;flex:none;border-bottom:1px solid #3a3a44}
 .stats[hidden]{display:none}
 .st{display:inline-flex;align-items:center;gap:6px;color:#f1f1f5;font-size:14px}
+.st[hidden]{display:none} /* без этого display:inline-flex выше перебивает атрибут hidden, и значок Twitch виден всегда */
 .st svg{width:17px;height:17px;flex:none;color:#e6e6ec}
 .st b{font-weight:600;font-variant-numeric:tabular-nums}
+.st svg.tw-ic{color:var(--tw)} /* логотип Twitch — фирменного фиолетового цвета, число рядом белое, как у остальных счётчиков */
 
 /* лента */
 .wrap{position:relative;flex:1;min-height:0}
@@ -49,6 +51,7 @@ body.locked .top{-webkit-app-region:no-drag}
 .row.ev .tx b{font-weight:700;color:#fff}
 .row.ev.gift .tx{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
 .row.ev.gift img.gi{width:26px;height:26px;object-fit:contain}
+.row.ev .cnt{font-weight:800;color:#ffd166;font-variant-numeric:tabular-nums} /* сколько подарков: «×5» */
 .feed.no-ev .row.ev{display:none}
 
 .empty{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5;pointer-events:none}
@@ -57,6 +60,11 @@ body.locked .top{-webkit-app-region:no-drag}
 .down{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);padding:6px 14px;border:0;border-radius:999px;background:#2f2f37;color:#fff;font-weight:600;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .down:hover{background:#3a3a44}
 .down[hidden]{display:none}
+
+/* лайки: сердечки стартуют у правого нижнего угла и плавно летят вверх, исчезая (движение задаёт страница через Web Animations) */
+.hearts{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.ht{position:absolute;bottom:14px;display:block;color:#ff4d5e;opacity:0;will-change:transform,opacity;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));text-shadow:none}
+.ht svg{display:block;width:100%;height:100%;fill:currentColor}
 
 /* настройки (шестерёнка) */
 .pop{position:absolute;right:10px;top:46px;width:250px;padding:12px 14px 14px;border-radius:12px;background:#1b1b20;border:1px solid #3a3a44;box-shadow:0 12px 32px rgba(0,0,0,.55);z-index:6;text-shadow:none}
@@ -73,13 +81,18 @@ body.locked .top{-webkit-app-region:no-drag}
 .clear{width:100%;margin-top:8px;padding:8px;border:1px solid #3a3a43;border-radius:9px;background:transparent;color:#d9d9e1;font-weight:600;font-size:13px}
 .clear:hover{background:var(--hov)}
 
-/* «ник — теперь с нами»: как строка подписки, но отдельный переключатель */
-.row.jn{align-items:center}
-.row.jn .av{background:#2a2a30;color:#c4c4cd}
-.row.jn .av svg{width:18px;height:18px}
-.row.jn .tx{margin:0;font-weight:600;color:#dcdce3}
-.row.jn .tx b{font-weight:700;color:#fff}
-.feed.no-jn .row.jn{display:none}
+/* «ник — теперь с нами»: одна строка под лентой (как в TikTok), на несколько секунд; новая заменяет прежнюю, в ленте записей нет.
+   Место под строку занято всегда, поэтому лента не прыгает, когда строка появляется и исчезает */
+.joinbar{flex:none;height:50px;padding:0 14px 6px;display:flex;align-items:center;overflow:hidden}
+body.no-jn .joinbar{display:none}
+.jb{display:flex;align-items:center;gap:10px;min-width:0;width:100%;animation:jbin .2s ease-out}
+.jb.out{animation:jbout .35s ease-in forwards}
+.jb .av{background:#2a2a30;color:#c4c4cd;width:34px;height:34px}
+.jb .av svg{width:18px;height:18px}
+.jb .tx{margin:0;min-width:0;font-weight:600;color:#dcdce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jb .tx b{font-weight:700;color:#fff}
+@keyframes jbin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes jbout{from{opacity:1}to{opacity:0}}
 
 /* ручки растягивания по краям (сверху окно двигают за шапку); при замке их нет */
 .grip{position:absolute;z-index:4;display:block;-webkit-app-region:no-drag}

@@ -7,9 +7,9 @@ const AREA = { x: 0, y: 0, width: 1920, height: 1040 };
 const clock = (t0 = 1000) => { let t = t0; const f = () => t; f.set = (v) => { t = v; }; return f; };
 
 test('оверлей: настройки по умолчанию и ограничение чисел', () => {
-  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true });
+  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true });
   const s = ov.cleanSettings({ opacity: -5, scale: 9999, onTop: false, locked: true, events: false, stats: false });
-  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, joins: true, stats: false }); // масштаба больше нет
+  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, joins: true, stats: false, hearts: true }); // масштаба больше нет
   assert.equal(ov.cleanSettings({ opacity: 500 }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 'мусор' }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 64.6 }).opacity, 65);
@@ -166,23 +166,25 @@ test('модель: Twitch отключён — его онлайн сбрасы
   assert.equal(m.stats().twViewers, null);
 });
 
-test('примеры для «Теста» содержат обе платформы, подарок и подписку', () => {
+test('примеры для «Теста» содержат обе платформы, подарок, подписку, репост и лайки', () => {
   const k = new Set(ov.SAMPLE.map((e) => e.platform + ':' + e.kind));
-  for (const x of ['tiktok:chat', 'twitch:chat', 'tiktok:gift', 'tiktok:follow']) assert.ok(k.has(x), x);
+  for (const x of ['tiktok:chat', 'twitch:chat', 'tiktok:gift', 'tiktok:follow', 'tiktok:share', 'tiktok:like']) assert.ok(k.has(x), x);
 });
 
-test('оверлей: «ник теперь с нами» — один раз на зрителя, просмотры за эфир считаются без повторов', () => {
+test('оверлей: «ник теперь с нами» — не запись ленты, один раз на зрителя; просмотры за эфир считаются без повторов', () => {
   const m = new ov.OverlayModel({ now: clock() });
   const a = m.track('tt:join', { id: 'anna', name: 'Анна' });
-  assert.equal(a.entry.kind, 'join');
-  assert.equal(a.entry.name, 'Анна');
-  assert.equal(m.track('tt:join', { id: 'anna', name: 'Анна' }).entry, null); // вернулся — не повторяем
+  assert.equal(a.entry, null);                                      // в ленте чата записей «кто зашёл» нет
+  assert.equal(a.join.name, 'Анна');                                // а для строки внизу данные есть
+  assert.equal(m.feed().length, 0);
+  assert.equal(m.track('tt:join', { id: 'anna', name: 'Анна' }).join, null); // вернулся — не повторяем
   m.track('tt:join', { id: 'bob', name: 'Боб' });
   assert.equal(m.stats().views, 2);
   m.track('tt:chat', { id: 'anna', name: 'Анна', text: 'привет' }); // уже учтена
   m.track('tt:chat', { id: 'kate', name: 'Катя', text: 'привет' }); // зашла раньше, чем мы подключились
   assert.equal(m.stats().views, 3);
-  assert.equal(m.track('tt:join', { name: 'Гость' }).entry, null); // без имени не показываем
+  assert.equal(m.track('tt:join', { name: 'Гость' }).join, null);   // без имени не показываем
+  assert.equal(m.feed().length, 2);                                 // в ленте только два сообщения чата
 });
 
 test('оверлей: просмотры — число от TikTok, если оно больше собственного счёта; сбрасываются с эфиром', () => {
@@ -195,7 +197,7 @@ test('оверлей: просмотры — число от TikTok, если о
   assert.equal(m.stats().views, 340);
   m.track('tt:status', { state: 'offline' });
   assert.equal(m.stats().views, null);
-  assert.equal(m.track('tt:join', { id: 'a', name: 'А' }).entry.kind, 'join'); // новый эфир — снова «с нами»
+  assert.equal(m.track('tt:join', { id: 'a', name: 'А' }).join.name, 'А'); // новый эфир — снова «с нами»
 });
 
 test('оверлей: настройка «кто зашёл на эфир» включена по умолчанию и отключается', () => {
@@ -212,4 +214,59 @@ test('оверлей: «В угол экрана» сохраняет выбра
   const min = ov.cornerBounds(AREA, { width: 10, height: 10 }); // слишком мало — минимальный размер
   assert.equal(min.width, ov.SIZE.minW); assert.equal(min.height, ov.SIZE.minH);
   assert.equal(ov.cornerBounds(AREA, null).width, ov.SIZE.defW); // размера нет — стандартный
+});
+
+test('оверлей: значок Twitch нужен, только когда канал подключён И стрим идёт (есть число зрителей)', () => {
+  const m = new ov.OverlayModel();
+  assert.equal(m.stats().twLive, false);                                    // Twitch не подключён
+  m.track('tw:status', { state: 'live' });
+  assert.equal(m.stats().twOn, true);
+  assert.equal(m.stats().twLive, false, 'чат подключён, но стрима нет — значка с прочерком быть не должно');
+  m.track('tw:viewers', { count: 0 });
+  assert.equal(m.stats().twLive, true, '0 зрителей — это всё равно идущий стрим');
+  m.track('tw:viewers', { count: 25 });
+  assert.equal(m.stats().twLive, true);
+  m.track('tw:viewers', { count: null });                                   // стрим закончился
+  assert.equal(m.stats().twLive, false);
+  m.track('tw:viewers', { count: 9 });
+  m.track('tw:status', { state: 'reconnect' });
+  assert.equal(m.stats().twLive, true, 'при переподключении значок не мигает');
+  m.track('tw:status', { state: 'offline' });
+  assert.equal(m.stats().twLive, false, 'Twitch отключён — значок убирается');
+  assert.equal(m.stats().twViewers, null);
+});
+
+test('оверлей: репост — строка в ленте, счётчики подписок и подарков не трогает', () => {
+  const m = new ov.OverlayModel();
+  const r = m.track('tt:share', { id: 'rustam', name: 'Рустам', avatar: 'https://x/a.png' });
+  assert.equal(r.entry.kind, 'share'); assert.equal(r.entry.platform, 'tiktok'); assert.equal(r.entry.name, 'Рустам');
+  assert.equal(r.stats, false); assert.equal(r.like, 0);
+  const s = m.stats(); assert.equal(s.follows, 0); assert.equal(s.gifts, 0);
+  assert.equal(m.track('tt:share', {}).entry.name, 'Гость');
+  assert.equal(m.feed().length, 2);
+  assert.equal(m.stats().views, 1, 'репост — это зритель эфира, он учитывается в просмотрах');
+});
+
+test('оверлей: лайки не попадают в ленту, а отдают число сердечек', () => {
+  const m = new ov.OverlayModel();
+  const r = m.track('tt:like', { count: 4, total: 120 });
+  assert.equal(r.entry, null); assert.equal(r.like, 4); assert.equal(r.stats, true);
+  assert.equal(m.feed().length, 0);
+  assert.equal(m.stats().likes, 120);
+  assert.equal(m.track('tt:like', {}).like, 1);                             // без данных — один лайк
+  assert.equal(m.track('tt:like', { count: 0 }).like, 1);
+  assert.equal(m.track('tt:like', { count: 'мусор' }).like, 1);
+  assert.equal(m.track('tt:chat', { name: 'A', text: 'hi' }).like, 0);
+});
+
+test('оверлей: подарок в ленте несёт количество', () => {
+  const m = new ov.OverlayModel();
+  const e = m.track('tt:gift', { name: 'Дина', gift: 'Роза', count: 7 }).entry;
+  assert.equal(e.kind, 'gift'); assert.equal(e.gift.count, 7); assert.equal(e.gift.name, 'Роза');
+});
+
+test('оверлей: настройка «лайки» (сердечки) включена по умолчанию и отключается', () => {
+  assert.equal(ov.cleanSettings({}).hearts, true);
+  assert.equal(ov.cleanSettings({ hearts: false }).hearts, false);
+  assert.equal(ov.cleanSettings({ hearts: 'нет' }, ov.cleanSettings({ hearts: false })).hearts, false); // не boolean — остаётся прежнее
 });

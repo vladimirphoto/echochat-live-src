@@ -55,6 +55,8 @@ function ovTrack(channel, payload) {
   const wc = ovWin.webContents;
   if (r.stats) wc.send('ov:stats', ovModel.stats());
   if (r.entry) wc.send('ov:msg', r.entry);
+  if (r.like) wc.send('ov:like', { count: r.like }); // лайки: сердечки в окне, в историю ленты не попадают
+  if (r.join) wc.send('ov:join', r.join); // кто зашёл: временная строка внизу, в историю ленты не попадает
 }
 // применить настройки к окну; echo=false — не отправлять их обратно окну, которое их само и прислало (иначе ползунок «дёргается»)
 function ovApply(echo = true) {
@@ -425,8 +427,20 @@ async function doConnect(rawName) {
     if (seenFollow.size > 500) seenFollow.clear();
     send('tt:follow', u);
   };
-  c.on(WebcastEvent.FOLLOW || 'follow', (d) => { if (!ev.isShareSocial(d)) onFollow(d); }); // репост — не подписка
-  c.on(WebcastEvent.SOCIAL || 'social', (d) => { if (ev.isFollowSocial(d)) onFollow(d); });
+  // репост эфира: событие share, а если его нет в версии библиотеки — social с признаком репоста (оба могут прийти парой)
+  const seenShare = new Map();
+  const onShare = (d) => {
+    if (!alive()) return;
+    const u = ev.userOf(d);
+    const key = u.id || u.name, now = Date.now();
+    if (seenShare.has(key) && now - seenShare.get(key) < 10000) return;
+    seenShare.set(key, now);
+    if (seenShare.size > 500) seenShare.clear();
+    send('tt:share', u);
+  };
+  c.on(WebcastEvent.FOLLOW || 'follow', (d) => { if (ev.isShareSocial(d)) onShare(d); else onFollow(d); }); // репост — не подписка
+  c.on(WebcastEvent.SOCIAL || 'social', (d) => { if (ev.isFollowSocial(d)) onFollow(d); else if (ev.isShareSocial(d)) onShare(d); });
+  if (WebcastEvent.SHARE) c.on(WebcastEvent.SHARE, onShare);
   c.on(WebcastEvent.LIKE || 'like', (d) => {
     if (!alive()) return;
     send('tt:like', ev.likesOf(d));

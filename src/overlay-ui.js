@@ -13,6 +13,8 @@
     join: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
     follow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></svg>',
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8c-1.5-4-6-4-6-1.5S10 8 12 8zm0 0c1.5-4 6-4 6-1.5S14 8 12 8z"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>',
+    heart: '<svg viewBox="0 0 24 24"><path d="M12 21.4 10.6 20.1C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.4 3c1.7 0 3.4.8 4.6 2.1C13.2 3.8 14.9 3 16.6 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6L12 21.4z"/></svg>',
   };
   const fmtNum = (n) => (Number.isFinite(n) ? n.toLocaleString('ru-RU') : '—');
   // онлайн Twitch от 10 000: двузначное число и K (12 400 → 12K), иначе цифры не помещаются
@@ -50,31 +52,26 @@
       row.appendChild(b);
       return row;
     }
-    if (e.kind === 'join') { // кто-то зашёл на эфир
-      row.classList.add('jn');
-      const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', ICON.join);
-      row.appendChild(ic);
-      const b = el('div', 'body'), tx = el('div', 'tx');
-      tx.appendChild(el('b', '', e.name)); tx.appendChild(document.createTextNode(' — теперь с нами'));
-      b.appendChild(tx); row.appendChild(b);
-      return row;
-    }
-    // подписка / подарок: серый круг со значком и одна строка
+    // подписка / подарок / репост: серый круг со значком и одна строка
     row.classList.add('ev');
-    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', e.kind === 'gift' ? ICON.gift : ICON.follow);
+    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', e.kind === 'gift' ? ICON.gift : e.kind === 'share' ? ICON.share : ICON.follow);
     row.appendChild(ic);
     const b = el('div', 'body'), tx = el('div', 'tx');
     tx.appendChild(el('b', '', e.name));
     if (e.kind === 'gift' && e.gift) {
       row.classList.add('gift');
-      tx.appendChild(document.createTextNode(' — отправил(а) «' + e.gift.name + '» ×' + e.gift.count));
+      tx.appendChild(document.createTextNode(' — отправил(а) «' + e.gift.name + '» '));
+      tx.appendChild(el('span', 'cnt', '×' + e.gift.count)); // сколько подарков
       if (isUrl(e.gift.image)) { const gi = new Image(); gi.className = 'gi'; gi.alt = ''; gi.referrerPolicy = 'no-referrer'; gi.src = e.gift.image; gi.onerror = () => gi.remove(); tx.appendChild(gi); }
-    } else tx.appendChild(document.createTextNode(' — подписался(ась) на канал'));
+    } else if (e.kind === 'share') tx.appendChild(document.createTextNode(' — поделился(ась) эфиром'));
+    else tx.appendChild(document.createTextNode(' — подписался(ась) на канал'));
     b.appendChild(tx); row.appendChild(b);
     return row;
   }
   function addEntry(e, animate) {
     if (!e || typeof e !== 'object') return;
+    if (e.kind === 'like') { if (animate) burst(e.count); return; } // лайки — не строка ленты, а летящие сердечки
+    if (e.kind === 'join') { if (animate) showJoin(e); return; } // «теперь с нами» — не строка ленты, а временная строка внизу
     const stick = nearBottom();
     const row = rowOf(e);
     if (animate) row.classList.add('in');
@@ -84,10 +81,61 @@
     if (stick) toBottom(); else { unread++; }
     syncDown();
   }
-  function clearFeed() { feed.innerHTML = ''; unread = 0; syncEmpty(); syncDown(); }
+  function clearFeed() { feed.innerHTML = ''; unread = 0; clearJoin(); syncEmpty(); syncDown(); }
   feed.addEventListener('scroll', syncDown, { passive: true });
   down.onclick = () => { toBottom(); unread = 0; syncDown(); };
   window.addEventListener('resize', () => { syncDown(); });
+
+  /* ---------- «ник — теперь с нами»: одна строка внизу на несколько секунд; новая сразу заменяет прежнюю, в ленте ничего не остаётся ---------- */
+  const joinBar = $('#joinBar');
+  const JOIN_MS = 5000;
+  let joinT = null, joinOutT = null;
+  function clearJoin() { clearTimeout(joinT); clearTimeout(joinOutT); if (joinBar) joinBar.replaceChildren(); }
+  function showJoin(e) {
+    if (!joinBar || SET.joins === false) return;
+    clearTimeout(joinT); clearTimeout(joinOutT);
+    const row = el('div', 'jb');
+    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', ICON.join);
+    const tx = el('div', 'tx'); tx.appendChild(el('b', '', String(e.name || 'Гость'))); tx.appendChild(document.createTextNode(' — теперь с нами'));
+    row.appendChild(ic); row.appendChild(tx);
+    joinBar.replaceChildren(row); // заменяет предыдущую сразу: если заходит много людей, строка быстро меняется
+    joinT = setTimeout(() => { row.classList.add('out'); joinOutT = setTimeout(() => { if (row.isConnected) row.remove(); }, 380); }, JOIN_MS);
+  }
+
+  /* ---------- лайки: сердечки летят вверх от правого нижнего угла и плавно исчезают ---------- */
+  const heartsEl = $('#hearts');
+  const MAX_FLYING = 40, MAX_PER_EVENT = 6; // пачка лайков от TikTok может быть большой: рисуем не больше нескольких сердечек на событие
+  let flying = 0;
+  function floatHeart() {
+    if (!heartsEl || SET.hearts === false || flying >= MAX_FLYING || typeof Element.prototype.animate !== 'function') return;
+    const h = el('i', 'ht');
+    h.insertAdjacentHTML('beforeend', ICON.heart);
+    const size = 22 + Math.random() * 14;
+    h.style.width = h.style.height = size.toFixed(0) + 'px';
+    h.style.right = (10 + Math.random() * 20).toFixed(0) + 'px'; // чуть разный старт, чтобы сердечки не слипались в одну линию
+    heartsEl.appendChild(h);
+    const room = Math.max(160, (heartsEl.clientHeight || 400) - 24);
+    const rise = Math.min(560, room * (0.72 + Math.random() * 0.22));
+    const sway = (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 22);
+    const at = (k, x) => 'translate3d(' + (sway * x).toFixed(1) + 'px,' + (-rise * k).toFixed(1) + 'px,0)';
+    flying++;
+    const done = () => { if (h.isConnected) { h.remove(); flying = Math.max(0, flying - 1); } };
+    try {
+      const a = h.animate([
+        { opacity: 0, transform: at(0, 0) + ' scale(.45)', offset: 0 },
+        { opacity: 1, transform: at(0.1, 0.2) + ' scale(1)', offset: 0.1 },
+        { opacity: 1, transform: at(0.45, 1) + ' scale(1.05)', offset: 0.45 },
+        { opacity: 0.75, transform: at(0.75, -0.6) + ' scale(1)', offset: 0.75 },
+        { opacity: 0, transform: at(1, 0.3) + ' scale(.9)', offset: 1 },
+      ], { duration: 2600 + Math.random() * 1400, easing: 'cubic-bezier(.25,.1,.3,1)', fill: 'forwards' });
+      a.onfinish = done; a.oncancel = done;
+    } catch (_) { done(); }
+  }
+  // n лайков → до MAX_PER_EVENT сердечек с небольшой задержкой друг за другом
+  function burst(n) {
+    const k = Math.min(MAX_PER_EVENT, Math.max(1, Math.round(Number(n)) || 1));
+    for (let i = 0; i < k; i++) setTimeout(floatHeart, i * 110 + Math.random() * 70);
+  }
 
   /* ---------- шапка и счётчики ---------- */
   let ST = { since: 0, ttOn: false, twOn: false };
@@ -102,7 +150,7 @@
     if (!s || typeof s !== 'object') return;
     ST = s;
     $('#vTt').textContent = fmtNum(s.ttViewers);
-    $('#stTw').hidden = !s.twOn; // онлайн Twitch виден, только пока Twitch подключён
+    $('#stTw').hidden = !s.twLive; // значок Twitch виден, только пока Twitch подключён и стрим идёт; иначе убирается совсем
     $('#vTw').textContent = fmtShort(s.twViewers); $('#vTw').title = fmtNum(s.twViewers);
     $('#vViews').textContent = fmtShort(s.views); $('#vViews').title = fmtNum(s.views);
     $('#vGifts').textContent = fmtNum(s.gifts);
@@ -113,7 +161,7 @@
   setInterval(tick, 1000);
 
   /* ---------- настройки (меняются во вкладке «Оверлей чата» приложения; здесь только замок) ---------- */
-  let SET = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true };
+  let SET = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true };
   const SHACKLE = { closed: 'M8 10.5V7.5a4 4 0 0 1 8 0v3', open: 'M8 10.5V7.5a4 4 0 0 1 7.6-1.7' };
   function applySettings(s) {
     if (!s || typeof s !== 'object') return;
@@ -122,10 +170,11 @@
     document.documentElement.style.setProperty('--a', String(Math.max(0.02, Math.min(1, SET.opacity / 100))));
     document.body.classList.toggle('locked', !!SET.locked);
     feed.classList.toggle('no-ev', !SET.events);
-    feed.classList.toggle('no-jn', !SET.joins);
+    document.body.classList.toggle('no-jn', !SET.joins);
+    if (!SET.joins) clearJoin();
     if (document.activeElement !== $('#sOpacity')) $('#sOpacity').value = SET.opacity;
     $('#sOpacityV').textContent = SET.opacity + '%';
-    $('#sOnTop').checked = !!SET.onTop; $('#sEvents').checked = !!SET.events; $('#sJoins').checked = !!SET.joins; $('#sStats').checked = !!SET.stats;
+    $('#sOnTop').checked = !!SET.onTop; $('#sEvents').checked = !!SET.events; $('#sJoins').checked = !!SET.joins; $('#sHearts').checked = SET.hearts !== false; $('#sStats').checked = !!SET.stats;
     $('#stats').hidden = !SET.stats;
     $('#btnLock').classList.toggle('on', !!SET.locked);
     $('#btnLock').title = SET.locked ? 'Окно заблокировано. Нажмите, чтобы разблокировать' : 'Заблокировать положение и размер окна';
@@ -141,6 +190,7 @@
   $('#sOnTop').addEventListener('change', (e) => push({ onTop: e.target.checked }));
   $('#sEvents').addEventListener('change', (e) => push({ events: e.target.checked }));
   $('#sJoins').addEventListener('change', (e) => push({ joins: e.target.checked }));
+  $('#sHearts').addEventListener('change', (e) => push({ hearts: e.target.checked }));
   $('#sStats').addEventListener('change', (e) => push({ stats: e.target.checked }));
   $('#btnSet').onclick = (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; };
   $('#btnClear').onclick = () => { try { api.clear(); } catch (_) {} pop.hidden = true; };
@@ -165,6 +215,8 @@
 
   /* ---------- связь с приложением ---------- */
   api.onMsg((e) => addEntry(e, true));
+  api.onLike((p) => burst(p && p.count));
+  api.onJoin((p) => showJoin(p || {}));
   api.onStats(applyStats);
   api.onSettings(applySettings);
   api.onClear(clearFeed);
@@ -175,5 +227,5 @@
     toBottom(); unread = 0; syncDown();
   }).catch(() => {});
   syncEmpty(); syncDown(); tick();
-  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, get SET() { return SET; } }; // для автотестов
+  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, get SET() { return SET; } }; // для автотестов
 })();

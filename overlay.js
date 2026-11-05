@@ -5,7 +5,9 @@
 
 // opacity — прозрачность только ФОНА окна (0 — фона нет совсем); рамка, текст и значки всегда видны полностью. Размер окна не масштабируется (всегда 100%).
 // locked — окно заблокировано: его нельзя ни сдвинуть, ни растянуть, пока замок не откроют
-const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true };
+// joins — строка «ник — теперь с нами» внизу окна (на несколько секунд, новая заменяет прежнюю)
+// hearts — лайки зрителей: сердечки плавно летят вверх от правого нижнего угла и исчезают
+const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true };
 const LIMITS = { opacity: [0, 100] };
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
@@ -16,8 +18,8 @@ function cleanSettings(o, base = DEFAULTS) {
   o = o && typeof o === 'object' ? o : {};
   const out = { ...DEFAULTS, ...base };
   out.opacity = clampInt(o.opacity !== undefined ? o.opacity : out.opacity, LIMITS.opacity[0], LIMITS.opacity[1], DEFAULTS.opacity);
-  for (const k of ['onTop', 'locked', 'events', 'joins', 'stats']) out[k] = typeof o[k] === 'boolean' ? o[k] : !!out[k];
-  return { opacity: out.opacity, onTop: out.onTop, locked: out.locked, events: out.events, joins: out.joins, stats: out.stats };
+  for (const k of ['onTop', 'locked', 'events', 'joins', 'stats', 'hearts']) out[k] = typeof o[k] === 'boolean' ? o[k] : !!out[k];
+  return { opacity: out.opacity, onTop: out.onTop, locked: out.locked, events: out.events, joins: out.joins, stats: out.stats, hearts: out.hearts };
 }
 
 // Положение окна, которое можно восстановить: размеры в разумных пределах и окно хотя бы частично на каком-то экране
@@ -70,7 +72,9 @@ class OverlayModel {
   _see(p) { const k = String((p && (p.id || (p.name && p.name !== 'Гость' ? p.name : ''))) || ''); if (!k) return ''; if (this.users.size < 200000) this.users.add(k); return k; }
   views() { const own = this.users.size; return this.libViews === null ? (own || null) : Math.max(this.libViews, own); }
   stats() {
-    return { ttOn: this.ttOn, twOn: this.twOn, since: this.since, ttViewers: this.ttViewers, twViewers: this.twViewers, views: this.views(), likes: this.likes, gifts: this.gifts, follows: this.follows };
+    // twLive — значок онлайна Twitch виден, только когда канал подключён И стрим действительно идёт (число зрителей известно);
+    // подключён чат, а стрима нет — значка с прочерком не показываем
+    return { ttOn: this.ttOn, twOn: this.twOn, twLive: this.twOn && isNum(this.twViewers), since: this.since, ttViewers: this.ttViewers, twViewers: this.twViewers, views: this.views(), likes: this.likes, gifts: this.gifts, follows: this.follows };
   }
   feed() { return this.entries.slice(); }
   clearFeed() { this.entries = []; }
@@ -85,10 +89,11 @@ class OverlayModel {
     if (this.entries.length > this.max) this.entries.splice(0, this.entries.length - this.max);
     return e;
   }
-  // → { stats: изменились ли счётчики/статус, entry: новая запись ленты или null }
+  // → { stats: изменились ли счётчики/статус, entry: новая запись ленты или null, like: сколько лайков пришло (для сердечек) или 0,
+  //     join: кто зашёл на эфир (для строки внизу) или null }
   track(channel, p) {
     p = p && typeof p === 'object' ? p : {};
-    const r = { stats: false, entry: null };
+    const r = { stats: false, entry: null, like: 0, join: null };
     switch (channel) {
       case 'tt:status': {
         const on = p.state === 'live';
@@ -104,18 +109,20 @@ class OverlayModel {
       case 'tt:viewers': if (isNum(p.count)) { this.ttViewers = p.count; r.stats = true; } break;
       case 'tt:views': if (isNum(p.count)) { this.libViews = Math.max(this.libViews || 0, p.count); r.stats = true; } break;
       case 'tt:join': {
-        // «ник теперь с нами»: один раз на зрителя за эфир (TikTok присылает вход и при каждом возвращении)
+        // «ник — теперь с нами»: один раз на зрителя за эфир (TikTok присылает вход и при каждом возвращении).
+        // Это НЕ запись ленты: окно показывает одну строку внизу на несколько секунд, новая заменяет прежнюю, в чате ничего не остаётся
         const k = this._see(p);
         r.stats = true;
         if (!k || this.joined.has(k)) break;
         this.joined.add(k);
-        r.entry = this._push({ platform: 'tiktok', kind: 'join', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
+        r.join = { name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') };
         break;
       }
       case 'tw:viewers': { const v = isNum(p.count) ? p.count : null; if (v !== this.twViewers) { this.twViewers = v; r.stats = true; } break; }
       case 'tt:like': {
         // итог от TikTok надёжнее суммы событий; если итога нет (или 0) — копим сами
         this.likes = p.total > 0 ? Math.max(this.likes, p.total) : this.likes + (p.count || 1);
+        r.like = Math.max(1, Math.round(Number(p.count)) || 1); // в ленту лайки не пишем (их тысячи): окно рисует летящие сердечки
         r.stats = true; break;
       }
       case 'tt:gift': {
@@ -127,6 +134,12 @@ class OverlayModel {
       case 'tt:follow': {
         this.follows += 1; r.stats = true; this._see(p);
         r.entry = this._push({ platform: 'tiktok', kind: 'follow', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
+        break;
+      }
+      case 'tt:share': {
+        // репост эфира: строка в ленте, счётчики не трогает
+        this._see(p);
+        r.entry = this._push({ platform: 'tiktok', kind: 'share', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
         break;
       }
       case 'tt:chat': case 'tw:chat': {
@@ -142,14 +155,17 @@ class OverlayModel {
   }
 }
 
-// Примеры для кнопки «Тест»: видно и TikTok, и Twitch, подарок и подписку
+// Примеры для кнопки «Тест»: видно и TikTok, и Twitch, подарок, подписку, репост и лайки (kind: 'like' — не строка, а сердечки)
 const SAMPLE = [
   { platform: 'tiktok', kind: 'chat', name: 'Анна', text: 'Привет из TikTok! Так выглядит оверлей чата' },
   { platform: 'twitch', kind: 'chat', name: 'Max', text: 'Привет из Twitch!' },
   { platform: 'tiktok', kind: 'follow', name: 'Игорь' },
-  { platform: 'tiktok', kind: 'join', name: 'Алина' },
+  { platform: 'tiktok', kind: 'join', name: 'Алина' }, // не строка ленты, а временная строка внизу
   { platform: 'tiktok', kind: 'gift', name: 'Дина', gift: { name: 'Роза', count: 5, image: '' } },
+  { platform: 'tiktok', kind: 'like', count: 6 },
+  { platform: 'tiktok', kind: 'share', name: 'Рустам' },
   { platform: 'tiktok', kind: 'chat', name: 'Марат', text: 'Отличный стрим, спасибо!' },
+  { platform: 'tiktok', kind: 'like', count: 4 },
 ];
 
 module.exports = { DEFAULTS, LIMITS, SIZE, cleanSettings, fitBounds, defaultBounds, cornerBounds, OverlayModel, SAMPLE };

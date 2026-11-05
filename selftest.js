@@ -429,7 +429,7 @@ async function eventTests(win) {
   try {
     const { BrowserWindow } = require('electron');
     const ovWin = () => BrowserWindow.getAllWindows().find((w) => w !== win && !w.isDestroyed());
-    add('оверлей: отдельная вкладка с переключателем, кнопками и настройками', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset', '#ovOpacity', '#ovLock', '#ovOnTop', '#ovJoins', '#ovEvents', '#ovStats'].every((i) => !!document.querySelector('#tab-overlay ' + i)) && !document.querySelector('#tab-widgets #ovToggle')"));
+    add('оверлей: отдельная вкладка с переключателем, кнопками и настройками', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset', '#ovOpacity', '#ovLock', '#ovOnTop', '#ovJoins', '#ovEvents', '#ovHearts', '#ovStats'].every((i) => !!document.querySelector('#tab-overlay ' + i)) && !document.querySelector('#tab-widgets #ovToggle')"));
     const on = await q('window.echo.overlayToggle(true)');
     await wait(1200);
     const w = ovWin();
@@ -441,18 +441,33 @@ async function eventTests(win) {
       await wait(2200);
       const rows = await qo("[...document.querySelectorAll('#feed .row')].map((r) => r.className + '|' + r.innerText.replace(/\\s+/g, ' ')).join(' // ')");
       add('оверлей: лента показывает и TikTok, и Twitch', /tiktok[^|]*\|.*Анна/.test(rows) && /twitch[^|]*\|.*Max/.test(rows), rows.slice(0, 200));
-      add('оверлей: подписка и подарок в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows));
+      add('оверлей: подписка, подарок с количеством и репост в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows) && /Рустам — поделился/.test(rows), rows.slice(0, 300));
+      // значок Twitch появляется при подключённом Twitch и идущем стриме и пропадает, когда стрима нет
+      await qo("window.__overlay.applyStats({ since: 0, ttOn: false, twOn: true, twLive: true, twViewers: 12, ttViewers: null, views: null, gifts: 0, follows: 0, likes: 0 })");
+      const twOn1 = await qo("getComputedStyle(document.querySelector('#stTw')).display !== 'none' && document.querySelector('#vTw').textContent");
+      await qo("window.__overlay.applyStats({ since: 0, ttOn: false, twOn: true, twLive: false, twViewers: null, ttViewers: null, views: null, gifts: 0, follows: 0, likes: 0 })");
+      const twOff1 = await qo("getComputedStyle(document.querySelector('#stTw')).display === 'none'");
+      add('оверлей: значок онлайна Twitch виден только при идущем стриме Twitch', twOn1 === '12' && twOff1 === true, String(twOn1) + ' / ' + twOff1);
+      // лайки: сердечки появляются у правого нижнего угла и улетают вверх
+      await qo("window.__overlay.like(3)");
+      await wait(900);
+      const ht = await qo("(() => { const h = [...document.querySelectorAll('#hearts .ht')]; const p = document.querySelector('.panel').getBoundingClientRect(); const r = h.map((x) => x.getBoundingClientRect()); return JSON.stringify({ n: h.length, right: r.every((b) => b.left > p.left + p.width / 2), rose: r.some((b) => b.bottom < p.bottom - 14), feedRows: document.querySelectorAll('#feed .ht').length }); })()");
+      const htj = JSON.parse(ht);
+      add('оверлей: лайки — сердечки у правого края летят вверх и не попадают в ленту', htj.n > 0 && htj.right === true && htj.rose === true && htj.feedRows === 0, ht);
       const head = await qo("[document.querySelector('#badge').textContent, !!document.querySelector('#time'), document.querySelectorAll('#stats .st').length].join()");
       add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,6$/.test(head), head);
-      const gear = await qo("[!!document.querySelector('#btnSet'), !!document.querySelector('#stViews'), document.querySelector('#stTw svg path[d^=\"M4 2\"]') === null, getComputedStyle(document.querySelector('#stTw')).color === getComputedStyle(document.querySelector('#stViews')).color].join()");
-      add('оверлей: шестерёнка, счётчик просмотров, у Twitch нет логотипа и цвет такой же', gear === 'true,true,true,true', gear);
+      const gear = await qo("[!!document.querySelector('#btnSet'), !!document.querySelector('#stViews'), !!document.querySelector('#stTw svg path[d^=\"M4 2\"]'), getComputedStyle(document.querySelector('#stTw')).display === 'none'].join()");
+      add('оверлей: шестерёнка, счётчик просмотров, у онлайна Twitch значок Twitch, а без подключения Twitch он скрыт совсем', gear === 'true,true,true,true', gear);
       await qo("document.querySelector('#btnSet').click()");
-      const pop1 = await qo("!document.querySelector('#pop').hidden && ['#sOpacity', '#sOnTop', '#sEvents', '#sJoins', '#sStats', '#btnClear'].every((i) => !!document.querySelector(i))");
+      const pop1 = await qo("!document.querySelector('#pop').hidden && ['#sOpacity', '#sOnTop', '#sEvents', '#sJoins', '#sHearts', '#sStats', '#btnClear'].every((i) => !!document.querySelector(i))");
       await qo("document.querySelector('#btnSet').click()");
       add('оверлей: шестерёнка открывает настройки', pop1 === true);
-      await qo("window.__overlay.addEntry({ platform: 'tiktok', kind: 'join', name: 'Новенький' }, false)");
-      const jn = await qo("[...document.querySelectorAll('.row.jn')].map((r) => r.innerText.replace(/\\s+/g, ' ')).join('|')");
-      add('оверлей: «ник — теперь с нами» в ленте', /Новенький — теперь с нами/.test(jn), jn);
+      // «ник — теперь с нами»: одна строка внизу, новая заменяет прежнюю, потом исчезает; в ленте записей нет
+      await qo("window.__overlay.join({ name: 'Первый' }); window.__overlay.join({ name: 'Новенький' })");
+      const jn = await qo("[document.querySelectorAll('#joinBar .jb').length, document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' '), document.querySelectorAll('#feed .row.jn').length, [...document.querySelectorAll('#feed .row')].some((r) => /теперь с нами/.test(r.innerText))].join('|')");
+      add('оверлей: «ник — теперь с нами» — одна строка внизу, новая заменяет прежнюю, в ленте не остаётся', /^1\|Новенький — теперь с нами\|0\|false$/.test(jn), jn);
+      await wait(5900);
+      add('оверлей: строка «кто зашёл» исчезает через несколько секунд', (await qo("document.querySelectorAll('#joinBar .jb').length")) === 0);
       // замок: окно нельзя сдвинуть, пока он закрыт; прозрачность убирает только фон
       const bg = () => qo("getComputedStyle(document.querySelector('.panel')).backgroundColor");
       await q('window.echo.overlaySet({ locked: true, opacity: 0 })');

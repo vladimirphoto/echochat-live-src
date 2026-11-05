@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('overlay', {
   grip: (m) => ipcRenderer.send('ov:grip', m),      // растягивание за край: { phase: start|move|end, dir, dx, dy }
   close: () => ipcRenderer.send('ov:close'),
   onMsg: on('ov:msg'),
+  onLike: on('ov:like'),
+  onJoin: on('ov:join'),
   onStats: on('ov:stats'),
   onSettings: on('ov:settings'),
   onClear: on('ov:clear-feed'),

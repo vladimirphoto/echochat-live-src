@@ -1004,7 +1004,7 @@ function ovShow(st) {
   err.hidden = !st.error; err.textContent = st.error ? 'Не удалось открыть оверлей: ' + st.error : '';
   if (document.activeElement !== $('#ovOpacity') && Number.isFinite(c.opacity)) $('#ovOpacity').value = c.opacity;
   if (Number.isFinite(c.opacity)) $('#ovOpacityVal').textContent = c.opacity + '%';
-  [['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovJoins', 'joins'], ['ovEvents', 'events'], ['ovStats', 'stats']].forEach(([id, k]) => { if (typeof c[k] === 'boolean') $('#' + id).checked = c[k]; });
+  [['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovJoins', 'joins'], ['ovEvents', 'events'], ['ovHearts', 'hearts'], ['ovStats', 'stats']].forEach(([id, k]) => { if (typeof c[k] === 'boolean') $('#' + id).checked = c[k]; });
 }
 $('#ovToggle').addEventListener('change', async (e) => {
   const r = await window.echo.overlayToggle(e.target.checked).catch(() => null);
@@ -1014,7 +1014,7 @@ $('#ovTest').onclick = async () => { ovShow(await window.echo.overlayTest().catc
 $('#ovClear').onclick = () => window.echo.overlayClear();
 $('#ovReset').onclick = () => window.echo.overlayResetPos();
 $('#ovOpacity').addEventListener('input', (e) => { $('#ovOpacityVal').textContent = e.target.value + '%'; window.echo.overlaySet({ opacity: +e.target.value }); });
-[['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovJoins', 'joins'], ['ovEvents', 'events'], ['ovStats', 'stats']].forEach(([id, k]) => $('#' + id).addEventListener('change', (e) => window.echo.overlaySet({ [k]: e.target.checked })));
+[['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovJoins', 'joins'], ['ovEvents', 'events'], ['ovHearts', 'hearts'], ['ovStats', 'stats']].forEach(([id, k]) => $('#' + id).addEventListener('change', (e) => window.echo.overlaySet({ [k]: e.target.checked })));
 window.echo.onOverlayState(ovShow);
 window.echo.overlayState().then(ovShow).catch(() => {});
 
@@ -1214,6 +1214,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.3.0': ['Оверлей чата: «ник — теперь с нами» — одна строка внизу на 5 секунд, новая заменяет прежнюю; в ленте чата эти записи больше не остаются', 'Оверлей чата: в ленте видны подарки с количеством («×5»), репосты эфира и подписки', 'Оверлей чата: лайки — сердечки плавно летят вверх от правого нижнего угла и исчезают (можно отключить в настройках)', 'Оверлей чата: онлайн Twitch теперь со значком Twitch и показывается только при подключённом Twitch и идущем стриме; без него значок убирается'],
   '2.2.3': ['Оверлей чата: вернулась шестерёнка с настройками (прозрачность фона, поверх окон, подарки, входы, счётчики, очистка чата)', 'Оверлей чата: в ленте видно, кто зашёл на эфир («ник — теперь с нами»), и есть счётчик просмотров за весь эфир (значок глаза)', 'Оверлей чата: у онлайна Twitch нет логотипа и он белый, как остальные счётчики; показывается только при подключённом Twitch', 'Оверлей чата: «В угол экрана» больше не сбрасывает размер, который вы выбрали'],
   '2.2.2': ['Донаты Каспи: когда лицензия истекла, вместо «Нет связи с сервером» пишется «Лицензия истекла» и есть кнопка «Купить Pro»', 'Онлайн Twitch от 10 000 показывается коротко: 12K (в приложении и в оверлее чата)', 'Оверлей чата: текст под кнопками во вкладке больше не прилипает к ним'],
   '2.2.1': ['Оверлей чата: замок полностью блокирует окно (нельзя сдвинуть и растянуть), пока его не откроют', 'Оверлей чата: прозрачность убирает только фон, рамка, текст и значки всегда видны полностью; размер всегда 100%', 'Настройки оверлея вынесены в отдельную вкладку «Оверлей чата» под «Донатами Каспи»'],
