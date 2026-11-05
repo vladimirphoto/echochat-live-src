@@ -990,6 +990,26 @@ function reloadPreview() { if (pvBase) { pvReady = false; pvTested = false; $('#
 $('#pvTest').onclick = () => { if (pvReady) { pvTested = true; window.echo.widgetTest(); } };
 $('#wClear').onclick = () => window.echo.widgetClear();
 
+/* ---------- оверлей чата ---------- */
+// Переключатель всегда показывает настоящее состояние окна: его можно закрыть крестиком в самом окне или из трея
+function ovShow(st) {
+  if (!st) return;
+  const on = !!st.on;
+  $('#ovToggle').checked = on;
+  $('#ovToggleTxt').textContent = on ? 'Включён' : 'Выключен';
+  const err = $('#ovErr');
+  err.hidden = !st.error; err.textContent = st.error ? 'Не удалось открыть оверлей: ' + st.error : '';
+}
+$('#ovToggle').addEventListener('change', async (e) => {
+  const r = await window.echo.overlayToggle(e.target.checked).catch(() => null);
+  ovShow(r || { on: false, error: 'нет ответа от приложения' });
+});
+$('#ovTest').onclick = async () => { ovShow(await window.echo.overlayTest().catch(() => null)); };
+$('#ovClear').onclick = () => window.echo.overlayClear();
+$('#ovReset').onclick = () => window.echo.overlayResetPos();
+window.echo.onOverlayState(ovShow);
+window.echo.overlayState().then(ovShow).catch(() => {});
+
 /* ---------- донаты Каспи ---------- */
 const K = S.kaspi;
 const newToken = () => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -1176,6 +1196,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.2.0': ['Новое: оверлей чата — окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента TikTok и Twitch вместе', 'Включается переключателем во вкладке «Виджеты» и пунктом в меню трея; положение, размер и прозрачность запоминаются'],
   '2.1.8': ['Озвучка: пауза в очереди больше не длится десятки секунд — фраза, которая не озвучилась за 8 секунд, пропускается', 'Озвучка: закреплённые голоса держат три готовых соединения, поэтому пачка сообщений не ждёт рукопожатия', 'Окно: «Свернуть» сворачивает на панель задач, иконка остаётся; в трей — только при закрытии по выбору'],
   '2.1.7': ['Озвучка: голос выбранной карточки прогревается сразу при клике, поэтому после нажатия TikTok/Twitch первая фраза нового голоса (в том числе мужского) идёт без задержки', 'Озвучка: фраза ждёт уже открывающееся соединение вместо того, чтобы открывать второе, а для выбранного голоса всегда держится запасное соединение — пачка фраз подряд не ждёт подключения'],
   '2.1.6': ['Смена голоса: соединение для нового голоса открывается сразу при выборе, поэтому первая фраза новым голосом идёт без задержки'],

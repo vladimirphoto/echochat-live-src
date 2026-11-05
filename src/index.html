@@ -162,6 +162,23 @@
 
       <!-- ВИДЖЕТЫ -->
       <section class="tab" id="tab-widgets">
+        <div class="wsettings ov-row">
+          <div class="card" id="ovCard">
+            <div class="ov-head">
+              <div>
+                <h2>Оверлей чата</h2>
+                <p class="muted">Отдельное окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента сообщений TikTok и Twitch вместе. Включайте на время стрима, выключайте после. Положение, размер и прозрачность запоминаются, настройки окна — по значку шестерёнки в его шапке. Окно называется «ЭхоЧат LIVE — оверлей чата»: в OBS его можно добавить источником «Захват окна».</p>
+              </div>
+              <label class="sw ov-main"><input type="checkbox" id="ovToggle" /><i></i><span id="ovToggleTxt">Выключен</span></label>
+            </div>
+            <div class="wbtn-row ov-btns">
+              <button class="btn wbtn ghost" id="ovTest" type="button">Тест</button>
+              <button class="btn wbtn ghost" id="ovClear" type="button">Очистить чат</button>
+              <button class="btn wbtn ghost" id="ovReset" type="button">Вернуть в угол экрана</button>
+            </div>
+            <div class="wstat bad" id="ovErr" hidden></div>
+          </div>
+        </div>
         <div class="cols wtop">
           <div class="card">
             <h2>Виджеты чата</h2>

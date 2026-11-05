@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -32,6 +32,117 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
   if (likesTimer) return;
   likesTimer = setTimeout(() => { likesTimer = null; if (!locked('widgets')) wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
 }
+
+// ---- оверлей чата: отдельное окно поверх всех окон (как окно чата в TikTok LIVE Studio) с чатом TikTok + Twitch, счётчиками и таймером.
+// Его питают те же события, что и главное окно (см. send ниже): модель считает счётчики всегда, поэтому оверлей, включённый посреди эфира, сразу показывает верные цифры.
+// Включается и выключается переключателем во вкладке «Виджеты» и пунктом в меню трея. Как и виджеты, входит в тариф Pro.
+const ovMod = require('./overlay');
+const ovModel = new ovMod.OverlayModel({ color: colorOf });
+let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null;
+const OV_FILE = () => path.join(app.getPath('userData'), 'overlay.json');
+try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; } catch (_) {}
+const ovOpen = () => !!(ovWin && !ovWin.isDestroyed());
+const ovPublic = (on) => ({ on: on === undefined ? ovOpen() : !!on, settings: ovSet, locked: locked('widgets') });
+function ovSave() {
+  clearTimeout(ovSaveT);
+  ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds })); } catch (_) {} }, 300);
+}
+// событие приложения → модель → окно оверлея (если оно открыто)
+function ovTrack(channel, payload) {
+  let r;
+  try { r = ovModel.track(channel, payload); } catch (_) { return; }
+  if (!ovOpen()) return;
+  const wc = ovWin.webContents;
+  if (r.stats) wc.send('ov:stats', ovModel.stats());
+  if (r.entry) wc.send('ov:msg', r.entry);
+}
+// применить настройки к окну; echo=false — не отправлять их обратно окну, которое их само и прислало (иначе ползунок «дёргается»)
+function ovApply(echo = true) {
+  if (!ovOpen()) return;
+  try { ovWin.setAlwaysOnTop(!!ovSet.onTop, 'screen-saver'); } catch (_) {}
+  try { ovWin.setOpacity(ovSet.opacity / 100); } catch (_) {}
+  try { ovWin.webContents.setZoomFactor(ovSet.scale / 100); } catch (_) {}
+  if (echo) ovWin.webContents.send('ov:settings', ovSet);
+}
+// переключатель в приложении и пункт трея всегда показывают настоящее состояние
+function ovNotify(on) { send('overlay:state', ovPublic(on)); rebuildTrayMenu(); }
+function ovUpdate(patch, echo = true) {
+  ovSet = ovMod.cleanSettings(patch, ovSet);
+  ovSave(); ovApply(echo); ovNotify();
+  return ovPublic();
+}
+function openOverlay() {
+  if (ovOpen()) { try { ovWin.showInactive(); } catch (_) {} return; }
+  const b = ovMod.fitBounds(ovBounds, screen.getAllDisplays().map((d) => d.workArea)) || ovMod.defaultBounds(screen.getPrimaryDisplay().workArea);
+  const w = new BrowserWindow({
+    ...b,
+    minWidth: ovMod.SIZE.minW, minHeight: ovMod.SIZE.minH,
+    show: false, frame: false, resizable: true, maximizable: false, fullscreenable: false, skipTaskbar: true,
+    backgroundColor: '#121214',
+    title: 'ЭхоЧат LIVE — оверлей чата', // это имя окна видно в OBS («Захват окна»)
+    icon: path.join(__dirname, 'src', 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'overlay-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false, // окно под игрой или за другими окнами продолжает обновляться
+    },
+  });
+  ovWin = w;
+  w.setMenu(null);
+  w.on('page-title-updated', (e) => e.preventDefault());
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  w.webContents.on('did-finish-load', () => ovApply());
+  w.once('ready-to-show', () => {
+    if (w.isDestroyed()) return;
+    ovApply();
+    w.showInactive(); // не отбираем фокус у игры или TikTok LIVE Studio
+    // положение и размер запоминаются, когда окно уже показано (а не пока оно создаётся)
+    const keep = () => { if (!w.isDestroyed() && !w.isMinimized()) { ovBounds = w.getBounds(); ovSave(); } };
+    w.on('move', keep); w.on('resize', keep);
+  });
+  w.on('closed', () => { if (ovWin === w) { ovWin = null; ovNotify(); } });
+  w.loadFile(path.join(__dirname, 'src', 'overlay.html'));
+}
+function closeOverlay() { if (ovOpen()) { try { ovWin.close(); } catch (_) {} } }
+function setOverlay(on) {
+  if (on) {
+    if (locked('widgets')) return { ok: false, ...ovPublic(false) };
+    try { openOverlay(); } catch (err) { ovWin = null; return { ok: false, error: String((err && err.message) || err), ...ovPublic(false) }; }
+  } else closeOverlay();
+  ovNotify(!!on);
+  return { ok: true, ...ovPublic(!!on) };
+}
+// окно оверлея обращается только за своим: чужие окна эти каналы не используют
+const fromOv = (e) => ovOpen() && e.sender === ovWin.webContents;
+ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed() } : null));
+ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
+ipcMain.handle('ov:clear', (e) => { if (!fromOv(e)) return false; ovClear(); return true; });
+ipcMain.on('ov:close', (e) => { if (fromOv(e)) closeOverlay(); });
+function ovClear() { ovModel.clearFeed(); if (ovOpen()) ovWin.webContents.send('ov:clear-feed'); }
+// из главного окна приложения
+ipcMain.handle('overlay:state', () => ovPublic());
+ipcMain.handle('overlay:toggle', (_e, on) => setOverlay(!!on));
+ipcMain.handle('overlay:set', (_e, patch) => ovUpdate(patch));
+ipcMain.handle('overlay:clear', () => { ovClear(); return { ok: true }; });
+ipcMain.handle('overlay:reset-pos', () => {
+  ovBounds = null; ovSave();
+  if (ovOpen()) { try { ovWin.setBounds(ovMod.defaultBounds(screen.getPrimaryDisplay().workArea)); } catch (_) {} }
+  return { ok: true };
+});
+// «Тест»: показывает примеры (открывает оверлей, если он выключен). В историю они не попадают: исчезают при очистке и перезапуске окна
+ipcMain.handle('overlay:test', () => {
+  const r = setOverlay(true);
+  if (!r.ok) return r;
+  const play = () => ovMod.SAMPLE.forEach((s, i) => setTimeout(() => {
+    if (ovOpen()) ovWin.webContents.send('ov:msg', { ...s, id: -(i + 1), t: Date.now(), avatar: '', color: colorOf(s.name) });
+  }, i * 350));
+  // только что созданное окно ещё грузится: ждём страницу, иначе первые примеры потеряются
+  if (ovWin.webContents.isLoading()) ovWin.webContents.once('did-finish-load', () => setTimeout(play, 200)); else play();
+  return r;
+});
+
 if (process.platform === 'win32') app.setAppUserModelId('live.echochat.app'); // нужен для уведомлений Windows; совпадает с ярлыками установщика
 
 // ---- трей (Windows): «свернуть» прячет окно в трей, озвучка продолжает работать; крестик закрывает приложение, как раньше
@@ -77,6 +188,12 @@ function buildTrayMenu() {
     { type: 'separator' },
     ...status,
     { type: 'separator' },
+    { label: 'Оверлей чата', type: 'checkbox', checked: ovOpen(), click: (it) => {
+      const r = setOverlay(it.checked);
+      if (r.locked) toast('Оверлей чата входит в тариф Pro');
+      else if (!r.ok) toast('Не удалось открыть оверлей чата');
+      rebuildTrayMenu(); // пункт всегда показывает настоящее состояние
+    } },
     { label: 'Пропустить текущую фразу', click: () => send('tray:skip') },
     { label: 'Что озвучивать', submenu: [
       flag('ttChat', 'TikTok: сообщения чата'), flag('gifts', 'TikTok: подарки'), flag('follows', 'TikTok: новые подписки'), flag('twChat', 'Twitch: сообщения чата'),
@@ -199,6 +316,7 @@ function createWindow() {
   // «Свернуть» — обычное сворачивание на панель задач (иконка остаётся); в трей прячется только при закрытии, по выбору пользователя
   // окно можно растягивать за края и разворачивать; при запуске всегда 1105×748, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
   win.on('close', onWindowClose);
+  win.on('closed', closeOverlay); // главное окно закрыто (выход) — оверлей закрывается вместе с ним, иначе приложение не завершилось бы
   win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
   win.webContents.on('context-menu', (_e, p) => {
@@ -219,6 +337,7 @@ const send = (channel, payload) => {
   if ((channel === 'tt:status' || channel === 'tw:status') && payload && payload.state) {
     trayConn[channel === 'tt:status' ? 'tt' : 'tw'] = payload.state; rebuildTrayMenu();
   }
+  ovTrack(channel, payload); // оверлей чата получает те же события, что и главное окно
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 };
 
@@ -653,7 +772,11 @@ const licMod = require('./license');
 const readAsset = (name) => { try { return require('fs').readFileSync(path.join(__dirname, 'assets', name)); } catch (_) { return null; } };
 const licPub = () => { const b = readAsset('license-pub.txt'); return b ? (String(b).split(/\r?\n/).map((x) => x.trim()).find((x) => /^[A-Za-z0-9_-]{40,50}$/.test(x)) || '') : ''; };
 function initLicense() {
-  license = new licMod.LicenseManager({ dir: app.getPath('userData'), getServer: relayServer, pub: licPub(), onChange: (st, meta) => send('lic:state', { ...st, justActivated: !!(meta && meta.activated) }) });
+  license = new licMod.LicenseManager({ dir: app.getPath('userData'), getServer: relayServer, pub: licPub(), onChange: (st, meta) => {
+    send('lic:state', { ...st, justActivated: !!(meta && meta.activated) });
+    if (st && Array.isArray(st.locked) && st.locked.includes('widgets')) closeOverlay(); // тариф закончился — оверлей закрывается, как и виджеты
+    else ovNotify(); // тариф открылся — переключатель в приложении снова доступен
+  } });
   if (!SELFTEST) license.start();
 }
 // данные экрана покупки: assets/purchase.json (цена, текст, контакт) и assets/pay-qr.png (QR для оплаты) — правятся без изменения кода
@@ -700,6 +823,7 @@ app.whenReady().then(async () => {
   if (SELFTEST) require('./selftest').run(win, app);
 });
 app.on('window-all-closed', async () => {
+  closeOverlay();
   await disconnect();
   stopTwitch();
   try { wsrv && wsrv.close(); } catch (_) {}

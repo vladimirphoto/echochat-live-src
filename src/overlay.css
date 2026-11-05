@@ -1,0 +1,73 @@
+/* Оверлей чата: тёмная панель в духе окна чата TikTok LIVE Studio */
+:root{--bg:#121214;--line:#2b2b30;--text:#f3f3f6;--muted:#8e8e98;--tt:#25d5ec;--tw:#a970ff;--live:#fe2c55;--hov:rgba(255,255,255,.08)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.35 "Segoe UI",system-ui,Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.panel{position:relative;display:flex;flex-direction:column;height:100%;border:1px solid var(--line);background:var(--bg)}
+
+/* шапка: её можно перетаскивать, кнопки — нет */
+.top{display:flex;align-items:center;gap:10px;padding:12px 12px 8px 14px;-webkit-app-region:drag;flex:none}
+.badge{padding:2px 8px;border-radius:5px;background:var(--live);color:#fff;font-weight:800;font-size:11px;letter-spacing:.04em;line-height:16px}
+.badge.off{background:#3a3a42;color:#b9b9c2}
+.time{font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.grow{flex:1}
+.ib{-webkit-app-region:no-drag;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:#c9c9d2}
+.ib:hover{background:var(--hov);color:#fff}
+.ib svg{width:18px;height:18px}
+.ib.on{color:var(--tt)}
+.ib.close:hover{background:var(--live);color:#fff}
+
+/* счётчики */
+.stats{display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;padding:2px 14px 12px;flex:none;border-bottom:1px solid var(--line)}
+.stats[hidden]{display:none}
+.st{display:inline-flex;align-items:center;gap:6px;color:#d6d6de;font-size:14px}
+.st svg{width:17px;height:17px;flex:none;color:#b7b7c1}
+.st.tw svg{color:var(--tw)}
+.st b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* лента */
+.wrap{position:relative;flex:1;min-height:0}
+.feed{position:absolute;inset:0;overflow-y:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px;user-select:text;-webkit-user-select:text}
+.feed::-webkit-scrollbar{width:8px}.feed::-webkit-scrollbar-thumb{background:#34343b;border-radius:8px}.feed::-webkit-scrollbar-track{background:transparent}
+.row{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.row.in{animation:in .22s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.av{flex:none;width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff;background:#6b7280}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.body{min-width:0;flex:1}
+.nm{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;color:var(--tt);word-break:break-word}
+.row.twitch .nm{color:var(--tw)}
+.nm svg{width:13px;height:13px;flex:none;opacity:.95}
+.tx{margin-top:1px;font-weight:600;font-size:14.5px;color:var(--text);word-break:break-word;overflow-wrap:anywhere}
+
+/* подарки и подписки: серый круг и одна строка, как «теперь подписчик» в TikTok LIVE Studio */
+.row.ev{align-items:center}
+.row.ev .av{background:#2a2a30;color:#c4c4cd}
+.row.ev .av svg{width:18px;height:18px}
+.row.ev .tx{margin:0;font-weight:600;color:#dcdce3}
+.row.ev .tx b{font-weight:700;color:#fff}
+.row.ev.gift .tx{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
+.row.ev.gift img.gi{width:26px;height:26px;object-fit:contain}
+.feed.no-ev .row.ev{display:none}
+
+.empty{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5;pointer-events:none}
+.empty[hidden]{display:none}
+
+.down{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);padding:6px 14px;border:0;border-radius:999px;background:#2f2f37;color:#fff;font-weight:600;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.down:hover{background:#3a3a44}
+.down[hidden]{display:none}
+
+/* настройки */
+.pop{position:absolute;right:10px;top:46px;width:244px;padding:12px 14px 14px;border-radius:12px;background:#1b1b20;border:1px solid #34343c;box-shadow:0 12px 32px rgba(0,0,0,.55);z-index:5}
+.pop[hidden]{display:none}
+.pop-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:13px;color:#cfcfd8}
+.pop-row b{font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+.pop input[type=range]{width:100%;margin:6px 0 4px;accent-color:#8b5cf6}
+.sw{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:13px;color:#e4e4ea}
+.sw input{display:none}
+.sw i{width:36px;height:20px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;flex:none;transition:.2s}
+.sw i:after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:linear-gradient(135deg,#8b5cf6,#ec4899)}
+.sw input:checked+i:after{left:19px}
+.clear{width:100%;margin-top:8px;padding:8px;border:1px solid #3a3a43;border-radius:9px;background:transparent;color:#d9d9e1;font-weight:600;font-size:13px}
+.clear:hover{background:var(--hov)}

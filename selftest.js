@@ -425,6 +425,35 @@ async function eventTests(win) {
   add('донаты: ссылка для OBS ведёт на страницу донатов', dl.ok && /\/jonny-chat-tiktok\/donate\/$/.test(dl.url), dl.url);
   await q("window.echo.donateSet({ ...window.__echo.K, enabled: false })");
   await q("document.querySelector('#paused').checked = false");
+  // оверлей чата: включается из приложения, показывает ленту TikTok и Twitch, выключается, окно закрывается
+  try {
+    const { BrowserWindow } = require('electron');
+    const ovWin = () => BrowserWindow.getAllWindows().find((w) => w !== win && !w.isDestroyed());
+    add('оверлей: переключатель и кнопки есть во вкладке «Виджеты»', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset'].every((i) => !!document.querySelector(i))"));
+    const on = await q('window.echo.overlayToggle(true)');
+    await wait(1200);
+    const w = ovWin();
+    add('оверлей: окно открывается из приложения', on.ok === true && on.on === true && !!w, JSON.stringify(on));
+    if (w) {
+      const qo = (js) => w.webContents.executeJavaScript(js, true);
+      add('оверлей: поверх всех окон, без рамки, с понятным именем для OBS', w.isAlwaysOnTop() && /оверлей чата/.test(w.getTitle()), w.getTitle());
+      await q('window.echo.overlayTest()');
+      await wait(2200);
+      const rows = await qo("[...document.querySelectorAll('#feed .row')].map((r) => r.className + '|' + r.innerText.replace(/\\s+/g, ' ')).join(' // ')");
+      add('оверлей: лента показывает и TikTok, и Twitch', /tiktok\|.*Анна/.test(rows) && /twitch\|.*Max/.test(rows), rows.slice(0, 200));
+      add('оверлей: подписка и подарок в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows));
+      const head = await qo("[document.querySelector('#badge').textContent, !!document.querySelector('#time'), document.querySelectorAll('#stats .st').length].join()");
+      add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,5$/.test(head), head);
+      await q("window.echo.overlayClear()");
+      await wait(300);
+      add('оверлей: «Очистить чат» очищает ленту', (await qo("document.querySelectorAll('#feed .row').length")) === 0);
+    }
+    await q('window.echo.overlayToggle(false)');
+    await wait(700);
+    add('оверлей: выключение закрывает окно', !ovWin());
+    const st = await q('window.echo.overlayState()');
+    add('оверлей: состояние «выключен» после закрытия', st && st.on === false, JSON.stringify(st));
+  } catch (err) { add('оверлей: проверка', false, String((err && err.message) || err)); }
   return R;
 }
 
