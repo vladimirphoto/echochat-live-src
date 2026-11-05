@@ -270,3 +270,15 @@ test('оверлей: настройка «лайки» (сердечки) вк�
   assert.equal(ov.cleanSettings({ hearts: false }).hearts, false);
   assert.equal(ov.cleanSettings({ hearts: 'нет' }, ov.cleanSettings({ hearts: false })).hearts, false); // не boolean — остаётся прежнее
 });
+
+test('оверлей: лайк с известным ником отдаёт его для строки внизу, анонимный — только сердечки', () => {
+  const m = new ov.OverlayModel({ color: () => '#abc' });
+  const r = m.track('tt:like', { name: 'Тимур', id: 'timur', avatar: 'https://x/t.png', count: 5, total: 50 });
+  assert.deepEqual(r.liker, { name: 'Тимур', avatar: 'https://x/t.png', color: '#abc', count: 5 });
+  assert.equal(r.like, 5); assert.equal(r.entry, null); assert.equal(m.feed().length, 0);
+  assert.equal(m.track('tt:like', { name: 'Гость', count: 2 }).liker, null);
+  assert.equal(m.track('tt:like', { count: 2 }).liker, null);
+  assert.equal(m.track('tt:like', { name: 'x'.repeat(300), count: 1 }).liker.name.length, 60);
+  assert.equal(m.track('tt:like', { name: 'Аня' }).liker.count, 1);
+  assert.equal(m.track('tt:chat', { name: 'A', text: 'hi' }).liker, null);
+});

@@ -89,6 +89,8 @@ body.no-jn .joinbar{display:none}
 .jb.out{animation:jbout .35s ease-in forwards}
 .jb .av{background:#2a2a30;color:#c4c4cd;width:34px;height:34px}
 .jb .av svg{width:18px;height:18px}
+.jb.lk .av{color:#ff4d5e}
+.jb.lk .av svg{width:17px;height:17px;fill:currentColor}
 .jb .tx{margin:0;min-width:0;font-weight:600;color:#dcdce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jb .tx b{font-weight:700;color:#fff}
 @keyframes jbin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}

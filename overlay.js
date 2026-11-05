@@ -90,10 +90,10 @@ class OverlayModel {
     return e;
   }
   // → { stats: изменились ли счётчики/статус, entry: новая запись ленты или null, like: сколько лайков пришло (для сердечек) или 0,
-  //     join: кто зашёл на эфир (для строки внизу) или null }
+  //     liker: кто поставил лайки (для строки внизу, если ник известен) или null, join: кто зашёл на эфир (для строки внизу) или null }
   track(channel, p) {
     p = p && typeof p === 'object' ? p : {};
-    const r = { stats: false, entry: null, like: 0, join: null };
+    const r = { stats: false, entry: null, like: 0, liker: null, join: null };
     switch (channel) {
       case 'tt:status': {
         const on = p.state === 'live';
@@ -123,6 +123,8 @@ class OverlayModel {
         // итог от TikTok надёжнее суммы событий; если итога нет (или 0) — копим сами
         this.likes = p.total > 0 ? Math.max(this.likes, p.total) : this.likes + (p.count || 1);
         r.like = Math.max(1, Math.round(Number(p.count)) || 1); // в ленту лайки не пишем (их тысячи): окно рисует летящие сердечки
+        // а кто лайкает — в той же строке внизу, где «кто зашёл» (анонимные лайки — только сердечки)
+        if (p.name && p.name !== 'Гость') r.liker = { name: cut(p.name, 60), avatar: cut(p.avatar, 500), color: this.color(p.name), count: r.like };
         r.stats = true; break;
       }
       case 'tt:gift': {
@@ -165,7 +167,7 @@ const SAMPLE = [
   { platform: 'tiktok', kind: 'like', count: 6 },
   { platform: 'tiktok', kind: 'share', name: 'Рустам' },
   { platform: 'tiktok', kind: 'chat', name: 'Марат', text: 'Отличный стрим, спасибо!' },
-  { platform: 'tiktok', kind: 'like', count: 4 },
+  { platform: 'tiktok', kind: 'like', name: 'Тимур', count: 4 }, // сердечки и ник в строке внизу
 ];
 
 module.exports = { DEFAULTS, LIMITS, SIZE, cleanSettings, fitBounds, defaultBounds, cornerBounds, OverlayModel, SAMPLE };

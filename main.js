@@ -57,6 +57,7 @@ function ovTrack(channel, payload) {
   if (r.entry) wc.send('ov:msg', r.entry);
   if (r.like) wc.send('ov:like', { count: r.like }); // лайки: сердечки в окне, в историю ленты не попадают
   if (r.join) wc.send('ov:join', r.join); // кто зашёл: временная строка внизу, в историю ленты не попадает
+  if (r.liker) wc.send('ov:liker', r.liker); // кто лайкает: та же строка внизу
 }
 // применить настройки к окну; echo=false — не отправлять их обратно окну, которое их само и прислало (иначе ползунок «дёргается»)
 function ovApply(echo = true) {
@@ -443,8 +444,8 @@ async function doConnect(rawName) {
   if (WebcastEvent.SHARE) c.on(WebcastEvent.SHARE, onShare);
   c.on(WebcastEvent.LIKE || 'like', (d) => {
     if (!alive()) return;
-    send('tt:like', ev.likesOf(d));
     const l = ev.likerOf(d);
+    send('tt:like', { ...ev.likesOf(d), name: l.name, id: l.id, avatar: l.avatar }); // ник нужен оверлею: «ник — поставил(а) лайк»
     if (likesBoard.add(l, l.count)) pushLikes();
   });
   c.on(WebcastEvent.ROOM_USER || 'roomUser', (d) => {

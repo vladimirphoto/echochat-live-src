@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('overlay', {
   onMsg: on('ov:msg'),
   onLike: on('ov:like'),
   onJoin: on('ov:join'),
+  onLiker: on('ov:liker'),
   onStats: on('ov:stats'),
   onSettings: on('ov:settings'),
   onClear: on('ov:clear-feed'),

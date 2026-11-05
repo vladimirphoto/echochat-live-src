@@ -70,7 +70,7 @@
   }
   function addEntry(e, animate) {
     if (!e || typeof e !== 'object') return;
-    if (e.kind === 'like') { if (animate) burst(e.count); return; } // лайки — не строка ленты, а летящие сердечки
+    if (e.kind === 'like') { if (animate) { burst(e.count); if (e.name) showLine('like', e); } return; } // лайки — не строка ленты, а летящие сердечки и строка внизу
     if (e.kind === 'join') { if (animate) showJoin(e); return; } // «теперь с нами» — не строка ленты, а временная строка внизу
     const stick = nearBottom();
     const row = rowOf(e);
@@ -86,21 +86,37 @@
   down.onclick = () => { toBottom(); unread = 0; syncDown(); };
   window.addEventListener('resize', () => { syncDown(); });
 
-  /* ---------- «ник — теперь с нами»: одна строка внизу на несколько секунд; новая сразу заменяет прежнюю, в ленте ничего не остаётся ---------- */
+  /* ---------- строка внизу: «ник — теперь с нами» и «ник — поставил(а) лайк»; на несколько секунд, новая заменяет прежнюю, в ленте ничего не остаётся ---------- */
   const joinBar = $('#joinBar');
-  const JOIN_MS = 5000;
-  let joinT = null, joinOutT = null;
-  function clearJoin() { clearTimeout(joinT); clearTimeout(joinOutT); if (joinBar) joinBar.replaceChildren(); }
-  function showJoin(e) {
+  const LINE_MS = 5000;
+  const HOLD_JOIN = 1500, HOLD_LIKE = 800; // лайков очень много: они не вытесняют только что показанное «зашёл» и не мелькают чаще раза в 0,8 с
+  let lineT = null, lineOutT = null, cur = null; // cur — что сейчас на строке: { kind, name, count, at, row, rest }
+  function clearJoin() { clearTimeout(lineT); clearTimeout(lineOutT); cur = null; if (joinBar) joinBar.replaceChildren(); }
+  const likeText = (n) => (n > 1 ? ' — поставил(а) лайки ×' + n : ' — поставил(а) лайк');
+  function armLine(row) {
+    clearTimeout(lineT); clearTimeout(lineOutT);
+    lineT = setTimeout(() => { row.classList.add('out'); lineOutT = setTimeout(() => { if (row.isConnected) row.remove(); if (cur && cur.row === row) cur = null; }, 380); }, LINE_MS);
+  }
+  function showLine(kind, e) {
     if (!joinBar || SET.joins === false) return;
-    clearTimeout(joinT); clearTimeout(joinOutT);
-    const row = el('div', 'jb');
-    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', ICON.join);
-    const tx = el('div', 'tx'); tx.appendChild(el('b', '', String(e.name || 'Гость'))); tx.appendChild(document.createTextNode(' — теперь с нами'));
+    const name = String((e && e.name) || 'Гость');
+    const now = Date.now();
+    const count = kind === 'like' ? Math.max(1, Math.round(Number(e && e.count)) || 1) : 0;
+    if (kind === 'like' && cur && cur.row.isConnected) {
+      // лайки от того же человека складываются в одну строку («×12»), а не мелькают каждый раз заново
+      if (cur.kind === 'like' && cur.name === name) { cur.count += count; cur.rest.textContent = likeText(cur.count); armLine(cur.row); return; }
+      if (now - cur.at < (cur.kind === 'join' ? HOLD_JOIN : HOLD_LIKE)) return;
+    }
+    const row = el('div', 'jb' + (kind === 'like' ? ' lk' : ''));
+    const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', kind === 'like' ? ICON.heart : ICON.join);
+    const tx = el('div', 'tx'); tx.appendChild(el('b', '', name));
+    const rest = document.createTextNode(kind === 'like' ? likeText(count) : ' — теперь с нами'); tx.appendChild(rest);
     row.appendChild(ic); row.appendChild(tx);
     joinBar.replaceChildren(row); // заменяет предыдущую сразу: если заходит много людей, строка быстро меняется
-    joinT = setTimeout(() => { row.classList.add('out'); joinOutT = setTimeout(() => { if (row.isConnected) row.remove(); }, 380); }, JOIN_MS);
+    cur = { kind, name, count, at: now, row, rest };
+    armLine(row);
   }
+  const showJoin = (e) => showLine('join', e);
 
   /* ---------- лайки: сердечки летят вверх от правого нижнего угла и плавно исчезают ---------- */
   const heartsEl = $('#hearts');
@@ -217,6 +233,7 @@
   api.onMsg((e) => addEntry(e, true));
   api.onLike((p) => burst(p && p.count));
   api.onJoin((p) => showJoin(p || {}));
+  api.onLiker((p) => showLine('like', p || {}));
   api.onStats(applyStats);
   api.onSettings(applySettings);
   api.onClear(clearFeed);
@@ -227,5 +244,5 @@
     toBottom(); unread = 0; syncDown();
   }).catch(() => {});
   syncEmpty(); syncDown(); tick();
-  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, get SET() { return SET; } }; // для автотестов
+  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: (e) => showLine('like', e), get SET() { return SET; } }; // для автотестов
 })();

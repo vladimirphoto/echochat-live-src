@@ -468,6 +468,12 @@ async function eventTests(win) {
       add('оверлей: «ник — теперь с нами» — одна строка внизу, новая заменяет прежнюю, в ленте не остаётся', /^1\|Новенький — теперь с нами\|0\|false$/.test(jn), jn);
       await wait(5900);
       add('оверлей: строка «кто зашёл» исчезает через несколько секунд', (await qo("document.querySelectorAll('#joinBar .jb').length")) === 0);
+      // та же строка показывает, кто ставит лайки: лайки одного человека складываются, а свежее «зашёл» они не вытесняют
+      await qo("window.__overlay.liker({ name: 'Лайкер', count: 3 }); window.__overlay.liker({ name: 'Лайкер', count: 2 })");
+      const lk1 = await qo("[document.querySelectorAll('#joinBar .jb').length, document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ')].join('|')");
+      await qo("window.__overlay.join({ name: 'Вошёл' }); window.__overlay.liker({ name: 'Другой', count: 1 })");
+      const lk2 = await qo("document.querySelector('#joinBar').innerText.replace(/\\s+/g, ' ')");
+      add('оверлей: строка внизу показывает, кто ставит лайки (лайки одного человека складываются, «зашёл» не вытесняется)', /^1\|Лайкер — поставил\(а\) лайки ×5$/.test(lk1) && /^Вошёл — теперь с нами$/.test(lk2), lk1 + ' // ' + lk2);
       // замок: окно нельзя сдвинуть, пока он закрыт; прозрачность убирает только фон
       const bg = () => qo("getComputedStyle(document.querySelector('.panel')).backgroundColor");
       await q('window.echo.overlaySet({ locked: true, opacity: 0 })');
