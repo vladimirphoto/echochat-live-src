@@ -11,6 +11,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .badge{padding:2px 8px;border-radius:5px;background:var(--live);color:#fff;font-weight:800;font-size:11px;letter-spacing:.04em;line-height:16px}
 .badge.off{background:#3a3a42;color:#b9b9c2}
 .time{font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.time[hidden]{display:none}
 .grow{flex:1}
 .ib{-webkit-app-region:no-drag;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:#f1f1f5}
 .ib:hover{background:var(--hov);color:#fff}
@@ -26,7 +27,7 @@ body.locked .top{-webkit-app-region:no-drag}
 .st[hidden]{display:none} /* без этого display:inline-flex выше перебивает атрибут hidden, и значок Twitch виден всегда */
 .st svg{width:17px;height:17px;flex:none;color:#e6e6ec}
 .st b{font-weight:600;font-variant-numeric:tabular-nums}
-.st svg.tw-ic{color:var(--tw)} /* логотип Twitch — фирменного фиолетового цвета, число рядом белое, как у остальных счётчиков */
+.st svg.tw-ic{color:#e6e6ec} /* логотип Twitch — белый, как у остальных значков счётчиков и текста */
 
 /* лента */
 .wrap{position:relative;flex:1;min-height:0}

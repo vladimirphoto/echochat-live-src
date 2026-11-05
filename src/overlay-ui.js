@@ -217,7 +217,8 @@
     const live = !!ST.since;
     badge.textContent = live ? 'LIVE' : 'ОФЛАЙН';
     badge.classList.toggle('off', !live);
-    timeEl.textContent = live ? fmtTime(Math.max(0, Date.now() - ST.since)) : '—';
+    timeEl.hidden = !live; // без эфира таймера нет: ни «—», ни пустого места рядом с плашкой ОФЛАЙН
+    timeEl.textContent = live ? fmtTime(Math.max(0, Date.now() - ST.since)) : '';
   }
   function applyStats(s) {
     if (!s || typeof s !== 'object') return;
