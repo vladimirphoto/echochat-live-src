@@ -4,7 +4,8 @@
 // здесь только показ состояния. Использует $ и askConfirm из renderer.js.
 (() => {
   const echo = window.echo;
-  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи' };
+  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', overlay: 'Оверлей чата' };
+  const LOCK_KEY = { overlay: 'widgets' }; // оверлей закрывается вместе с виджетами: один тариф Pro
   const DAY = 86400000;
   const qa = (s) => [...document.querySelectorAll(s)];
   const plural = (n, [a, b, c]) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d >= 2 && d <= 4 ? b : c; };
@@ -33,7 +34,7 @@
     for (const tab of Object.keys(LOCKABLE)) {
       const el = document.getElementById('tab-' + tab);
       if (!el) continue;
-      const must = s.locked.includes(tab);
+      const must = s.locked.includes(LOCK_KEY[tab] || tab);
       let ov = el.querySelector(':scope > .lock-ov');
       const kids = [...el.children].filter((c) => !c.classList.contains('lock-ov'));
       if (must) {

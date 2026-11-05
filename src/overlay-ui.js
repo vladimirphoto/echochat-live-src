@@ -3,7 +3,7 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const api = window.overlay;
-  const feed = $('#feed'), emptyEl = $('#empty'), down = $('#down'), pop = $('#pop');
+  const feed = $('#feed'), emptyEl = $('#empty'), down = $('#down');
   const MAX_ROWS = 120;
   const STICK_PX = 48; // ближе этого к низу — лента «прилипает» и сама прокручивается к новым сообщениям
 
@@ -99,36 +99,39 @@
   }
   setInterval(tick, 1000);
 
-  /* ---------- настройки ---------- */
-  let SET = { opacity: 100, scale: 100, onTop: true, events: true, stats: true };
+  /* ---------- настройки (меняются во вкладке «Оверлей чата» приложения; здесь только замок) ---------- */
+  let SET = { opacity: 100, onTop: true, locked: false, events: true, stats: true };
+  const SHACKLE = { closed: 'M8 10.5V7.5a4 4 0 0 1 8 0v3', open: 'M8 10.5V7.5a4 4 0 0 1 7.6-1.7' };
   function applySettings(s) {
     if (!s || typeof s !== 'object') return;
     SET = { ...SET, ...s };
+    // прозрачность — только у фона; 2% оставляем, чтобы окно по-прежнему ловило мышь
+    document.documentElement.style.setProperty('--a', String(Math.max(0.02, Math.min(1, SET.opacity / 100))));
+    document.body.classList.toggle('locked', !!SET.locked);
     feed.classList.toggle('no-ev', !SET.events);
     $('#stats').hidden = !SET.stats;
-    $('#btnPin').classList.toggle('on', !!SET.onTop);
-    $('#btnPin').title = SET.onTop ? 'Поверх всех окон: включено' : 'Поверх всех окон: выключено';
-    $('#pinShackle').setAttribute('d', SET.onTop ? 'M8 10.5V7.5a4 4 0 0 1 8 0v3' : 'M8 10.5V7.5a4 4 0 0 1 7.6-1.7');
-    if (document.activeElement !== $('#sOpacity')) $('#sOpacity').value = SET.opacity;
-    if (document.activeElement !== $('#sScale')) $('#sScale').value = SET.scale;
-    $('#sOpacityV').textContent = SET.opacity + '%'; $('#sScaleV').textContent = SET.scale + '%';
-    $('#sOnTop').checked = !!SET.onTop; $('#sEvents').checked = !!SET.events; $('#sStats').checked = !!SET.stats;
+    $('#btnLock').classList.toggle('on', !!SET.locked);
+    $('#btnLock').title = SET.locked ? 'Окно заблокировано. Нажмите, чтобы разблокировать' : 'Заблокировать положение и размер окна';
+    $('#lockShackle').setAttribute('d', SET.locked ? SHACKLE.closed : SHACKLE.open);
     const stick = nearBottom(); syncDown(); if (stick) toBottom();
   }
-  let sendT = null;
-  const push = (patch) => { SET = { ...SET, ...patch }; applySettings(SET); clearTimeout(sendT); sendT = setTimeout(() => { try { api.set(patch); } catch (_) {} }, 60); };
-  $('#sOpacity').addEventListener('input', (e) => { $('#sOpacityV').textContent = e.target.value + '%'; push({ opacity: +e.target.value }); });
-  $('#sScale').addEventListener('change', (e) => push({ scale: +e.target.value })); // размер — по отпусканию, пока тянут, окно не прыгает
-  $('#sScale').addEventListener('input', (e) => { $('#sScaleV').textContent = e.target.value + '%'; });
-  $('#sOnTop').addEventListener('change', (e) => push({ onTop: e.target.checked }));
-  $('#sEvents').addEventListener('change', (e) => push({ events: e.target.checked }));
-  $('#sStats').addEventListener('change', (e) => push({ stats: e.target.checked }));
-  $('#btnPin').onclick = () => push({ onTop: !SET.onTop });
-  $('#btnSet').onclick = (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; };
-  $('#btnClear').onclick = () => { try { api.clear(); } catch (_) {} pop.hidden = true; };
+  $('#btnLock').onclick = () => { const locked = !SET.locked; applySettings({ locked }); try { api.set({ locked }); } catch (_) {} };
   $('#btnClose').onclick = () => { try { api.close(); } catch (_) {} };
-  document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== $('#btnSet') && !$('#btnSet').contains(e.target)) pop.hidden = true; });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pop.hidden = true; });
+
+  /* ---------- растягивание за края (при замке ручки скрыты) ---------- */
+  document.querySelectorAll('.grip').forEach((g) => {
+    g.addEventListener('pointerdown', (e) => {
+      if (SET.locked || e.button !== 0) return;
+      e.preventDefault(); g.setPointerCapture(e.pointerId);
+      const sx = e.screenX, sy = e.screenY, dir = g.dataset.dir;
+      let raf = 0, last = null;
+      try { api.grip({ phase: 'start' }); } catch (_) {}
+      const send = () => { raf = 0; if (last) { try { api.grip({ phase: 'move', dir, dx: last.x - sx, dy: last.y - sy }); } catch (_) {} } };
+      const mv = (ev) => { last = { x: ev.screenX, y: ev.screenY }; if (!raf) raf = requestAnimationFrame(send); };
+      const up = () => { g.removeEventListener('pointermove', mv); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up); if (raf) cancelAnimationFrame(raf); send(); try { api.grip({ phase: 'end' }); } catch (_) {} };
+      g.addEventListener('pointermove', mv); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+    });
+  });
 
   /* ---------- связь с приложением ---------- */
   api.onMsg((e) => addEntry(e, true));

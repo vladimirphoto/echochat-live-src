@@ -13,8 +13,7 @@
       <span class="badge off" id="badge">ОФЛАЙН</span>
       <span class="time" id="time">—</span>
       <span class="grow"></span>
-      <button class="ib" id="btnPin" type="button" title="Поверх всех окон"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path id="pinShackle" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button>
-      <button class="ib" id="btnSet" type="button" title="Настройки оверлея"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <button class="ib" id="btnLock" type="button" title="Заблокировать положение окна"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path id="lockShackle" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button>
       <button class="ib close" id="btnClose" type="button" title="Закрыть оверлей"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </header>
 
@@ -32,16 +31,7 @@
       <button class="down" id="down" type="button" hidden>↓ Новые сообщения</button>
     </main>
 
-    <div class="pop" id="pop" hidden>
-      <div class="pop-row"><label for="sOpacity">Прозрачность</label><b id="sOpacityV">100%</b></div>
-      <input type="range" id="sOpacity" min="30" max="100" value="100" />
-      <div class="pop-row"><label for="sScale">Размер</label><b id="sScaleV">100%</b></div>
-      <input type="range" id="sScale" min="70" max="180" value="100" />
-      <label class="sw"><input type="checkbox" id="sOnTop" checked /><i></i><span>Поверх всех окон</span></label>
-      <label class="sw"><input type="checkbox" id="sEvents" checked /><i></i><span>Подарки и подписки в ленте</span></label>
-      <label class="sw"><input type="checkbox" id="sStats" checked /><i></i><span>Счётчики эфира</span></label>
-      <button class="clear" id="btnClear" type="button">Очистить чат</button>
-    </div>
+    <i class="grip e" data-dir="e"></i><i class="grip w" data-dir="w"></i><i class="grip s" data-dir="s"></i><i class="grip se" data-dir="se"></i><i class="grip sw" data-dir="sw"></i>
   </div>
   <script src="overlay-ui.js"></script>
 </body>

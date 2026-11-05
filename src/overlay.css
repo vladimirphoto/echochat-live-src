@@ -1,9 +1,10 @@
 /* Оверлей чата: тёмная панель в духе окна чата TikTok LIVE Studio */
 :root{--bg:#121214;--line:#2b2b30;--text:#f3f3f6;--muted:#8e8e98;--tt:#25d5ec;--tw:#a970ff;--live:#fe2c55;--hov:rgba(255,255,255,.08)}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.35 "Segoe UI",system-ui,Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+html,body{height:100%;margin:0;background:transparent;color:var(--text);font:14px/1.35 "Segoe UI",system-ui,Arial,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit;cursor:pointer}
-.panel{position:relative;display:flex;flex-direction:column;height:100%;border:1px solid var(--line);background:var(--bg)}
+/* прозрачность относится только к фону (--a): рамка, текст и значки всегда видны полностью; лёгкая тень делает текст читаемым и на прозрачном фоне */
+.panel{position:relative;display:flex;flex-direction:column;height:100%;border:1px solid #4a4a56;border-radius:14px;overflow:hidden;background:rgba(18,18,20,var(--a,1));text-shadow:0 1px 3px rgba(0,0,0,.85)}
 
 /* шапка: её можно перетаскивать, кнопки — нет */
 .top{display:flex;align-items:center;gap:10px;padding:12px 12px 8px 14px;-webkit-app-region:drag;flex:none}
@@ -11,17 +12,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 .badge.off{background:#3a3a42;color:#b9b9c2}
 .time{font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
 .grow{flex:1}
-.ib{-webkit-app-region:no-drag;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:#c9c9d2}
+.ib{-webkit-app-region:no-drag;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:#f1f1f5}
 .ib:hover{background:var(--hov);color:#fff}
 .ib svg{width:18px;height:18px}
 .ib.on{color:var(--tt)}
+body.locked .top{-webkit-app-region:no-drag}
 .ib.close:hover{background:var(--live);color:#fff}
 
 /* счётчики */
-.stats{display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;padding:2px 14px 12px;flex:none;border-bottom:1px solid var(--line)}
+.stats{display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;padding:2px 14px 12px;flex:none;border-bottom:1px solid #3a3a44}
 .stats[hidden]{display:none}
-.st{display:inline-flex;align-items:center;gap:6px;color:#d6d6de;font-size:14px}
-.st svg{width:17px;height:17px;flex:none;color:#b7b7c1}
+.st{display:inline-flex;align-items:center;gap:6px;color:#f1f1f5;font-size:14px}
+.st svg{width:17px;height:17px;flex:none;color:#e6e6ec}
 .st.tw svg{color:var(--tw)}
 .st b{font-weight:600;font-variant-numeric:tabular-nums}
 
@@ -57,17 +59,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .down:hover{background:#3a3a44}
 .down[hidden]{display:none}
 
-/* настройки */
-.pop{position:absolute;right:10px;top:46px;width:244px;padding:12px 14px 14px;border-radius:12px;background:#1b1b20;border:1px solid #34343c;box-shadow:0 12px 32px rgba(0,0,0,.55);z-index:5}
-.pop[hidden]{display:none}
-.pop-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:13px;color:#cfcfd8}
-.pop-row b{font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
-.pop input[type=range]{width:100%;margin:6px 0 4px;accent-color:#8b5cf6}
-.sw{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:13px;color:#e4e4ea}
-.sw input{display:none}
-.sw i{width:36px;height:20px;border-radius:20px;background:rgba(255,255,255,.14);position:relative;flex:none;transition:.2s}
-.sw i:after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
-.sw input:checked+i{background:linear-gradient(135deg,#8b5cf6,#ec4899)}
-.sw input:checked+i:after{left:19px}
-.clear{width:100%;margin-top:8px;padding:8px;border:1px solid #3a3a43;border-radius:9px;background:transparent;color:#d9d9e1;font-weight:600;font-size:13px}
-.clear:hover{background:var(--hov)}
+/* ручки растягивания по краям (сверху окно двигают за шапку); при замке их нет */
+.grip{position:absolute;z-index:4;display:block;-webkit-app-region:no-drag}
+.grip.e{right:0;top:52px;bottom:12px;width:7px;cursor:ew-resize}
+.grip.w{left:0;top:52px;bottom:12px;width:7px;cursor:ew-resize}
+.grip.s{left:12px;right:12px;bottom:0;height:7px;cursor:ns-resize}
+.grip.se{right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize}
+.grip.sw{left:0;bottom:0;width:14px;height:14px;cursor:nesw-resize}
+body.locked .grip{display:none}

@@ -21,6 +21,7 @@
         <button class="nav" data-tab="filters"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/></svg>Фильтры</button>
         <button class="nav" data-tab="widgets"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><path d="M17.2 13.5v7.5M13.5 17.2H21"/></svg>Виджеты<span class="nav-pro" hidden>PRO</span></button>
         <button class="nav" data-tab="kaspi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.9 9.3c-.4-1-1.4-1.5-2.8-1.5-1.6 0-2.7.8-2.7 2s1 1.7 2.7 2c1.7.3 2.9.9 2.9 2.2 0 1.3-1.3 2.1-2.9 2.1-1.5 0-2.6-.6-3-1.7M12 6.4v1.4M12 16.3v1.4"/></svg>Донаты Каспи<span class="nav-pro" hidden>PRO</span></button>
+        <button class="nav" data-tab="overlay"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3"/><path d="M3 8.5h18"/><circle cx="6.6" cy="6" r=".55" fill="currentColor"/><circle cx="7.3" cy="12.4" r="1.2"/><path d="M11 12.4h6.5"/><circle cx="7.3" cy="16.6" r="1.2"/><path d="M11 16.6h4"/></svg>Оверлей чата<span class="nav-pro" hidden>PRO</span></button>
               <button class="nav" data-tab="license"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.2 4L12 5l4.8 7L21 8l-2 11H5z"/><path d="M5.5 21h13"/></svg>Лицензия</button>
         <button class="nav" data-tab="settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
       </nav>
@@ -162,23 +163,6 @@
 
       <!-- ВИДЖЕТЫ -->
       <section class="tab" id="tab-widgets">
-        <div class="wsettings ov-row">
-          <div class="card" id="ovCard">
-            <div class="ov-head">
-              <div>
-                <h2>Оверлей чата</h2>
-                <p class="muted">Отдельное окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента сообщений TikTok и Twitch вместе. Включайте на время стрима, выключайте после. Положение, размер и прозрачность запоминаются, настройки окна — по значку шестерёнки в его шапке. Окно называется «ЭхоЧат LIVE — оверлей чата»: в OBS его можно добавить источником «Захват окна».</p>
-              </div>
-              <label class="sw ov-main"><input type="checkbox" id="ovToggle" /><i></i><span id="ovToggleTxt">Выключен</span></label>
-            </div>
-            <div class="wbtn-row ov-btns">
-              <button class="btn wbtn ghost" id="ovTest" type="button">Тест</button>
-              <button class="btn wbtn ghost" id="ovClear" type="button">Очистить чат</button>
-              <button class="btn wbtn ghost" id="ovReset" type="button">Вернуть в угол экрана</button>
-            </div>
-            <div class="wstat bad" id="ovErr" hidden></div>
-          </div>
-        </div>
         <div class="cols wtop">
           <div class="card">
             <h2>Виджеты чата</h2>
@@ -302,6 +286,39 @@
         </div>
       </section>
       <!-- НАСТРОЙКИ -->
+      <!-- ОВЕРЛЕЙ ЧАТА -->
+      <section class="tab" id="tab-overlay">
+        <div class="cols">
+          <div class="card" id="ovCard">
+            <div class="ov-head">
+              <div>
+                <h2>Оверлей чата</h2>
+                <p class="muted">Отдельное окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента сообщений TikTok и Twitch вместе. Включайте на время стрима, выключайте после. Положение и размер запоминаются. Размер меняется за боковые и нижний края окна, двигать окно можно за шапку.</p>
+              </div>
+              <label class="sw ov-main"><input type="checkbox" id="ovToggle" /><i></i><span id="ovToggleTxt">Выключен</span></label>
+            </div>
+            <div class="wbtn-row wbtn-row3 ov-btns">
+              <button class="btn wbtn ghost" id="ovTest" type="button">Тест</button>
+              <button class="btn wbtn ghost" id="ovClear" type="button">Очистить чат</button>
+              <button class="btn wbtn ghost" id="ovReset" type="button">В угол экрана</button>
+            </div>
+            <div class="wstat bad" id="ovErr" hidden></div>
+            <p class="muted ov-obs">В OBS окно добавляется источником «Захват окна» с названием «ЭхоЧат LIVE — оверлей чата».</p>
+          </div>
+          <div class="card">
+            <h2>Настройки окна</h2>
+            <div class="ctl" style="margin-top:8px"><div class="row"><label>Прозрачность фона</label><b id="ovOpacityVal">100%</b></div><input type="range" id="ovOpacity" min="0" max="100" value="100" /></div>
+            <p class="muted" style="margin:2px 0 8px">Убирается только фон. Рамка, текст и значки всегда видны полностью.</p>
+            <div class="toggles">
+              <label class="sw"><input type="checkbox" id="ovLock" /><i></i><span>Заблокировать окно (нельзя сдвинуть и растянуть, пока замок не откроют)</span></label>
+              <label class="sw"><input type="checkbox" id="ovOnTop" checked /><i></i><span>Поверх всех окон</span></label>
+              <label class="sw"><input type="checkbox" id="ovEvents" checked /><i></i><span>Подарки и подписки в ленте</span></label>
+              <label class="sw"><input type="checkbox" id="ovStats" checked /><i></i><span>Счётчики эфира</span></label>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ЛИЦЕНЗИЯ -->
       <section class="tab" id="tab-license">
         <div class="cols lic-cols" id="licCols">

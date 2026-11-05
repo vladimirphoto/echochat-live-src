@@ -41,13 +41,13 @@ const PAGE_TEST = `(async () => {
   try {
     // --- интерфейс (критично) ---
     add('ui', 'preload API', window.echo && ['connect','disconnect','synth','voices','checkUpdate'].every((k) => typeof window.echo[k] === 'function'));
-    for (const t of ['voice', 'filters', 'widgets', 'kaspi', 'live']) {
+    for (const t of ['voice', 'filters', 'widgets', 'kaspi', 'overlay', 'live']) {
       $('.nav[data-tab=' + t + ']').click();
       add('ui', 'вкладка ' + t, $('#tab-' + t).classList.contains('show') && $('#title').textContent.length > 0);
     }
     add('ui', 'вкладка «Виджеты»: ссылка и настройки', /^https:\\/\\/vladimirphoto\\.github\\.io\\/jonny-chat-tiktok\\/chat\\/\\?tt=(left|right)&tw=(left|right)&w=\\w+$/.test($('#wUrl').value) && !!$('#wAlignTtSel') && !!$('#wAlignTwSel') && document.querySelectorAll('#tab-widgets input[data-k]').length >= 5, $('#wUrl').value);
     add('ui', 'иконки в 4 плашках', document.querySelectorAll('.stat .ic').length === 4);
-    add('ui', 'иконки в меню', document.querySelectorAll('.nav .ic').length === 7);
+    add('ui', 'иконки в меню', document.querySelectorAll('.nav .ic').length === 8);
     add('ui', 'карточки голосов', document.querySelectorAll('#voices .voice').length >= 2, document.querySelectorAll('#voices .voice').length);
     add('ui', 'версия в сайдбаре', /\\d+\\.\\d+/.test($('#verLine').textContent), $('#verLine').textContent);
 
@@ -429,7 +429,7 @@ async function eventTests(win) {
   try {
     const { BrowserWindow } = require('electron');
     const ovWin = () => BrowserWindow.getAllWindows().find((w) => w !== win && !w.isDestroyed());
-    add('оверлей: переключатель и кнопки есть во вкладке «Виджеты»', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset'].every((i) => !!document.querySelector(i))"));
+    add('оверлей: отдельная вкладка с переключателем, кнопками и настройками', await q("['#ovToggle', '#ovTest', '#ovClear', '#ovReset', '#ovOpacity', '#ovLock', '#ovOnTop', '#ovEvents', '#ovStats'].every((i) => !!document.querySelector('#tab-overlay ' + i)) && !document.querySelector('#tab-widgets #ovToggle')"));
     const on = await q('window.echo.overlayToggle(true)');
     await wait(1200);
     const w = ovWin();
@@ -444,6 +444,18 @@ async function eventTests(win) {
       add('оверлей: подписка и подарок в ленте', /Игорь/.test(rows) && /Роза/.test(rows) && /×5/.test(rows));
       const head = await qo("[document.querySelector('#badge').textContent, !!document.querySelector('#time'), document.querySelectorAll('#stats .st').length].join()");
       add('оверлей: шапка с таймером и счётчики', /^(LIVE|ОФЛАЙН),true,5$/.test(head), head);
+      // замок: окно нельзя сдвинуть, пока он закрыт; прозрачность убирает только фон
+      const bg = () => qo("getComputedStyle(document.querySelector('.panel')).backgroundColor");
+      await q('window.echo.overlaySet({ locked: true, opacity: 0 })');
+      await wait(400);
+      const lk = await qo("[document.body.classList.contains('locked'), getComputedStyle(document.querySelector('.top')).webkitAppRegion, getComputedStyle(document.querySelector('.grip.s')).display].join()");
+      add('оверлей: замок блокирует окно (нельзя двигать, ручек растягивания нет)', w.isMovable() === false && lk === 'true,no-drag,none', 'movable=' + w.isMovable() + ' ' + lk);
+      const bg0 = await bg();
+      const vis = await qo("[getComputedStyle(document.querySelector('.panel')).borderTopColor, ...['.badge', '.time', '.row .nm', '#stats svg'].map((x) => getComputedStyle(document.querySelector(x)).opacity)].join()");
+      add('оверлей: при нулевой прозрачности фон почти исчезает, а рамка и текст остаются видны', /rgba\(18, 18, 20, 0\.0[0-9]*\)/.test(bg0) && /rgb\(74, 74, 86\)/.test(vis) && w.getOpacity() === 1, bg0 + ' | ' + vis + ' | opacity ' + w.getOpacity());
+      await q('window.echo.overlaySet({ locked: false, opacity: 100 })');
+      await wait(400);
+      add('оверлей: замок открывается, окно снова двигается', w.isMovable() === true && /rgba\(18, 18, 20, 1\)|rgb\(18, 18, 20\)/.test(await bg()));
       await q("window.echo.overlayClear()");
       await wait(300);
       add('оверлей: «Очистить чат» очищает ленту', (await qo("document.querySelectorAll('#feed .row').length")) === 0);

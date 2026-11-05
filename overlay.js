@@ -3,8 +3,10 @@
 // счётчиками эфира и таймером. Здесь — логика без Electron, чтобы её можно было проверить тестами:
 // настройки, положение окна и модель (лента сообщений + счётчики), которую питают те же события, что и главное окно.
 
-const DEFAULTS = { opacity: 100, scale: 100, onTop: true, events: true, stats: true };
-const LIMITS = { opacity: [30, 100], scale: [70, 180] };
+// opacity — прозрачность только ФОНА окна (0 — фона нет совсем); рамка, текст и значки всегда видны полностью. Размер окна не масштабируется (всегда 100%).
+// locked — окно заблокировано: его нельзя ни сдвинуть, ни растянуть, пока замок не откроют
+const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, stats: true };
+const LIMITS = { opacity: [0, 100] };
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
 const clampInt = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d; };
@@ -14,9 +16,8 @@ function cleanSettings(o, base = DEFAULTS) {
   o = o && typeof o === 'object' ? o : {};
   const out = { ...DEFAULTS, ...base };
   out.opacity = clampInt(o.opacity !== undefined ? o.opacity : out.opacity, LIMITS.opacity[0], LIMITS.opacity[1], DEFAULTS.opacity);
-  out.scale = clampInt(o.scale !== undefined ? o.scale : out.scale, LIMITS.scale[0], LIMITS.scale[1], DEFAULTS.scale);
-  for (const k of ['onTop', 'events', 'stats']) out[k] = typeof o[k] === 'boolean' ? o[k] : !!out[k];
-  return { opacity: out.opacity, scale: out.scale, onTop: out.onTop, events: out.events, stats: out.stats };
+  for (const k of ['onTop', 'locked', 'events', 'stats']) out[k] = typeof o[k] === 'boolean' ? o[k] : !!out[k];
+  return { opacity: out.opacity, onTop: out.onTop, locked: out.locked, events: out.events, stats: out.stats };
 }
 
 // Положение окна, которое можно восстановить: размеры в разумных пределах и окно хотя бы частично на каком-то экране

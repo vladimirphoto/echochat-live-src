@@ -60,8 +60,8 @@ function ovTrack(channel, payload) {
 function ovApply(echo = true) {
   if (!ovOpen()) return;
   try { ovWin.setAlwaysOnTop(!!ovSet.onTop, 'screen-saver'); } catch (_) {}
-  try { ovWin.setOpacity(ovSet.opacity / 100); } catch (_) {}
-  try { ovWin.webContents.setZoomFactor(ovSet.scale / 100); } catch (_) {}
+  // прозрачность относится только к фону и применяется в самой странице (CSS), окно целиком всегда непрозрачное
+  try { ovWin.setMovable(!ovSet.locked); } catch (_) {} // замок: окно нельзя сдвинуть (растягивание отключается в странице)
   if (echo) ovWin.webContents.send('ov:settings', ovSet);
 }
 // переключатель в приложении и пункт трея всегда показывают настоящее состояние
@@ -77,8 +77,9 @@ function openOverlay() {
   const w = new BrowserWindow({
     ...b,
     minWidth: ovMod.SIZE.minW, minHeight: ovMod.SIZE.minH,
-    show: false, frame: false, resizable: true, maximizable: false, fullscreenable: false, skipTaskbar: true,
-    backgroundColor: '#121214',
+    // окно прозрачное: фон рисует страница с настраиваемой прозрачностью. Размер меняется своими ручками по краям (у прозрачных окон Windows нативное растягивание не работает)
+    show: false, frame: false, transparent: true, hasShadow: false, resizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true,
+    backgroundColor: '#00000000',
     title: 'ЭхоЧат LIVE — оверлей чата', // это имя окна видно в OBS («Захват окна»)
     icon: path.join(__dirname, 'src', 'icon.png'),
     webPreferences: {
@@ -117,7 +118,21 @@ function setOverlay(on) {
 // окно оверлея обращается только за своим: чужие окна эти каналы не используют
 const fromOv = (e) => ovOpen() && e.sender === ovWin.webContents;
 ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed() } : null));
-ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
+// из самого окна меняется только замок; остальные настройки — во вкладке «Оверлей чата» главного окна
+ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch && typeof patch.locked === 'boolean' ? { locked: patch.locked } : {}, false).settings : null));
+// растягивание окна за края: страница присылает смещение курсора, окно меняет размер (при замке — никак)
+let ovGrip = null;
+ipcMain.on('ov:grip', (e, m) => {
+  if (!fromOv(e) || !m || typeof m !== 'object') return;
+  if (m.phase === 'end' || ovSet.locked) { ovGrip = null; return; }
+  if (m.phase === 'start') { ovGrip = ovWin.getBounds(); return; }
+  if (!ovGrip || !/^[nsew]{1,2}$/.test(String(m.dir))) return;
+  const dx = Number(m.dx) || 0, dy = Number(m.dy) || 0, b = ovGrip, d = String(m.dir), S = ovMod.SIZE;
+  const width = Math.min(S.maxW, Math.max(S.minW, Math.round(b.width + (d.includes('e') ? dx : d.includes('w') ? -dx : 0))));
+  const height = Math.min(S.maxH, Math.max(S.minH, Math.round(b.height + (d.includes('s') ? dy : d.includes('n') ? -dy : 0))));
+  const x = d.includes('w') ? b.x + b.width - width : b.x, y = d.includes('n') ? b.y + b.height - height : b.y;
+  try { ovWin.setBounds({ x, y, width, height }); } catch (_) {}
+});
 ipcMain.handle('ov:clear', (e) => { if (!fromOv(e)) return false; ovClear(); return true; });
 ipcMain.on('ov:close', (e) => { if (fromOv(e)) closeOverlay(); });
 function ovClear() { ovModel.clearFeed(); if (ovOpen()) ovWin.webContents.send('ov:clear-feed'); }

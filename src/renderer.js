@@ -136,6 +136,7 @@ const TITLES = {
   filters: ['Фильтры', 'Что голос читает вслух, а что пропускает'],
   widgets: ['Виджеты', 'Чат TikTok и Twitch для OBS и TikTok LIVE Studio'],
   kaspi: ['Донаты Каспи', 'Донаты на экран стрима: имя, сумма и картинка'],
+  overlay: ['Оверлей чата', 'Окно чата TikTok и Twitch поверх всех окон на время стрима'],
   license: ['Лицензия', 'Тариф, ключ и пробный период'],
   settings: ['Настройки', 'Окно, запуск и обновления'],
 };
@@ -991,14 +992,17 @@ $('#pvTest').onclick = () => { if (pvReady) { pvTested = true; window.echo.widge
 $('#wClear').onclick = () => window.echo.widgetClear();
 
 /* ---------- оверлей чата ---------- */
-// Переключатель всегда показывает настоящее состояние окна: его можно закрыть крестиком в самом окне или из трея
+// Все элементы всегда показывают настоящее состояние: окно можно закрыть крестиком в нём или из трея, замок — нажать в самом окне
 function ovShow(st) {
   if (!st) return;
-  const on = !!st.on;
+  const on = !!st.on, c = st.settings || {};
   $('#ovToggle').checked = on;
   $('#ovToggleTxt').textContent = on ? 'Включён' : 'Выключен';
   const err = $('#ovErr');
   err.hidden = !st.error; err.textContent = st.error ? 'Не удалось открыть оверлей: ' + st.error : '';
+  if (document.activeElement !== $('#ovOpacity') && Number.isFinite(c.opacity)) $('#ovOpacity').value = c.opacity;
+  if (Number.isFinite(c.opacity)) $('#ovOpacityVal').textContent = c.opacity + '%';
+  [['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovEvents', 'events'], ['ovStats', 'stats']].forEach(([id, k]) => { if (typeof c[k] === 'boolean') $('#' + id).checked = c[k]; });
 }
 $('#ovToggle').addEventListener('change', async (e) => {
   const r = await window.echo.overlayToggle(e.target.checked).catch(() => null);
@@ -1007,6 +1011,8 @@ $('#ovToggle').addEventListener('change', async (e) => {
 $('#ovTest').onclick = async () => { ovShow(await window.echo.overlayTest().catch(() => null)); };
 $('#ovClear').onclick = () => window.echo.overlayClear();
 $('#ovReset').onclick = () => window.echo.overlayResetPos();
+$('#ovOpacity').addEventListener('input', (e) => { $('#ovOpacityVal').textContent = e.target.value + '%'; window.echo.overlaySet({ opacity: +e.target.value }); });
+[['ovLock', 'locked'], ['ovOnTop', 'onTop'], ['ovEvents', 'events'], ['ovStats', 'stats']].forEach(([id, k]) => $('#' + id).addEventListener('change', (e) => window.echo.overlaySet({ [k]: e.target.checked })));
 window.echo.onOverlayState(ovShow);
 window.echo.overlayState().then(ovShow).catch(() => {});
 
@@ -1196,6 +1202,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.2.1': ['Оверлей чата: замок полностью блокирует окно (нельзя сдвинуть и растянуть), пока его не откроют', 'Оверлей чата: прозрачность убирает только фон, рамка, текст и значки всегда видны полностью; размер всегда 100%', 'Настройки оверлея вынесены в отдельную вкладку «Оверлей чата» под «Донатами Каспи»'],
   '2.2.0': ['Новое: оверлей чата — окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента TikTok и Twitch вместе', 'Включается переключателем во вкладке «Виджеты» и пунктом в меню трея; положение, размер и прозрачность запоминаются'],
   '2.1.8': ['Озвучка: пауза в очереди больше не длится десятки секунд — фраза, которая не озвучилась за 8 секунд, пропускается', 'Озвучка: закреплённые голоса держат три готовых соединения, поэтому пачка сообщений не ждёт рукопожатия', 'Окно: «Свернуть» сворачивает на панель задач, иконка остаётся; в трей — только при закрытии по выбору'],
   '2.1.7': ['Озвучка: голос выбранной карточки прогревается сразу при клике, поэтому после нажатия TikTok/Twitch первая фраза нового голоса (в том числе мужского) идёт без задержки', 'Озвучка: фраза ждёт уже открывающееся соединение вместо того, чтобы открывать второе, а для выбранного голоса всегда держится запасное соединение — пачка фраз подряд не ждёт подключения'],

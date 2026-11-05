@@ -7,18 +7,19 @@ const AREA = { x: 0, y: 0, width: 1920, height: 1040 };
 const clock = (t0 = 1000) => { let t = t0; const f = () => t; f.set = (v) => { t = v; }; return f; };
 
 test('оверлей: настройки по умолчанию и ограничение чисел', () => {
-  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, scale: 100, onTop: true, events: true, stats: true });
-  const s = ov.cleanSettings({ opacity: 5, scale: 9999, onTop: false, events: false, stats: false });
-  assert.deepEqual(s, { opacity: 30, scale: 180, onTop: false, events: false, stats: false });
+  assert.deepEqual(ov.cleanSettings({}), { opacity: 100, onTop: true, locked: false, events: true, stats: true });
+  const s = ov.cleanSettings({ opacity: -5, scale: 9999, onTop: false, locked: true, events: false, stats: false });
+  assert.deepEqual(s, { opacity: 0, onTop: false, locked: true, events: false, stats: false }); // масштаба больше нет
+  assert.equal(ov.cleanSettings({ opacity: 500 }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 'мусор' }).opacity, 100);
   assert.equal(ov.cleanSettings({ opacity: 64.6 }).opacity, 65);
 });
 
 test('оверлей: лишние поля отбрасываются, частичное обновление не сбрасывает остальное', () => {
   const base = ov.cleanSettings({ opacity: 70, onTop: false });
-  const s = ov.cleanSettings({ scale: 120, hack: '<script>', onTop: 'yes' }, base);
+  const s = ov.cleanSettings({ locked: true, hack: '<script>', onTop: 'yes' }, base);
   assert.equal(s.opacity, 70);       // осталось из base
-  assert.equal(s.scale, 120);        // пришло в обновлении
+  assert.equal(s.locked, true);      // пришло в обновлении
   assert.equal(s.onTop, false);      // не boolean — игнорируется, остаётся из base
   assert.ok(!('hack' in s));
   assert.deepEqual(ov.cleanSettings(null), ov.DEFAULTS);
