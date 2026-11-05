@@ -595,7 +595,9 @@ window.echo.onLike((l) => {
 });
 window.echo.onViewers((v) => { if (Number.isFinite(v.count)) $('#sViewers').textContent = v.count.toLocaleString('ru-RU'); });
 // онлайн Twitch считается отдельно: пока стрима нет (или канал не подключён) — прочерк
-window.echo.onTwViewers((v) => { $('#sViewersTw').textContent = v && Number.isFinite(v.count) ? v.count.toLocaleString('ru-RU') : '—'; });
+// онлайн Twitch: от 10 000 — двузначное число и K (12 400 → 12K), чтобы цифры помещались в плашку
+const shortViewers = (n) => (n >= 10000 ? Math.floor(n / 1000) + 'K' : n.toLocaleString('ru-RU'));
+window.echo.onTwViewers((v) => { const e = $('#sViewersTw'); e.textContent = v && Number.isFinite(v.count) ? shortViewers(v.count) : '—'; e.title = v && Number.isFinite(v.count) ? v.count.toLocaleString('ru-RU') : ''; });
 window.echo.onError((e) => sys(e.message));
 
 /* ---------- подключение ---------- */
@@ -1052,6 +1054,15 @@ function refreshKaspiUi() {
   $('#kBox').hidden = !K.enabled;
   if (!K.enabled) return setKStat('Приём отключён', 'bad');
   $('#kUrl').value = kaspiAddr();
+  // лицензия истекла (или Pro нет): так и пишем и предлагаем купить Pro; «нет связи с сервером» — только при настоящем обрыве
+  const ls = window.__lic && window.__lic.state;
+  if (kState.relayPro || (ls && Array.isArray(ls.locked) && ls.locked.includes('kaspi'))) {
+    setKStat(ls && ls.reason === 'trial-ended' ? 'Пробный период закончился. ' : ls && !ls.paid && ls.plan === 'lite' && !ls.reason ? 'Донаты Каспи входят в Pro. ' : 'Лицензия истекла. ', 'bad');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'kbuy'; b.textContent = 'Купить Pro';
+    b.onclick = () => window.__lic && window.__lic.buy();
+    $('#kStat').appendChild(b);
+    return;
+  }
   if (kState.relayBase) setKStat(kState.relay === false ? 'Нет связи с сервером, проверьте интернет' : 'Приём включён', kState.relay === false ? 'bad' : 'ok');
   else if (!kState.running) setKStat('Запускаю приём…', '');
   else if (!kState.ips.length) setKStat('Не найдено подключение к локальной сети: подключи компьютер к Wi-Fi или кабелю', 'bad');
@@ -1062,7 +1073,8 @@ async function copyFrom(inputSel, btn, label) {
   try { await navigator.clipboard.writeText(inp.value); } catch (_) { inp.select(); document.execCommand('copy'); }
   btn.textContent = '✓ Скопировано'; setTimeout(() => { btn.textContent = label; }, 1500);
 }
-if (window.echo.onKaspiRelay) window.echo.onKaspiRelay((s) => { kState.relay = s.ok; refreshKaspiUi(); });
+if (window.echo.onKaspiRelay) window.echo.onKaspiRelay((s) => { kState.relay = s.ok; kState.relayPro = s.code === 'pro'; refreshKaspiUi(); });
+window.addEventListener('lic-change', () => refreshKaspiUi());
 $('#dUrl').onfocus = (e) => e.target.select();
 $('#kUrl').onfocus = (e) => e.target.select();
 $('#dCopy').onclick = () => copyFrom('#dUrl', $('#dCopy'), 'Копировать');
@@ -1202,6 +1214,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.2.2': ['Донаты Каспи: когда лицензия истекла, вместо «Нет связи с сервером» пишется «Лицензия истекла» и есть кнопка «Купить Pro»', 'Онлайн Twitch от 10 000 показывается коротко: 12K (в приложении и в оверлее чата)', 'Оверлей чата: текст под кнопками во вкладке больше не прилипает к ним'],
   '2.2.1': ['Оверлей чата: замок полностью блокирует окно (нельзя сдвинуть и растянуть), пока его не откроют', 'Оверлей чата: прозрачность убирает только фон, рамка, текст и значки всегда видны полностью; размер всегда 100%', 'Настройки оверлея вынесены в отдельную вкладку «Оверлей чата» под «Донатами Каспи»'],
   '2.2.0': ['Новое: оверлей чата — окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента TikTok и Twitch вместе', 'Включается переключателем во вкладке «Виджеты» и пунктом в меню трея; положение, размер и прозрачность запоминаются'],
   '2.1.8': ['Озвучка: пауза в очереди больше не длится десятки секунд — фраза, которая не озвучилась за 8 секунд, пропускается', 'Озвучка: закреплённые голоса держат три готовых соединения, поэтому пачка сообщений не ждёт рукопожатия', 'Окно: «Свернуть» сворачивает на панель задач, иконка остаётся; в трей — только при закрытии по выбору'],

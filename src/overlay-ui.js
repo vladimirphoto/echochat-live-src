@@ -14,6 +14,8 @@
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8c-1.5-4-6-4-6-1.5S10 8 12 8zm0 0c1.5-4 6-4 6-1.5S14 8 12 8z"/></svg>',
   };
   const fmtNum = (n) => (Number.isFinite(n) ? n.toLocaleString('ru-RU') : '—');
+  // онлайн Twitch от 10 000: двузначное число и K (12 400 → 12K), иначе цифры не помещаются
+  const fmtShort = (n) => (Number.isFinite(n) ? (n >= 10000 ? Math.floor(n / 1000) + 'K' : n.toLocaleString('ru-RU')) : '—');
   const fmtTime = (ms) => [Math.floor(ms / 3600000), Math.floor(ms / 60000) % 60, Math.floor(ms / 1000) % 60].map((n) => String(n).padStart(2, '0')).join(':');
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const isUrl = (u) => /^https?:\/\//i.test(String(u || ''));
@@ -91,7 +93,7 @@
     ST = s;
     $('#vTt').textContent = fmtNum(s.ttViewers);
     $('#stTw').hidden = !s.twOn; // онлайн Twitch виден, только пока Twitch подключён
-    $('#vTw').textContent = fmtNum(s.twViewers);
+    $('#vTw').textContent = fmtShort(s.twViewers); $('#vTw').title = fmtNum(s.twViewers);
     $('#vGifts').textContent = fmtNum(s.gifts);
     $('#vFollows').textContent = fmtNum(s.follows);
     $('#vLikes').textContent = fmtNum(s.likes);

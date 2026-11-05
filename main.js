@@ -750,7 +750,7 @@ ipcMain.handle('kaspi:sample', async (_e, i) => {
     rq.end(JSON.stringify({ text: smp.text }));
   });
 });
-const kaspiState = () => ({ running: !!(krx && krx.port), port: krx ? krx.port : 0, ips: kaspi.lanAddresses(), relay: relayOk ? relayOk.ok : null, relayBase: relayBaseNow });
+const kaspiState = () => ({ running: !!(krx && krx.port), port: krx ? krx.port : 0, ips: kaspi.lanAddresses(), relay: relayOk ? relayOk.ok : null, relayPro: !!(relayOk && relayOk.code === 'pro'), relayBase: relayBaseNow });
 ipcMain.handle('donate:set', async (_e, s) => {
   dset = { ...dset, ...(s || {}) };
   wsrv && wsrv.broadcast('dsettings', donateWidgetSettings());

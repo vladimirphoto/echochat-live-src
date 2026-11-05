@@ -12,7 +12,9 @@ const isHttp = (u) => /^https?:\/\/[^\s/]+/i.test(String(u || ''));
 function startRelay({ getConfig, onNotification, onState }) {
   let timer = null, stopped = false, after = 0, lastOk = null;
   const seen = new Set();
-  const state = (ok, error) => { if (lastOk !== ok) { lastOk = ok; try { onState && onState({ ok, error: error || '' }); } catch (_) {} } };
+  // code: 'pro' — сервер отказал из-за тарифа (лицензия истекла или Pro нет), это не обрыв связи
+  let lastCode = '';
+  const state = (ok, error, code) => { code = code || ''; if (lastOk !== ok || lastCode !== code) { lastOk = ok; lastCode = code; try { onState && onState({ ok, error: error || '', code }); } catch (_) {} } };
 
   async function tick() {
     if (stopped) return;
@@ -26,7 +28,7 @@ function startRelay({ getConfig, onNotification, onState }) {
       if (!r.ok) throw new Error('сервер ответил ' + r.status);
       const j = await r.json();
       if (!j || j.ok !== true || !Array.isArray(j.items)) throw new Error('неверный ответ сервера');
-      if (j.needPro) { state(false, 'донаты Каспи доступны в Pro'); return; }
+      if (j.needPro) { state(false, 'донаты Каспи доступны в Pro', 'pro'); return; }
       state(true);
       for (const it of j.items) {
         const id = Number(it.id) || 0;

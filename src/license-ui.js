@@ -210,6 +210,7 @@
     if (!s) return;
     const was = st;
     st = s;
+    window.dispatchEvent(new CustomEvent('lic-change', { detail: s }));
     renderStatus(s);
     renderChip(s);
     document.querySelectorAll('.nav-pro').forEach((b) => { b.hidden = !!s.paid; });
@@ -272,6 +273,7 @@
     if (!$('#licBuyBack').hidden) closeBuy();
     else if (!$('#licEndBack').hidden) closeEnd();
   });
+  window.__lic = { get state() { return st; }, buy: () => { goTab('license'); openBuy('pro'); } };
   echo.onLic((s) => apply(s, { activated: !!(s && s.justActivated) }));
 
   // цену на карточке тарифа берём из того же файла, что и окно покупки
