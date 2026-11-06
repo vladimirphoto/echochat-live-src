@@ -19,7 +19,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .logo svg{width:22px;height:22px}
 .brand b{display:block;font-size:17px;line-height:1.2}.brand small{color:var(--muted);font-size:12.5px}
 .wrap{max-width:1100px;margin:0 auto;padding:14px 24px 56px}
-.card{padding:22px;border-radius:18px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);margin-bottom:16px}
+.card{padding:22px;border-radius:18px;background:var(--panel);border:1px solid var(--line);margin-bottom:16px}
 .card h2{font-size:17px;margin-bottom:3px}
 .hint{color:var(--muted);font-size:13px;margin-bottom:18px}
 label{display:block;color:var(--muted);font-size:12.5px;margin:0 0 7px}
@@ -78,9 +78,9 @@ label{display:block;color:var(--muted);font-size:12.5px;margin:0 0 7px}
 .search{position:relative;flex:1;min-width:220px;max-width:360px}
 .search .sico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex;pointer-events:none}
 .search .in{padding-left:38px}
-.lic{position:relative;display:grid;grid-template-columns:1fr auto;gap:14px;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);margin-bottom:10px;transition:.15s}
+.lic{position:relative;display:grid;grid-template-columns:1fr auto;gap:14px;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);margin-bottom:10px;transition:border-color .15s,background-color .15s}
 .lic:hover{border-color:rgba(139,92,246,.45);background:rgba(255,255,255,.05)}
-.lic.dim{opacity:.72}
+.lic.dim>div:first-child{opacity:.72}
 .lk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .lk .k{font:600 15.5px Consolas,"Cascadia Mono",monospace;letter-spacing:.6px;user-select:all}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--line);color:var(--muted)}
@@ -325,7 +325,8 @@ $('create').onclick=function(){
 $('go').onclick=function(){tok=$('tok').value.trim();if(!tok)return;sessionStorage.setItem('adm',tok);$('loginMsg').textContent='';load()};
 $('tok').onkeydown=function(e){if(e.key==='Enter')$('go').click()};
 $('logout').onclick=function(){sessionStorage.removeItem('adm');tok='';data=null;$('tok').value='';$('app').classList.add('hide');$('logout').classList.add('hide');$('login').classList.remove('hide');$('newBox').classList.add('hide')};
-$('search').oninput=function(){query=$('search').value;render()};
+var searchTimer=0;
+$('search').oninput=function(){query=$('search').value;clearTimeout(searchTimer);searchTimer=setTimeout(render,150)};
 $('searchIco').appendChild(ico('search'));
 if(tok)load();
 </script></body></html>`;
