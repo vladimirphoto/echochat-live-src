@@ -35,8 +35,10 @@
       const el = document.getElementById('tab-' + tab);
       if (!el) continue;
       const must = s.locked.includes(LOCK_KEY[tab] || tab);
-      let ov = el.querySelector(':scope > .lock-ov');
-      const kids = [...el.children].filter((c) => !c.classList.contains('lock-ov'));
+      // слой блокировки лежит в <main> поверх всей страницы (шапка, счётчики, вкладка), а не внутри вкладки: так размытие общее и не зависит от анимации вкладки
+      const main = el.parentElement;
+      let ov = main.querySelector(`:scope > .lock-ov[data-for="${tab}"]`);
+      const kids = [...el.children];
       if (must) {
         clearTimeout(el._unlock);
         el.classList.remove('unlocking');
@@ -45,9 +47,10 @@
         if (!ov) {
           ov = document.createElement('div');
           ov.className = 'lock-ov';
+          ov.dataset.for = tab;
           ov.innerHTML = `<div class="lock-card"><div class="lock-ic">${LOCK_SVG}</div><h3></h3><p></p><button class="btn primary" type="button">Открыть Pro</button></div>`;
           ov.querySelector('button').addEventListener('click', () => { goTab('license'); openBuy('pro'); });
-          el.appendChild(ov);
+          main.appendChild(ov);
         }
         ov.classList.remove('out');
         const [h, p] = lockText(tab, s);
