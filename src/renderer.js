@@ -21,9 +21,26 @@ const BUILTIN = [
   { id: 'b-remy', name: 'Реми', desc: 'Мужской · бархатный, спокойный', voice: 'fr-FR-RemyMultilingualNeural', gender: 'M' },
   { id: 'b-florian', name: 'Флориан', desc: 'Мужской · бодрый, энергичный', voice: 'de-DE-FlorianMultilingualNeural', gender: 'M' },
 ].map((v) => ({ rate: 0, pitch: 0, ...v, provider: 'edge', builtin: true }));
+// Голоса Azure AI Speech (нужен свой ключ). Те же имена, что у Microsoft, плюс Дария; точный список берётся из аккаунта пользователя (applyAzCatalog)
+const BUILTIN_AZ = [
+  { id: 'az-svetlana', name: 'Светлана', desc: 'Женский · родной русский, тёплый', voice: 'ru-RU-SvetlanaNeural', gender: 'F' },
+  { id: 'az-dmitry', name: 'Дмитрий', desc: 'Мужской · родной русский, уверенный', voice: 'ru-RU-DmitryNeural', gender: 'M' },
+  { id: 'az-dariya', name: 'Дария', desc: 'Женский · родной русский, мягкий', voice: 'ru-RU-DariyaNeural', gender: 'F' },
+  { id: 'az-ava', name: 'Ава', desc: 'Женский · мягкий, живой', voice: 'en-US-AvaMultilingualNeural', gender: 'F' },
+  { id: 'az-emma', name: 'Эмма', desc: 'Женский · спокойный, дружелюбный', voice: 'en-US-EmmaMultilingualNeural', gender: 'F' },
+  { id: 'az-vivienne', name: 'Вивьен', desc: 'Женский · нежный, выразительный', voice: 'fr-FR-VivienneMultilingualNeural', gender: 'F' },
+  { id: 'az-seraphina', name: 'Серафина', desc: 'Женский · чёткий, уверенный', voice: 'de-DE-SeraphinaMultilingualNeural', gender: 'F' },
+  { id: 'az-andrew', name: 'Эндрю', desc: 'Мужской · тёплый, душевный', voice: 'en-US-AndrewMultilingualNeural', gender: 'M' },
+  { id: 'az-brian', name: 'Брайан', desc: 'Мужской · ровный, дикторский', voice: 'en-US-BrianMultilingualNeural', gender: 'M' },
+  { id: 'az-remy', name: 'Реми', desc: 'Мужской · бархатный, спокойный', voice: 'fr-FR-RemyMultilingualNeural', gender: 'M' },
+  { id: 'az-florian', name: 'Флориан', desc: 'Мужской · бодрый, энергичный', voice: 'de-DE-FlorianMultilingualNeural', gender: 'M' },
+].map((v) => ({ rate: 0, pitch: 0, ...v, provider: 'azure', builtin: true }));
+const AZ_BASE_IDS = ['az-svetlana', 'az-dmitry'];
+const EDGE_VOICES = new Set(BUILTIN.map((b) => b.voice));
+BUILTIN.push(...BUILTIN_AZ);
 
 const DEFAULTS = {
-  selected: 'b-svetlana', vol: 80, maxLen: 140, nick: '',
+  selected: 'b-svetlana', engView: 'edge', azCatalog: [], vol: 80, maxLen: 140, nick: '',
   presets: [],
   widgets: [], wSel: '', twNick: '',
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
@@ -71,7 +88,16 @@ if (!S.widgets.length) S.widgets = [normWidget({ id: 'w1', name: 'OBS', tt: 'lef
 if (!S.widgets.some((w) => w.id === S.wSel)) S.wSel = S.widgets[0].id;
 const curW = () => S.widgets.find((w) => w.id === S.wSel) || S.widgets[0];
 // встроенные голоса всегда на месте, свои — добавляются после них
-S.presets = BUILTIN.map((b) => ({ ...b, ...((S.presets || []).find((p) => p.id === b.id) || {}), builtin: true }));
+// голоса Azure из аккаунта пользователя (после «Сохранить и проверить»): русские и многоязычные, которые читают по-русски
+const azExtra = () => (Array.isArray(S.azCatalog) ? S.azCatalog : []).filter((c) => c && typeof c.id === 'string' && !BUILTIN_AZ.some((b) => b.voice === c.id)).map((c) => ({
+  id: 'az-' + c.id, voice: c.id, name: String(c.name || c.id).slice(0, 24), gender: c.gender === 'M' ? 'M' : 'F', hd: !!c.hd, rate: 0, pitch: 0, provider: 'azure', builtin: true,
+  desc: (c.gender === 'M' ? 'Мужской' : 'Женский') + (c.hd ? ' · HD, максимально живой' : c.native ? ' · родной русский' : ' · многоязычный'),
+}));
+// когда список аккаунта загружен, скрываем голоса Azure, которых в нём нет (кроме двух основных русских)
+const azVisible = (p) => p.provider !== 'azure' || !(S.azCatalog || []).length || AZ_BASE_IDS.includes(p.id) || S.azCatalog.some((c) => c && c.id === p.voice);
+const buildPresets = (saved) => [...BUILTIN, ...azExtra()].map((b) => ({ ...b, ...((saved || []).find((p) => p.id === b.id) || {}), builtin: true })).filter(azVisible);
+S.presets = buildPresets(S.presets);
+if (!['edge', 'azure'].includes(S.engView)) S.engView = 'edge';
 if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id;
 delete S.subsOnly; // режим «только подписчики» убран
 delete S.showTwitch; // чат Twitch всегда показывается в ленте, если канал подключён
@@ -204,14 +230,15 @@ $('#twNick').value = S.twNick || '';
 const voicesBox = $('#voices');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+const engOf = (p) => (p && p.provider === 'azure' ? 'azure' : 'edge');
 function renderVoices() {
   voicesBox.innerHTML = '';
-  S.presets.forEach((p) => {
+  S.presets.filter((p) => engOf(p) === S.engView).forEach((p) => {
     const d = document.createElement('div');
-    d.className = 'voice' + (p.id === S.selected ? ' sel' : '');
+    d.className = 'voice' + (p.id === S.selected ? ' sel' : '') + (p.provider === 'azure' && !azInfo.hasKey ? ' noaz' : '');
     d.dataset.id = p.id;
     d.innerHTML = `<div class="av">${esc((p.name[0] || '?').toUpperCase())}</div>
-      <div class="vi"><b>${esc(p.name)}</b><small>${esc(p.desc || p.voice || '')}</small></div>
+      <div class="vi"><b>${esc(p.name)}${p.hd ? '<em class="hd">HD</em>' : ''}</b><small>${esc(p.desc || p.voice || '')}</small></div>
       <span class="vtags">${p.id !== S.selected && S.ttVoice === p.id ? '<em class="tt">TikTok</em>' : ''}${p.id !== S.selected && S.twVoice === p.id ? '<em class="tw">Twitch</em>' : ''}</span>
       <button class="mini play" title="Прослушать">${ICON_PLAY}</button>
       ${p.builtin ? '' : '<button class="mini del" title="Удалить голос">✕</button>'}
@@ -233,10 +260,11 @@ function renderVoices() {
   });
   refreshPreviewUi();
   fillVoiceSelects();
+  renderEngine();
 }
 
 // голос чата TikTok и Twitch закрепляется кнопками в карточке выбранного голоса; для подарков и подписок — список в «Что озвучивать»
-const voiceOpts = () => S.presets.map((p) => ({ v: p.id, label: p.name + ' · ' + (p.gender === 'M' ? 'муж.' : 'жен.') }));
+const voiceOpts = () => S.presets.map((p) => ({ v: p.id, label: p.name + ' · ' + (p.gender === 'M' ? 'муж.' : 'жен.') + (p.provider === 'azure' ? ' · Azure' : '') }));
 const routeSelects = [
   makeSelect('eventVoiceSel', {
     options: () => [{ v: '', label: 'Как у чата TikTok' }, ...voiceOpts()],
@@ -247,7 +275,13 @@ const routeSelects = [
 function fillVoiceSelects() { ensureRouteVoices(); routeSelects.forEach((r) => r()); }
 const eventPreset = () => S.presets.find((p) => p.id === S.eventVoice) || ttPreset();
 // заранее открыть соединения с сервером озвучки для голосов чата, Twitch и событий: первая фраза эфира не ждёт подключения
-function warmVoices() { try { window.echo.warm([...new Set([ttPreset(), twPreset(), eventPreset(), selectedPreset()].map((p) => p && p.voice).filter(Boolean))]); } catch (_) {} }
+function warmVoices() {
+  try {
+    const used = [ttPreset(), twPreset(), eventPreset(), selectedPreset()].filter(Boolean);
+    window.echo.warm([...new Set(used.filter((p) => engOf(p) === 'edge').map((p) => p.voice))]);
+    if (azInfo.hasKey && used.some((p) => engOf(p) === 'azure')) window.echo.azWarm();
+  } catch (_) {}
+}
 setTimeout(warmVoices, 2500);
 setInterval(warmVoices, 5 * 60 * 1000); // голоса подарков и подписок звучат редко — напоминаем серверу-пулу, что они нужны
 
@@ -256,10 +290,126 @@ const BASE_IDS = ['b-svetlana', 'b-dmitry'];
 function applyCatalog(all) {
   if (!Array.isArray(all) || all.length < 10) return; // каталог не загрузился — показываем всё
   const have = new Set(all);
-  S.presets = S.presets.filter((p) => BASE_IDS.includes(p.id) || have.has(p.voice));
+  S.presets = S.presets.filter((p) => p.provider === 'azure' || BASE_IDS.includes(p.id) || have.has(p.voice)); // каталог Edge касается только голосов Edge
   if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id;
   ensureRouteVoices(); save();
   renderVoices(); refreshRate(); refreshPitch(); syncControls();
+}
+
+/* ---------- движки озвучки: Microsoft и Azure ---------- */
+// Вкладки только показывают голоса своего движка: голос любого движка можно закрепить за TikTok, Twitch и событиями независимо.
+// Azure работает по ключу пользователя; если он недоступен, фраза читается голосом Microsoft (см. tts:synth в main.js).
+let azInfo = { hasKey: false, keyTail: '', region: 'westeurope', blocked: null, verified: false };
+const azPill = $('#azPill'), azStat = $('#azStat'), azBox = $('#azBox'), azChars = { n: 0 };
+const azPillSet = (state, text) => { azPill.dataset.s = state; azPill.textContent = text; azPill.title = azChars.n ? 'Отправлено в Azure за этот запуск: ' + azChars.n + ' симв.' : ''; };
+const azSetStat = (kind, text) => { azStat.className = 'az-stat' + (kind ? ' ' + kind : ''); azStat.textContent = text || ''; };
+function azHuman(r) {
+  const code = r && r.code;
+  return ({
+    'no-key': 'Не указан ключ или регион Azure.',
+    auth: 'Azure не принял ключ. Проверь, что ключ скопирован целиком, а регион тот же, где создан ресурс.',
+    quota: 'Превышен лимит запросов или квота Azure.',
+    network: 'Нет связи с Azure. Проверь интернет.',
+    timeout: 'Azure не ответил вовремя.',
+    server: 'Сервис Azure временно недоступен.',
+    bad: 'Azure не принял запрос.',
+    empty: 'Azure вернул пустой звук.',
+  })[code] || (r && r.error) || 'Azure недоступен.';
+}
+function azRefreshPill() {
+  if (!azInfo.hasKey) return azPillSet('off', 'Не подключено');
+  if (azInfo.blocked) return azPillSet('bad', 'Ошибка · звучит Microsoft');
+  azPillSet(azInfo.verified ? 'ok' : 'off', azInfo.verified ? 'Подключено' + (S.azCatalog.length ? ' · ' + S.azCatalog.length + ' голосов' : '') : 'Ключ сохранён');
+}
+// какой голос и какого движка озвучивает TikTok, Twitch и события: видно на любой вкладке
+function renderEngine() {
+  $$('#engSeg button').forEach((b) => { const on = b.dataset.eng === S.engView; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  azBox.hidden = S.engView !== 'azure';
+  const lab = (p) => `<em>${esc(p.name)}</em><u class="${engOf(p) === 'azure' ? 'az' : ''}">${engOf(p) === 'azure' ? 'Azure' : 'Microsoft'}</u>`;
+  $('#routeSum').innerHTML = `<span><i class="tt">TikTok</i>${lab(ttPreset())}</span><span><i class="tw">Twitch</i>${lab(twPreset())}</span><span><i class="ev">Подарки</i>${lab(eventPreset())}</span>`;
+  const reg = $('#azRegion'); if (document.activeElement !== reg) reg.value = azInfo.region || '';
+  $('#azKey').placeholder = azInfo.hasKey ? '•••••••• ' + (azInfo.keyTail || '') + ' · сохранён' : 'Вставь ключ из Azure';
+  $('#azForget').hidden = !azInfo.hasKey;
+  if (S.engView === 'azure' && !azInfo.hasKey && !azStat.textContent) azSetStat('', 'Пока ключ не указан, голоса Azure читает Microsoft. Введи ключ и регион и нажми «Сохранить и проверить».');
+  azRefreshPill();
+}
+$$('#engSeg button').forEach((b) => {
+  b.onclick = () => {
+    if (S.engView === b.dataset.eng) return;
+    S.engView = b.dataset.eng;
+    // ползунки скорости и тона и кнопка «Проверить голос» относятся к выбранному голосу — он должен быть на открытой вкладке
+    const vis = S.presets.filter((p) => engOf(p) === S.engView);
+    if (vis.length && !vis.some((p) => p.id === S.selected)) S.selected = (vis.find((p) => p.id === S.ttVoice) || vis.find((p) => p.id === S.twVoice) || vis[0]).id;
+    stopPreview(); save(); renderVoices(); refreshRate(); refreshPitch(); syncControls(); warmVoices();
+  };
+});
+
+// голоса аккаунта Azure: русские и многоязычные, которые умеют читать по-русски; HD — в начало
+function applyAzCatalog(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  S.azCatalog = list.slice(0, 60).map((v) => ({ id: v.id, name: v.name, gender: v.gender, native: !!v.native, hd: !!v.hd }));
+  S.presets = buildPresets(S.presets);
+  ensureRouteVoices();
+  if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id;
+  save(); renderVoices(); refreshRate(); refreshPitch(); syncControls();
+}
+async function azSaveAndTest() {
+  const btn = $('#azSave'); if (btn.disabled) return;
+  const key = $('#azKey').value.trim(), region = $('#azRegion').value.trim();
+  btn.disabled = true; azPillSet('busy', 'Проверяю…'); azSetStat('', 'Проверяю подключение к Azure…');
+  try {
+    const patch = { region }; if (key) patch.key = key;
+    const r = await window.echo.azSet(patch);
+    azInfo = { ...azInfo, ...(r.status || {}) };
+    if (!r.ok) return azSetStat('bad', r.error);
+    if (!azInfo.hasKey) return azSetStat('bad', 'Вставь ключ Speech из портала Azure.');
+    $('#azKey').value = '';
+    const t = await window.echo.azTest();
+    azInfo = { ...azInfo, ...(t.status || {}), blocked: t.ok ? null : azInfo.blocked, verified: !!t.ok };
+    if (t.ok) { applyAzCatalog(t.voices); azSetStat('ok', 'Готово: ключ работает. Голосов для русского языка: ' + t.voices.length + '. Теперь выбери голос и закрепи его за TikTok или Twitch.'); }
+    else azSetStat('bad', azHuman(t));
+  } catch (e) {
+    azSetStat('bad', 'Не удалось проверить: ' + String((e && e.message) || e).slice(0, 120));
+  } finally { btn.disabled = false; renderVoices(); }
+}
+$('#azSave').onclick = azSaveAndTest;
+$('#azKey').onkeydown = $('#azRegion').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); azSaveAndTest(); } };
+$('#azForget').onclick = async () => {
+  const r = await window.echo.azSet({ key: '' }).catch(() => null);
+  azInfo = { ...azInfo, ...((r && r.status) || { hasKey: false, keyTail: '' }), blocked: null, verified: false };
+  azSetStat('', 'Ключ удалён. Голоса Azure теперь читает Microsoft.');
+  renderVoices();
+};
+// результат синтеза голосом Azure: подтверждаем работу или показываем, почему фраза ушла голосом Microsoft (не чаще раза в минуту в ленте)
+let azWarnAt = 0;
+function azNote(r) {
+  if (r.ok && r.engine === 'azure') {
+    azChars.n += r.chars || 0;
+    if (azInfo.blocked || !azInfo.verified) { azInfo.blocked = null; azInfo.verified = true; azRefreshPill(); }
+    return;
+  }
+  if (r.fallback) {
+    const why = azHuman({ code: r.azureCode, error: r.azureError });
+    azInfo.blocked = r.azureCode || 'server'; azInfo.verified = false; azRefreshPill();
+    azSetStat('bad', why + ' Пока фразы читает Microsoft.');
+    if (Date.now() - azWarnAt > 60000) { azWarnAt = Date.now(); sys('Azure недоступен: ' + why + ' Озвучка идёт голосом Microsoft.'); }
+  }
+}
+// при запуске подтягиваем сохранённые настройки и тихо обновляем список голосов аккаунта
+function azInit() {
+  window.echo.azStatus().then((st) => {
+    azInfo = { ...azInfo, ...st };
+    const dl = $('#azRegions'); dl.innerHTML = '';
+    (st.regions || []).forEach((r) => { const o = document.createElement('option'); o.value = r.id; o.label = r.name; dl.appendChild(o); });
+    renderVoices();
+    if (!st.hasKey) return;
+    setTimeout(() => window.echo.azTest().then((t) => {
+      azInfo = { ...azInfo, ...(t.status || {}), verified: !!t.ok };
+      if (t.ok) applyAzCatalog(t.voices);
+      else if (t.code === 'auth') azSetStat('bad', azHuman(t));
+      renderEngine();
+    }).catch(() => {}), 3000);
+  }).catch(() => {});
 }
 
 /* ---------- прослушивание голоса: ▶ превращается в паузу и останавливает ---------- */
@@ -435,11 +585,15 @@ function playBlob(b64, rate = 1) {
 }
 
 function synthFor(text, p, urgent) {
+  const az = engOf(p) === 'azure';
   return window.echo.synth({
     text, voice: p.voice, urgent: !!urgent,
+    engine: az ? 'azure' : 'edge',
+    // если Azure недоступен, фразу читает Microsoft: тот же голос, а у голосов без двойника в Microsoft — родной русский по полу
+    fallbackVoice: az ? (EDGE_VOICES.has(p.voice) ? p.voice : (p.gender === 'M' ? 'ru-RU-DmitryNeural' : 'ru-RU-SvetlanaNeural')) : undefined,
     rate: Math.max(0.5, 1 + (p.rate || 0) / 100),
     pitch: ((p.pitch || 0) >= 0 ? '+' : '') + (p.pitch || 0) + 'Hz',
-  }).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
+  }).then((r) => { if (az && r) azNote(r); return r; }).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
 }
 
 // синтез стартует заранее, пока играет предыдущая фраза — без пауз между сообщениями
@@ -1251,10 +1405,12 @@ async function initLikesPreview() {
 /* ---------- старт ---------- */
 renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L });
 window.echo.voices().then((r) => applyCatalog(r && r.all)).catch(() => {});
-window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get voiceCalls() { return voiceCalls; }, setPauseMs(v) { PAUSE_MS = v; }, setFeedReturnMs(v) { FEED_RETURN_MS = v; }, stopAllVoice() { queue.length = 0; stopCurrent(); }, feedFromBottom, addMsg, get PAUSE_MS() { return PAUSE_MS; }, S, clean, speakName, renderVoices, builtin: BUILTIN, get presets() { return S.presets; }, since, ttPreset, twPreset, eventPreset, setNk };
+azInit();
+window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get voiceCalls() { return voiceCalls; }, setPauseMs(v) { PAUSE_MS = v; }, setFeedReturnMs(v) { FEED_RETURN_MS = v; }, stopAllVoice() { queue.length = 0; stopCurrent(); }, feedFromBottom, addMsg, get PAUSE_MS() { return PAUSE_MS; }, S, clean, speakName, renderVoices, applyAzCatalog, azNote, engOf, get azInfo() { return azInfo; }, builtin: BUILTIN, get presets() { return S.presets; }, since, ttPreset, twPreset, eventPreset, setNk };
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.4.0': ['Озвучка: новый движок Azure рядом с Microsoft — отдельные вкладки «Microsoft» и «Azure» в «Мои голоса». Голос любого движка можно закрепить за TikTok, Twitch и подарками независимо', 'Azure: ключ и регион вводятся в приложении, кнопка «Сохранить и проверить» загружает голоса аккаунта (русские и многоязычные, HD помечены). Ключ хранится только на компьютере, в зашифрованном виде', 'Azure: если сервис недоступен или лимит исчерпан, фраза читается голосом Microsoft, а в ленте и в карточке подключения появляется причина'],
   '2.3.9': ['Оверлей чата: рядом с ником подписчика канала появился значок Sub (в ленте и в нижней строке); у тех, кто не подписан, его нет. Если человек подписался во время эфира, значок появится сразу после подписки'],
   '2.3.8': ['Закрытые разделы: размытие лежит на всей странице сразу (вместе с шапкой и счётчиками), стало сильнее и больше не меняется от слабого к сильному'],
   '2.3.7': ['Закрытые разделы («Виджеты», «Донаты Каспи», «Оверлей чата»): размытие идёт до самых краёв окна и плавно нарастает сверху, без резких границ по краям'],

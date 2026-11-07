@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut, safeStorage } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -579,12 +579,82 @@ ipcMain.handle('eng:install', async (e, id) => {
   try { await te.install(app.getPath('userData'), id, (p) => { try { e.sender.send('eng:progress', { id, p }); } catch (_) {} }); engLoad().piperVoice = id; engSave(); return { ok: true, status: te.status(app.getPath('userData'), engCfg) }; }
   catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
+// ---------- Azure AI Speech (azure-tts.js): отдельный движок рядом с Microsoft Edge ----------
+// ключ шифруется средствами ОС (safeStorage), если они доступны; в окно уходит только «есть ключ» и последние 4 символа
+const azure = require('./azure-tts');
+const azFile = () => require('path').join(app.getPath('userData'), 'azure.json');
+let azCfg = null;
+const azDecode = (s) => {
+  if (typeof s !== 'string') return '';
+  try {
+    if (s.startsWith('enc:')) return safeStorage.decryptString(Buffer.from(s.slice(4), 'base64'));
+    if (s.startsWith('raw:')) return Buffer.from(s.slice(4), 'base64').toString('utf8');
+  } catch (_) { /* ключ не расшифровался (другая учётная запись ОС) — просим ввести заново */ }
+  return '';
+};
+const azEncode = (key) => {
+  try { if (safeStorage && safeStorage.isEncryptionAvailable()) return 'enc:' + safeStorage.encryptString(key).toString('base64'); } catch (_) {}
+  return 'raw:' + Buffer.from(key, 'utf8').toString('base64');
+};
+const azLoad = () => {
+  if (!azCfg) {
+    let j = {};
+    try { j = JSON.parse(require('fs').readFileSync(azFile(), 'utf8')); } catch (_) {}
+    azCfg = { key: azDecode(j.key), region: azure.isRegion(j.region) ? j.region : 'westeurope' };
+  }
+  return azCfg;
+};
+const azSave = () => { try { require('fs').writeFileSync(azFile(), JSON.stringify({ region: azCfg.region, key: azCfg.key ? azEncode(azCfg.key) : '' })); } catch (_) {} };
+const azStatus = () => { const c = azLoad(); return { hasKey: !!c.key, keyTail: c.key ? c.key.slice(-4) : '', region: c.region, regions: azure.REGIONS, blocked: az.state().blocked }; };
+const az = azure.createAzure({ getConfig: azLoad });
+const azExplain = (e) => ({ code: (e && e.code) || 'server', error: String((e && e.message) || e).slice(0, 200) });
+
+ipcMain.handle('az:status', () => azStatus());
+ipcMain.handle('az:set', (_e, o) => {
+  const c = azLoad(); o = o || {};
+  if (typeof o.region === 'string') {
+    const r = o.region.trim().toLowerCase();
+    if (!azure.isRegion(r)) return { ok: false, error: 'Регион указан неверно: только латинские буквы, цифры и дефис, например westeurope', status: azStatus() };
+    c.region = r;
+  }
+  if (typeof o.key === 'string') {
+    const k = o.key.trim();
+    if (k && !azure.isKey(k)) return { ok: false, error: 'Ключ указан неверно: скопируй его целиком из Azure (без пробелов)', status: azStatus() };
+    c.key = k;
+  }
+  azSave(); az.reset();
+  return { ok: true, status: azStatus() };
+});
+// проверка ключа и загрузка голосов аккаунта (русские и многоязычные, которые умеют читать по-русски)
+ipcMain.handle('az:test', async () => {
+  try { const r = await az.voices({ force: true }); return { ok: true, count: r.voices.length, voices: r.voices, status: azStatus() }; }
+  catch (e) { return { ok: false, ...azExplain(e), status: azStatus() }; }
+});
+ipcMain.handle('az:warm', () => { az.warm(); return true; });
+
 // выбор движка (Piper/Google) пока убран из интерфейса: всегда озвучивает Edge, даже если раньше был выбран другой
 const ENGINES_ON = false;
+// запасной голос Edge, когда Azure недоступен: тот же голос, если он есть у Edge, иначе родной русский по полу
+const edgeFallbackVoice = (o) => {
+  const v = String(o.fallbackVoice || o.voice || '');
+  return /^[\w-]{3,80}$/.test(v) && !/DragonHD/i.test(v) && !/DariyaNeural/i.test(v) ? v : 'ru-RU-SvetlanaNeural';
+};
 ipcMain.handle('tts:synth', async (_e, o) => {
   try {
     const text = String(o.text || '').slice(0, 400);
     if (!text.trim()) return { ok: false, error: 'empty text' };
+    if (o.engine === 'azure') {
+      try {
+        const b = await az.synth(text, String(o.voice || ''), o.rate, o.pitch);
+        return { ok: true, audio: b.toString('base64'), chars: text.length, engine: 'azure' };
+      } catch (err) {
+        // озвучка не должна пропадать: фраза уходит голосом Microsoft, а окно получает причину и покажет её
+        const x = azExplain(err);
+        console.warn('[tts] azure не сработал, откат на Edge:', x.code);
+        const buf = await edgeSynth(text, edgeFallbackVoice(o), o.rate, o.pitch, { urgent: !!o.urgent });
+        return { ok: true, audio: buf.toString('base64'), chars: text.length, engine: 'edge', fallback: true, azureCode: x.code, azureError: x.error };
+      }
+    }
     const cfg = engLoad();
     if (ENGINES_ON && (cfg.engine === 'piper' || cfg.engine === 'google')) {
       try { const b = cfg.engine === 'piper' ? await te.piperSynth(app.getPath('userData'), cfg, text, o.rate) : await te.googleSynth(cfg, text, o.rate); return { ok: true, audio: b.toString('base64'), chars: text.length }; }

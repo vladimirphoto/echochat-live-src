@@ -165,7 +165,7 @@ const PAGE_TEST = `(async () => {
     ub.innerHTML = '<span>Проверить обновления</span>';
 
     // --- сеть: голоса Microsoft ---
-    for (const b of E.builtin) {
+    for (const b of E.builtin.filter((v) => v.provider !== 'azure')) { // голоса Azure проверяются отдельно: нужен ключ пользователя
       const t0 = Date.now();
       const r = await window.echo.synth({ text: 'Привет, как у вас дела?', voice: b.voice, rate: 1, pitch: '+0Hz' });
       add('net', 'голос ' + b.name + ' (' + b.voice + ')', r.ok && r.audio.length > 3000, r.ok ? ((Date.now() - t0) + ' мс, base64 ' + r.audio.length) : r.error);

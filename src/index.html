@@ -128,6 +128,28 @@
           <div class="card">
             <h2>Мои голоса</h2>
             <p class="muted">Выбери голос — он подсветится. Нажми TikTok и/или Twitch в его карточке, чтобы им озвучивался чат этой платформы. Скорость и тон настраиваются ниже</p>
+            <div class="eng-seg" id="engSeg" role="tablist" aria-label="Движок озвучки">
+              <button type="button" role="tab" data-eng="edge" class="on"><b>Microsoft</b><small>Edge · без ключей</small></button>
+              <button type="button" role="tab" data-eng="azure"><b>Azure</b><small>Speech · свой ключ</small></button>
+            </div>
+            <div class="route-sum" id="routeSum"></div>
+            <div class="az-box" id="azBox" hidden>
+              <div class="az-head"><b>Подключение Azure</b><span class="az-pill" id="azPill" data-s="off">Не подключено</span></div>
+              <div class="az-grid">
+                <div><label class="vlabel" for="azKey">Ключ Speech</label><input type="password" id="azKey" autocomplete="off" spellcheck="false" placeholder="Вставь ключ из Azure" /></div>
+                <div><label class="vlabel" for="azRegion">Регион</label><input type="text" id="azRegion" list="azRegions" autocomplete="off" spellcheck="false" placeholder="westeurope" /><datalist id="azRegions"></datalist></div>
+              </div>
+              <div class="az-actions"><button type="button" class="btn ghost" id="azForget">Удалить ключ</button><button type="button" class="btn primary" id="azSave">Сохранить и проверить</button></div>
+              <div class="az-stat" id="azStat"></div>
+              <details class="az-help"><summary>Где взять ключ и регион</summary>
+                <ol>
+                  <li>Открой <a href="https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices" target="_blank">создание ресурса Speech</a> в портале Azure и создай его (есть бесплатный уровень F0, лимиты смотри в портале).</li>
+                  <li>В ресурсе открой «Keys and Endpoint» (Ключи и конечная точка).</li>
+                  <li>Скопируй «KEY 1» в поле ключа, а «Location/Region» (например, westeurope) — в поле региона.</li>
+                </ol>
+                <p>Ключ хранится только на этом компьютере, в зашифрованном виде. Если Azure недоступен или лимит исчерпан, фраза прозвучит голосом Microsoft, а озвучка не остановится.</p>
+              </details>
+            </div>
             <div class="voices" id="voices"></div>
             <div class="row"><label>Громкость</label><b id="volVal">80%</b></div>
             <input type="range" id="vol" min="0" max="100" value="80" />
