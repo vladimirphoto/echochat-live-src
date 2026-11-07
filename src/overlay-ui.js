@@ -16,6 +16,7 @@
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8c-1.5-4-6-4-6-1.5S10 8 12 8zm0 0c1.5-4 6-4 6-1.5S14 8 12 8z"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>',
     heart: '<svg viewBox="0 0 24 24"><path d="M12 21.4 10.6 20.1C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.4 3c1.7 0 3.4.8 4.6 2.1C13.2 3.8 14.9 3 16.6 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6L12 21.4z"/></svg>',
+    star: '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17l-5.6 3 1.1-6.3L2.9 9.3l6.3-.9L12 2.6z"/></svg>',
   };
   const fmtNum = (n) => (Number.isFinite(n) ? n.toLocaleString('ru-RU') : '—');
   // онлайн Twitch от 10 000: двузначное число и K (12 400 → 12K), иначе цифры не помещаются
@@ -23,6 +24,8 @@
   const fmtTime = (ms) => [Math.floor(ms / 3600000), Math.floor(ms / 60000) % 60, Math.floor(ms / 1000) % 60].map((n) => String(n).padStart(2, '0')).join(':');
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const isUrl = (u) => /^https?:\/\//i.test(String(u || ''));
+  // значок Sub рядом с ником: ставится только подписчикам канала (признак sub приходит из приложения), у остальных его нет
+  const subTag = () => { const s = el('span', 'sub'); s.insertAdjacentHTML('beforeend', ICON.star); s.appendChild(document.createTextNode('Sub')); return s; };
 
   /* ---------- лента ---------- */
   let unread = 0;
@@ -50,6 +53,7 @@
       const b = el('div', 'body'), nm = el('div', 'nm');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
       nm.appendChild(el('span', '', e.name));
+      if (e.sub) nm.appendChild(subTag());
       b.appendChild(nm); b.appendChild(el('div', 'tx', e.text));
       row.appendChild(b);
       return row;
@@ -60,6 +64,7 @@
     row.appendChild(ic);
     const b = el('div', 'body'), tx = el('div', 'tx');
     tx.appendChild(el('b', '', e.name));
+    if (e.sub && e.kind !== 'follow') tx.appendChild(subTag()); // у строки «подписался(ась)» значка нет
     if (e.kind === 'gift' && e.gift) {
       row.classList.add('gift');
       tx.appendChild(document.createTextNode(' — отправил(а) «' + e.gift.name + '» '));
@@ -77,7 +82,7 @@
     // подарок и репост — тоже действие: на 5 секунд занимает нижнюю строку вместо чата (чат на это время поднимается на вторую строку).
     // Если строку внизу выключили, они остаются обычными строками ленты. При открытии окна старые подарки и репосты заново не показываются
     if ((e.kind === 'gift' || e.kind === 'share') && SET.joins !== false) {
-      if (animate) pushAction(e.kind === 'gift' ? { kind: 'gift', name: String(e.name || 'Гость'), gift: e.gift || { name: 'подарок', count: 1, image: '' } } : { kind: 'share', name: String(e.name || 'Гость') });
+      if (animate) pushAction(e.kind === 'gift' ? { kind: 'gift', name: String(e.name || 'Гость'), sub: !!e.sub, gift: e.gift || { name: 'подарок', count: 1, image: '' } } : { kind: 'share', name: String(e.name || 'Гость'), sub: !!e.sub });
       return;
     }
     const stick = stuck || nearBottom();
@@ -124,6 +129,7 @@
     const row = el('div', 'jb' + (a.kind === 'like' ? ' lk' : a.kind === 'gift' ? ' gf' : ''));
     const ic = el('div', 'av'); ic.insertAdjacentHTML('beforeend', a.kind === 'like' ? ICON.heart : a.kind === 'gift' ? ICON.gift : a.kind === 'share' ? ICON.share : ICON.join);
     const tx = el('div', 'tx'); tx.appendChild(el('b', '', a.name));
+    if (a.sub) tx.appendChild(subTag());
     let rest = null;
     if (a.kind === 'gift') {
       tx.appendChild(document.createTextNode(' — отправил(а) «' + a.gift.name + '» '));
@@ -172,8 +178,8 @@
     if (!cur) next();
     else if (!cur.leaving && PRIO[a.kind] < PRIO[cur.kind]) endIn(Math.max(0, T.min - (Date.now() - cur.at))); // подарок или репост не ждут конца лайка или «зашёл»
   }
-  const showJoin = (e) => pushAction({ kind: 'join', name: String((e && e.name) || 'Гость') });
-  const showLike = (e) => pushAction({ kind: 'like', name: String((e && e.name) || 'Гость'), count: Math.max(1, Math.round(Number(e && e.count)) || 1) });
+  const showJoin = (e) => pushAction({ kind: 'join', name: String((e && e.name) || 'Гость'), sub: !!(e && e.sub) });
+  const showLike = (e) => pushAction({ kind: 'like', name: String((e && e.name) || 'Гость'), sub: !!(e && e.sub), count: Math.max(1, Math.round(Number(e && e.count)) || 1) });
 
   /* ---------- лайки: сердечки летят вверх от правого нижнего угла и плавно исчезают ---------- */
   const heartsEl = $('#hearts');

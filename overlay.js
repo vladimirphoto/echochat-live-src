@@ -98,8 +98,13 @@ class OverlayModel {
     this.twViewers = null;
   }
   // views — сколько человек зашло за весь эфир: число от TikTok, а если его нет — уникальные зрители, которых мы увидели сами (входы, чат, подарки, подписки)
-  resetCounters() { this.likes = 0; this.gifts = 0; this.follows = 0; this.ttViewers = null; this.libViews = null; this.users = new Set(); this.joined = new Set(); }
-  _see(p) { const k = String((p && (p.id || (p.name && p.name !== 'Гость' ? p.name : ''))) || ''); if (!k) return ''; if (this.users.size < 200000) this.users.add(k); return k; }
+  resetCounters() { this.likes = 0; this.gifts = 0; this.follows = 0; this.ttViewers = null; this.libViews = null; this.users = new Set(); this.joined = new Set(); this.subs = new Set(); }
+  _key(p) { return String((p && (p.id || (p.name && p.name !== 'Гость' ? p.name : ''))) || ''); }
+  _see(p) { const k = this._key(p); if (!k) return ''; if (this.users.size < 200000) this.users.add(k); return k; }
+  // Значок Sub нужен только подписчикам канала: либо TikTok прислал «подписан» (isFollower), либо человек подписался прямо в этом эфире
+  // (событие подписки приходит раньше, чем TikTok обновит статус в его сообщениях). Неизвестно или не подписан — значка нет.
+  // Ключ sub добавляется в запись только когда он true, у остальных записей он не появляется
+  _sub(p) { const k = this._key(p); return (p && p.isFollower === true) || (!!k && this.subs.has(k)) ? { sub: true } : {}; }
   views() { const own = this.users.size; return this.libViews === null ? (own || null) : Math.max(this.libViews, own); }
   stats() {
     // twLive — значок онлайна Twitch виден, только когда канал подключён И стрим действительно идёт (число зрителей известно);
@@ -145,7 +150,7 @@ class OverlayModel {
         r.stats = true;
         if (!k || this.joined.has(k)) break;
         this.joined.add(k);
-        r.join = { name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') };
+        r.join = { name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...this._sub(p) };
         break;
       }
       case 'tw:viewers': { const v = isNum(p.count) ? p.count : null; if (v !== this.twViewers) { this.twViewers = v; r.stats = true; } break; }
@@ -154,31 +159,34 @@ class OverlayModel {
         this.likes = p.total > 0 ? Math.max(this.likes, p.total) : this.likes + (p.count || 1);
         r.like = Math.max(1, Math.round(Number(p.count)) || 1); // в ленту лайки не пишем (их тысячи): окно рисует летящие сердечки
         // а кто лайкает — в той же строке внизу, где «кто зашёл» (анонимные лайки — только сердечки)
-        if (p.name && p.name !== 'Гость') r.liker = { name: cut(p.name, 60), avatar: cut(p.avatar, 500), color: this.color(p.name), count: r.like };
+        if (p.name && p.name !== 'Гость') r.liker = { name: cut(p.name, 60), avatar: cut(p.avatar, 500), color: this.color(p.name), count: r.like, ...this._sub(p) };
         r.stats = true; break;
       }
       case 'tt:gift': {
         const n = Math.max(1, Math.round(Number(p.count)) || 1);
         this.gifts += n; r.stats = true; this._see(p);
-        r.entry = this._push({ platform: 'tiktok', kind: 'gift', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), gift: { name: cut(p.gift, 60) || 'подарок', count: n, image: cut(p.image, 500) } });
+        r.entry = this._push({ platform: 'tiktok', kind: 'gift', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...this._sub(p), gift: { name: cut(p.gift, 60) || 'подарок', count: n, image: cut(p.image, 500) } });
         break;
       }
       case 'tt:follow': {
-        this.follows += 1; r.stats = true; this._see(p);
-        r.entry = this._push({ platform: 'tiktok', kind: 'follow', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
+        this.follows += 1; r.stats = true;
+        const k = this._see(p);
+        if (k && this.subs.size < 200000) this.subs.add(k); // с этого момента рядом с его ником значок Sub
+        r.entry = this._push({ platform: 'tiktok', kind: 'follow', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') }); // в самой строке подписки значка нет: там и так написано «подписался(ась)»
         break;
       }
       case 'tt:share': {
         // репост эфира: строка в ленте, счётчики не трогает
         this._see(p);
-        r.entry = this._push({ platform: 'tiktok', kind: 'share', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
+        r.entry = this._push({ platform: 'tiktok', kind: 'share', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...this._sub(p) });
         break;
       }
       case 'tt:chat': case 'tw:chat': {
         const text = cut(p.text, 500);
         if (!text.trim()) break; // пустые сообщения не показываем
         if (channel === 'tt:chat' && this._see(p)) r.stats = true;
-        r.entry = this._push({ platform: channel === 'tw:chat' ? 'twitch' : 'tiktok', kind: 'chat', name: cut(p.name, 60) || 'Гость', text, avatar: cut(p.avatar, 500), color: this.color(p.name || '') });
+        // значок Sub — только у подписчиков TikTok-канала; у зрителей Twitch его нет
+        r.entry = this._push({ platform: channel === 'tw:chat' ? 'twitch' : 'tiktok', kind: 'chat', name: cut(p.name, 60) || 'Гость', text, avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...(channel === 'tt:chat' ? this._sub(p) : {}) });
         break;
       }
       default: break;
@@ -189,15 +197,15 @@ class OverlayModel {
 
 // Примеры для кнопки «Тест»: видно и TikTok, и Twitch, подарок, подписку, репост и лайки (kind: 'like' — не строка, а сердечки)
 const SAMPLE = [
-  { platform: 'tiktok', kind: 'chat', name: 'Анна', text: 'Привет из TikTok! Так выглядит оверлей чата' },
+  { platform: 'tiktok', kind: 'chat', name: 'Анна', text: 'Привет из TikTok! Так выглядит оверлей чата', sub: true }, // подписчик: рядом с ником значок Sub
   { platform: 'twitch', kind: 'chat', name: 'Max', text: 'Привет из Twitch!' },
   { platform: 'tiktok', kind: 'follow', name: 'Игорь' },
-  { platform: 'tiktok', kind: 'join', name: 'Алина' }, // не строка ленты, а временная строка внизу
-  { platform: 'tiktok', kind: 'gift', name: 'Дина', gift: { name: 'Роза', count: 5, image: '' } },
+  { platform: 'tiktok', kind: 'join', name: 'Алина', sub: true }, // не строка ленты, а временная строка внизу
+  { platform: 'tiktok', kind: 'gift', name: 'Дина', sub: true, gift: { name: 'Роза', count: 5, image: '' } },
   { platform: 'tiktok', kind: 'like', count: 6 },
   { platform: 'tiktok', kind: 'share', name: 'Рустам' },
-  { platform: 'tiktok', kind: 'chat', name: 'Марат', text: 'Отличный стрим, спасибо!' },
-  { platform: 'tiktok', kind: 'like', name: 'Тимур', count: 4 }, // сердечки и ник в строке внизу
+  { platform: 'tiktok', kind: 'chat', name: 'Марат', text: 'Отличный стрим, спасибо!' }, // не подписан: значка нет
+  { platform: 'tiktok', kind: 'like', name: 'Тимур', count: 4, sub: true }, // сердечки и ник в строке внизу
 ];
 
 module.exports = { DEFAULTS, LIMITS, SIZE, cleanSettings, cleanHotkey, fitBounds, defaultBounds, cornerBounds, OverlayModel, SAMPLE };

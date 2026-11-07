@@ -303,3 +303,43 @@ test('оверлей: пустое сочетание выключает гор�
   assert.equal(ov.cleanSettings({ opacity: 50 }, { opacity: 100 }).hotkey, 'Ctrl+Alt+I'); // в старом overlay.json сочетания нет — берётся по умолчанию
   assert.equal(ov.cleanSettings({}, ov.cleanSettings({ hotkey: '' })).hotkey, ''); // выключенное остаётся выключенным
 });
+
+test('оверлей: значок Sub — только у подписчиков (isFollower === true), у неизвестных и неподписанных его нет', () => {
+  const m = new ov.OverlayModel({ color: () => '#abc' });
+  const yes = m.track('tt:chat', { name: 'Анна', id: 'anna', text: 'привет', isFollower: true }).entry;
+  const no = m.track('tt:chat', { name: 'Борис', id: 'boris', text: 'привет', isFollower: false }).entry;
+  const unknown = m.track('tt:chat', { name: 'Вера', id: 'vera', text: 'привет', isFollower: null }).entry;
+  assert.equal(yes.sub, true);
+  assert.ok(!('sub' in no), 'неподписанному значок не нужен');
+  assert.ok(!('sub' in unknown), 'статус неизвестен — значка нет');
+  // Twitch значок Sub не получает, даже если в событии есть isFollower
+  assert.ok(!('sub' in m.track('tw:chat', { name: 'Max', text: 'hi', isFollower: true }).entry));
+});
+
+test('оверлей: значок Sub у входа, лайка, подарка и репоста; у строки подписки его нет', () => {
+  const m = new ov.OverlayModel({ color: () => '#abc' });
+  assert.equal(m.track('tt:join', { name: 'Алина', id: 'alina', isFollower: true }).join.sub, true);
+  assert.ok(!('sub' in m.track('tt:join', { name: 'Тимур', id: 'timur', isFollower: false }).join));
+  assert.equal(m.track('tt:like', { name: 'Дина', id: 'dina', count: 2, isFollower: true }).liker.sub, true);
+  assert.equal(m.track('tt:gift', { name: 'Дина', id: 'dina', gift: 'Роза', count: 1, isFollower: true }).entry.sub, true);
+  assert.equal(m.track('tt:share', { name: 'Рустам', id: 'rus', isFollower: true }).entry.sub, true);
+  assert.ok(!('sub' in m.track('tt:follow', { name: 'Игорь', id: 'igor', isFollower: true }).entry), 'в строке «подписался(ась)» значка нет');
+});
+
+test('оверлей: кто подписался во время эфира, получает значок сразу, даже если TikTok ещё не обновил его статус', () => {
+  const m = new ov.OverlayModel({ color: () => '#abc' });
+  assert.ok(!('sub' in m.track('tt:chat', { name: 'Игорь', id: 'igor', text: 'до подписки', isFollower: false }).entry));
+  m.track('tt:follow', { name: 'Игорь', id: 'igor' });
+  assert.equal(m.track('tt:chat', { name: 'Игорь', id: 'igor', text: 'после', isFollower: false }).entry.sub, true);
+  assert.equal(m.track('tt:chat', { name: 'Игорь', id: 'igor', text: 'после 2' }).entry.sub, true);
+  assert.ok(!('sub' in m.track('tt:chat', { name: 'Другой', id: 'other', text: 'х', isFollower: false }).entry), 'чужая подписка значок не даёт');
+  // эфир закончился — память о подписавшихся в этом эфире сбрасывается
+  m.track('tt:status', { state: 'offline' });
+  assert.ok(!('sub' in m.track('tt:chat', { name: 'Игорь', id: 'igor', text: 'новый эфир', isFollower: false }).entry));
+});
+
+test('оверлей: в примерах «Теста» есть подписчики со значком и неподписанный зритель', () => {
+  const chats = ov.SAMPLE.filter((e) => e.platform === 'tiktok' && e.kind === 'chat');
+  assert.ok(chats.some((e) => e.sub === true) && chats.some((e) => !e.sub));
+  assert.ok(ov.SAMPLE.some((e) => e.kind === 'join' && e.sub) && ov.SAMPLE.some((e) => e.kind === 'like' && e.name && e.sub) && ov.SAMPLE.some((e) => e.kind === 'gift' && e.sub));
+});

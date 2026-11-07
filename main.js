@@ -466,7 +466,7 @@ async function doConnect(rawName) {
   c.on(WebcastEvent.LIKE || 'like', (d) => {
     if (!alive()) return;
     const l = ev.likerOf(d);
-    send('tt:like', { ...ev.likesOf(d), name: l.name, id: l.id, avatar: l.avatar }); // ник нужен оверлею: «ник — поставил(а) лайк»
+    send('tt:like', { ...ev.likesOf(d), name: l.name, id: l.id, avatar: l.avatar, isFollower: l.isFollower }); // ник нужен оверлею: «ник — поставил(а) лайк»; isFollower — для значка Sub
     if (likesBoard.add(l, l.count)) pushLikes();
   });
   c.on(WebcastEvent.ROOM_USER || 'roomUser', (d) => {
