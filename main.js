@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -805,6 +805,27 @@ ipcMain.handle('donate:set', async (_e, s) => {
   try { await applyKaspi(); } catch (_) {}
   return { ok: true, ...kaspiState() };
 });
+// свой звук доната: файл копируется в папку данных приложения (до 5 МБ), играет окно приложения
+const DSND_MAX = 5 * 1024 * 1024, DSND_EXT = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', webm: 'audio/webm' };
+const dsndFiles = () => { try { return require('fs').readdirSync(app.getPath('userData')).filter((f) => /^donate-sound\.[a-z0-9]+$/.test(f)); } catch (_) { return []; } };
+const dsndClear = () => dsndFiles().forEach((f) => { try { require('fs').unlinkSync(path.join(app.getPath('userData'), f)); } catch (_) {} });
+ipcMain.handle('donsound:pick', async () => {
+  const fs = require('fs');
+  const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title: 'Свой звук доната', properties: ['openFile'], filters: [{ name: 'Звук', extensions: Object.keys(DSND_EXT) }] }).catch(() => null);
+  if (!r || r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  const src = r.filePaths[0], ext = path.extname(src).slice(1).toLowerCase();
+  if (!DSND_EXT[ext]) return { ok: false, error: 'Нужен файл mp3, wav, ogg, m4a, aac, flac или webm' };
+  let st; try { st = fs.statSync(src); } catch (e) { return { ok: false, error: 'Не удалось открыть файл' }; }
+  if (st.size > DSND_MAX) return { ok: false, error: 'Файл больше 5 МБ: возьмите звук покороче' };
+  try { dsndClear(); fs.copyFileSync(src, path.join(app.getPath('userData'), 'donate-sound.' + ext)); } catch (e) { return { ok: false, error: 'Не удалось сохранить звук: ' + (e && e.message || e) }; }
+  return { ok: true, name: path.basename(src) };
+});
+ipcMain.handle('donsound:get', () => {
+  const f = dsndFiles()[0];
+  if (!f) return { ok: false };
+  try { return { ok: true, mime: DSND_EXT[f.split('.').pop()] || 'audio/mpeg', data: require('fs').readFileSync(path.join(app.getPath('userData'), f)) }; } catch (_) { return { ok: false }; }
+});
+ipcMain.handle('donsound:clear', () => { dsndClear(); return { ok: true }; });
 ipcMain.handle('kaspi:state', () => kaspiState());
 ipcMain.handle('donate:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/donate` : ''));
 ipcMain.handle('donate:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.DONATE_PAGES_URL } : { ok: false, url: '' }));

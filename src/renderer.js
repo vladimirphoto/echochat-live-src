@@ -29,7 +29,7 @@ const DEFAULTS = {
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
-  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true },
+  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '' },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
@@ -451,7 +451,7 @@ function ensureSynth(item) {
 
 // звук доната: мягкий «колокольчик» из четырёх нот (до-ми-соль-до), собирается в браузере, без файлов; громкость как у озвучки
 let actx = null;
-function playChime() {
+function playBell() {
   return new Promise((resolve) => {
     let done = false, timer = 0, master = null, oscs = [];
     const finish = () => { if (done) return; done = true; clearTimeout(timer); chimeStop = null; resolve(); };
@@ -477,6 +477,28 @@ function playChime() {
       timer = setTimeout(finish, 1300); // следующая фраза (голос) начинается, пока звук ещё затихает
     } catch (_) { finish(); }
   });
+}
+
+// свой звук доната (файл, который человек загрузил): играет вместо колокольчика, не дольше 20 с; не заиграл — звучит колокольчик
+let customSound = null; // { url } — адрес загруженного звука
+function playCustom() {
+  return new Promise((resolve) => {
+    let done = false, timer = 0, a = null;
+    const finish = (ok) => { if (done) return; done = true; clearTimeout(timer); chimeStop = null; if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (_) {} } resolve(ok === true); };
+    try {
+      a = new Audio(customSound.url);
+      a.volume = Math.max(0, Math.min(1, (S.vol == null ? 100 : S.vol) / 100));
+      a.onended = () => finish(true);
+      a.onerror = () => finish(false);
+      chimeStop = () => finish(true); // оборвали (стоп, пропуск) — колокольчик после этого не нужен
+      timer = setTimeout(() => finish(true), 20000);
+      const p = a.play(); if (p && p.catch) p.catch(() => finish(false));
+    } catch (_) { finish(false); }
+  });
+}
+async function playChime() {
+  if (customSound && customSound.url) { if (await playCustom()) return; }
+  return playBell();
 }
 
 // Ждём синтез не дольше SYNTH_DEADLINE_MS: иначе одна зависшая фраза останавливает всю очередь на десятки секунд.
@@ -1074,11 +1096,61 @@ $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
   el.addEventListener('change', () => {
     K[el.dataset.kk] = el.checked; pushDonate();
-    if (!el.checked && el.dataset.kk === 'sound') dropSrc('donateSound'); // выключили — звук обрывается сразу
+    if (!el.checked && el.dataset.kk === 'sound') { dropSrc('donateSound'); soundTest = null; refreshSoundTestUi(); } // выключили — звук обрывается сразу
     if (!el.checked && el.dataset.kk === 'voice') dropSrc('donateVoice');
   });
 });
-$('#kSoundTest').addEventListener('click', () => enqueue({ el: null, chime: true, src: 'donateSound' }, true));
+// «Прослушать звук»: пока звук играет, треугольник превращается в две полоски; повторное нажатие останавливает
+const SND_PLAY = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const SND_PAUSE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+let soundTest = null; // пункт очереди, который сейчас звучит как проба
+function refreshSoundTestUi() {
+  const on = !!soundTest;
+  $('#kSoundIcon').innerHTML = on ? SND_PAUSE : SND_PLAY;
+  $('#kSoundLbl').textContent = on ? 'Остановить' : 'Прослушать звук';
+  $('#kSoundTest').classList.toggle('active', on);
+}
+function stopSoundTest() {
+  const it = soundTest; if (!it) return;
+  soundTest = null; it.cancelled = true;
+  const i = queue.indexOf(it); if (i >= 0) queue.splice(i, 1);
+  else if (curItem === it) skipPhrase();
+  refreshSoundTestUi();
+}
+$('#kSoundTest').addEventListener('click', () => {
+  if (soundTest) return stopSoundTest();
+  const item = { el: null, chime: true, src: 'donateSound', onEnd: () => { if (soundTest === item) { soundTest = null; refreshSoundTestUi(); } } };
+  soundTest = item; refreshSoundTestUi();
+  enqueue(item, true);
+});
+
+// свой звук доната: загрузка файла, возврат к колокольчику
+function refreshSoundNameUi() {
+  $('#kSoundName').textContent = customSound ? 'Сейчас: ' + (K.soundName || 'свой звук') : 'Сейчас: стандартный колокольчик';
+  $('#kSoundReset').hidden = !customSound;
+}
+async function loadCustomSound() {
+  const r = await window.echo.donateSoundGet().catch(() => null);
+  if (customSound) { URL.revokeObjectURL(customSound.url); customSound = null; }
+  if (r && r.ok && r.data) customSound = { url: URL.createObjectURL(new Blob([r.data], { type: r.mime || 'audio/mpeg' })) };
+  else if (K.soundName) { K.soundName = ''; save(); }
+  refreshSoundNameUi();
+}
+$('#kSoundPick').addEventListener('click', async () => {
+  const r = await window.echo.donateSoundPick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#kSoundName').textContent = r.error || 'Не удалось загрузить звук'; return; }
+  stopSoundTest();
+  K.soundName = r.name || ''; save();
+  await loadCustomSound();
+});
+$('#kSoundReset').addEventListener('click', async () => {
+  stopSoundTest();
+  await window.echo.donateSoundClear().catch(() => {});
+  K.soundName = ''; save();
+  await loadCustomSound();
+});
+loadCustomSound();
 bindRange('kDur', 'kDurVal', (v) => v + ' с', () => K.duration, (v) => { K.duration = v; pushDonate(); })();
 bindRange('kScale', 'kScaleVal', (v) => v + '%', () => K.scale, (v) => { K.scale = v; pushDonate(); })();
 bindRange('kMin', 'kMinVal', (v) => kmoney(v), () => K.minAmount, (v) => { K.minAmount = v; pushDonate(); })();
@@ -1255,6 +1327,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.5.0': ['Донаты: можно загрузить свой звук (mp3, wav, ogg и др., до 5 МБ) и вернуть стандартный; на кнопке «Прослушать звук» во время проигрывания вместо треугольника две полоски, повторное нажатие останавливает звук'],
   '2.4.5': ['Обновление по кнопке: при ошибке GitHub (502/503/504) скачивание само повторяется до 5 раз с паузами'],
   '2.4.4': ['Возврат к стабильной версии 2.3.9: офлайн-голоса Silero и автопереключение Edge → Silero из версий 2.4.0–2.4.2 убраны. Значок Sub в оверлее чата теперь без свечения'],
   '2.3.9': ['Оверлей чата: рядом с ником подписчика канала появился значок Sub (в ленте и в нижней строке); у тех, кто не подписан, его нет. Если человек подписался во время эфира, значок появится сразу после подписки'],
