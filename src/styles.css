@@ -685,3 +685,15 @@ main{position:relative}
 .lic-statmsg{display:flex;align-items:center;gap:8px;margin-top:12px;min-height:0}
 .lic-statmsg:empty{display:none}
 .lic-statmsg.ok:before{content:"";flex:none;width:16px;height:16px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a11' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat}
+
+/* офлайн-голоса Silero */
+.sil{margin:2px 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.sil[hidden],.sil-bar[hidden],.sil .btn[hidden]{display:none}
+.sil-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.sil-h small{font-size:12px;color:var(--muted)}
+.sil-h small[data-s="ok"]{color:var(--ok)}
+.sil-h small[data-s="work"]{color:var(--a3)}
+.sil .muted{margin:0 0 10px;font-size:12px;line-height:1.45}
+.sil .muted[data-err="1"]{color:var(--bad)}
+.sil-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:0 0 10px}
+.sil-bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--a1),var(--a3));transition:width .6s ease}

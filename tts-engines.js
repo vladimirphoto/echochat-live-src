@@ -88,4 +88,4 @@ async function googleSynth(cfg, text, rate) {
   return Buffer.from(j.audioContent, 'base64');
 }
 
-module.exports = { status, install, piperSynth, googleSynth, piperArgs, PIPER_VOICES, GOOGLE_VOICES };
+module.exports = { status, install, download, piperSynth, googleSynth, piperArgs, PIPER_VOICES, GOOGLE_VOICES };
