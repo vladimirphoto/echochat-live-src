@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const { downloadWithRetry, retryableStatus } = require('./fetch-retry');
 
 const REPO = 'vladimirphoto/jonny-chat-tiktok';
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -95,18 +96,36 @@ async function install(onProgress) {
   const tmp = installed
     ? path.join(os.tmpdir(), `EchoChat-LIVE-Setup-${found.version}.exe`)
     : path.join(os.tmpdir(), `EchoChat-LIVE-${found.version}.exe.download`);
-  const res = await fetch(found.url, { headers: { 'User-Agent': 'EchoChat-LIVE' } });
-  if (!res.ok || !res.body) throw new Error('Не удалось скачать: ' + res.status);
-  const total = Number(res.headers.get('content-length')) || found.size || 0;
-  const out = fs.createWriteStream(tmp);
-  let got = 0;
-  for await (const chunk of res.body) {
-    got += chunk.length;
-    if (!out.write(chunk)) await new Promise((r) => out.once('drain', r));
-    if (total) onProgress(Math.round((got / total) * 100));
+  // GitHub иногда отвечает 5xx или обрывает загрузку: пробуем до 5 раз с паузами, прогресс каждый раз с нуля
+  try {
+    await downloadWithRetry(async () => {
+      onProgress(0);
+      const res = await fetch(found.url, { headers: { 'User-Agent': 'EchoChat-LIVE' } });
+      if (!res.ok || !res.body) {
+        const err = new Error('Не удалось скачать: ' + res.status);
+        if (!res.ok && !retryableStatus(res.status)) err.fatal = true;
+        throw err;
+      }
+      const total = Number(res.headers.get('content-length')) || found.size || 0;
+      const out = fs.createWriteStream(tmp);
+      let got = 0;
+      try {
+        for await (const chunk of res.body) {
+          got += chunk.length;
+          if (!out.write(chunk)) await new Promise((r) => out.once('drain', r));
+          if (total) onProgress(Math.round((got / total) * 100));
+        }
+        await new Promise((r, j) => { out.on('error', j); out.end(r); });
+      } catch (e) {
+        out.destroy();
+        throw e;
+      }
+      if (total && got < total) throw new Error('Загрузка прервана');
+    });
+  } catch (e) {
+    if (/Не удалось скачать: 5\d\d/.test(String(e && e.message))) e.message += ' (сервер GitHub временно недоступен, попробуй ещё раз через минуту)';
+    throw e;
   }
-  await new Promise((r, j) => { out.end(r); out.on('error', j); });
-  if (total && got < total) throw new Error('Загрузка прервана');
 
   if (installed) {
     // тихая установка поверх: установщик сам закроет старую версию, обновит файлы и запустит приложение
