@@ -685,3 +685,18 @@ main{position:relative}
 .lic-statmsg{display:flex;align-items:center;gap:8px;margin-top:12px;min-height:0}
 .lic-statmsg:empty{display:none}
 .lic-statmsg.ok:before{content:"";flex:none;width:16px;height:16px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a11' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat}
+
+/* свой звук доната: две кнопки одной ширины рядом, размер не прыгает при смене подписи */
+.snd-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.snd-row .btn{display:flex;align-items:center;justify-content:center;min-width:0;height:40px;padding:0 10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snd-name{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:20px}
+.snd-name small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snd-reset{all:unset;cursor:pointer;flex:none;font-size:12px;color:var(--a2);text-decoration:underline}
+.snd-reset[hidden]{display:none}
+/* «Что нового»: длинный список прокручивается внутри окна, кнопка «Закрыть» всегда на виду */
+#wnBack .wn-box{max-height:86vh;display:flex;flex-direction:column}
+#wnBack .wn-box>*{flex:none}
+#wnBack .wn-badge{align-self:flex-start}
+#wnBack ul#wnList{flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:6px;margin-bottom:16px}
+#wnBack ul#wnList::-webkit-scrollbar{width:6px}
+#wnBack ul#wnList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:6px}

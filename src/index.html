@@ -277,12 +277,11 @@
                 <label class="sw"><input type="checkbox" data-kk="voice" checked /><i></i><span>Озвучивать донаты голосом</span></label>
                 <label class="sw"><input type="checkbox" data-kk="sound" checked /><i></i><span>Звук при донате</span></label>
               </div>
-              <button class="btn ghost" id="kSoundTest" type="button" style="margin-top:12px;min-width:150px"><span id="kSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="kSoundLbl">Прослушать звук</span></button>
-              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
+              <div class="snd-row">
+                <button class="btn ghost" id="kSoundTest" type="button"><span id="kSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="kSoundLbl">Прослушать звук</span></button>
                 <button class="btn ghost" id="kSoundPick" type="button">Загрузить свой звук</button>
-                <button class="btn ghost" id="kSoundReset" type="button" hidden>Сбросить</button>
-                <small class="muted" id="kSoundName">Сейчас: стандартный колокольчик</small>
               </div>
+              <div class="snd-name"><small class="muted" id="kSoundName">Сейчас: стандартный колокольчик</small><button class="snd-reset" id="kSoundReset" type="button" hidden>Сбросить</button></div>
               <div class="ctl"><div class="row"><label>Показывать каждый донат</label><b id="kDurVal">8 с</b></div><input type="range" id="kDur" min="3" max="30" value="8" /></div>
               <div class="ctl"><div class="row"><label>Масштаб</label><b id="kScaleVal">100%</b></div><input type="range" id="kScale" min="50" max="200" value="100" /></div>
               <div class="ctl"><div class="row"><label>Минимальная сумма</label><b id="kMinVal">0 ₸</b></div><input type="range" id="kMin" min="0" max="10000" step="100" value="0" /></div>

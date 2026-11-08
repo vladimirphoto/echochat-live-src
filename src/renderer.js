@@ -1327,6 +1327,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.5.2': ['Окно «Что нового» прокручивается, кнопка «Закрыть» всегда видна, закрыть можно кликом по пустому месту или клавишей Esc. Кнопки «Прослушать звук» и «Загрузить свой звук» стоят рядом, одного размера, и не меняют размер при нажатии'],
   '2.5.1': ['Обновление: проверка и скачивание больше не зависают, если GitHub не отвечает. Через 15 секунд проверка идёт запасным путём или показывает понятную ошибку, а скачивание, которое встало на 30 секунд, повторяется само'],
   '2.5.0': ['Донаты: можно загрузить свой звук (mp3, wav, ogg и др., до 5 МБ) и вернуть стандартный; на кнопке «Прослушать звук» во время проигрывания вместо треугольника две полоски, повторное нажатие останавливает звук'],
   '2.4.5': ['Обновление по кнопке: при ошибке GitHub (502/503/504) скачивание само повторяется до 5 раз с паузами'],
@@ -1406,7 +1407,11 @@ const vcmp = (a, b) => { const x = String(a).split('.').map((n) => parseInt(n, 1
     $('#wnVer').textContent = 'Версия ' + v;
     $('#wnList').innerHTML = list.map((t) => `<li>${esc(t)}</li>`).join('');
     $('#wnBack').hidden = false;
-    $('#wnClose').onclick = () => { $('#wnBack').hidden = true; markSeen(); };
+    const closeWn = () => { $('#wnBack').hidden = true; document.removeEventListener('keydown', wnKey); markSeen(); };
+    const wnKey = (e) => { if (e.key === 'Escape') closeWn(); };
+    $('#wnClose').onclick = closeWn;
+    $('#wnBack').onclick = (e) => { if (e.target === e.currentTarget) closeWn(); }; // клик по пустому месту вне окна закрывает
+    document.addEventListener('keydown', wnKey);
   } catch (_) {}
 })();
 $('#kLogClear').onclick = () => { klog.innerHTML = '<div class="empty">Пока ничего не приходило</div>'; };
