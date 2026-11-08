@@ -107,26 +107,58 @@ function runCapture(cmd, args, o = {}) {
   return new Promise((resolve, reject) => {
     execFile(cmd, args, { windowsHide: true, maxBuffer: 64 * 1024 * 1024, timeout: o.timeout || 0, cwd: o.cwd }, (e, out, err) => {
       if (!e) return resolve(String(out));
+      // файл, который только что распаковали, исчез: чаще всего его удалил антивирус
+      if (e.code === 'ENOENT') return reject(new Error((o.what || cmd) + ': не найден файл ' + cmd + ' (возможно, его удалил антивирус)'));
       reject(new Error((o.what || cmd) + ': ' + String(String(err || out || e.message).trim()).split('\n').slice(-6).join(' ').slice(-400)));
     });
   });
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// null — Python на месте и запускается, иначе текст причины
+async function pythonProblem(py, run) {
+  if (!has(py)) return 'python.exe не найден';
+  try { await run(py, ['-c', 'import sys; print(sys.version_info[0])'], { what: 'проверка Python', timeout: 60000 }); return null; }
+  catch (e) { return String((e && e.message) || e); }
+}
+
+// Свой Python: если рабочий уже стоит, ничего не делаем; если нет или он битый (прошлая установка оборвалась,
+// файл удалил антивирус), ставим заново с чистой папки. Проверка идёт не сразу, а после паузы: антивирус нередко
+// убирает файл через пару секунд после распаковки, и тогда ошибка вылезала позже, на шаге pip, как «spawn ... ENOENT».
+async function ensurePython(p, say, { download, run, settleMs }) {
+  if (!(await pythonProblem(p.py, run))) return;
+  const pyDir = path.join(p.dir, 'python');
+  let problem = '';
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    fs.rmSync(pyDir, { recursive: true, force: true });
+    const zip = path.join(p.dir, 'python.zip');
+    say(0.01, 'Скачиваю Python');
+    await download(PY_URL, zip, (f) => say(0.01 + f * 0.07, 'Скачиваю Python'));
+    await run('powershell', ['-NoProfile', '-Command', 'Expand-Archive', '-LiteralPath', zip, '-DestinationPath', pyDir, '-Force'], { what: 'распаковка Python' });
+    if (!has(p.py)) { // запасная распаковка: tar.exe есть в Windows 10 (1803) и новее
+      try { fs.mkdirSync(pyDir, { recursive: true }); await run('tar', ['-xf', zip, '-C', pyDir], { what: 'распаковка Python (tar)' }); } catch (_) {}
+    }
+    fs.rmSync(zip, { force: true });
+    if (settleMs > 0) await sleep(settleMs);
+    problem = await pythonProblem(p.py, run);
+    if (!problem) return;
+  }
+  let n = 0; try { n = fs.readdirSync(pyDir).length; } catch (_) {}
+  throw new Error(has(p.py)
+    ? 'Python не запускается: ' + problem
+    : `python.exe пропал после распаковки (файлов в папке: ${n}). Похоже, его удалил антивирус: добавь папку ${p.dir} в исключения Защитника Windows и нажми «Установить» снова`);
+}
+
 async function install(userData, onProgress, deps = {}) {
-  const { download, run = runCapture, createTestClient, assumeSupported = false } = deps;
+  const { download, run = runCapture, createTestClient, assumeSupported = false, settleMs = 2500 } = deps;
   if (!assumeSupported && !supported()) throw new Error('Silero поддерживается только в Windows 64-бит');
   const p = paths(userData);
   const say = (frac, step) => { try { onProgress && onProgress(Math.min(1, Math.max(0, frac)), step); } catch (_) {} };
   fs.mkdirSync(p.dir, { recursive: true });
   fs.rmSync(p.marker, { force: true });
 
-  if (!has(p.py)) {
-    say(0.01, 'Скачиваю Python');
-    const zip = path.join(p.dir, 'python.zip');
-    await download(PY_URL, zip, (f) => say(0.01 + f * 0.07, 'Скачиваю Python'));
-    await run('powershell', ['-NoProfile', '-Command', 'Expand-Archive', '-LiteralPath', zip, '-DestinationPath', path.join(p.dir, 'python'), '-Force'], { what: 'распаковка Python' });
-    fs.rmSync(zip, { force: true });
-  }
+  await ensurePython(p, say, { download, run, settleMs });
   // во встраиваемом Python по умолчанию выключен site-packages: без этого pip не ставит пакеты
   const pyDir = path.join(p.dir, 'python');
   const pth = fs.readdirSync(pyDir).find((f) => /^python\d+\._pth$/i.test(f));
@@ -137,7 +169,8 @@ async function install(userData, onProgress, deps = {}) {
   if (!pipOk) {
     const gp = path.join(p.dir, 'get-pip.py');
     await download(GET_PIP_URL, gp);
-    await run(p.py, [gp, '--no-warn-script-location', '--disable-pip-version-check'], { what: 'установка pip', timeout: 10 * 60 * 1000 });
+    const getPip = () => run(p.py, [gp, '--no-warn-script-location', '--disable-pip-version-check', '--retries', '10', '--timeout', '60'], { what: 'установка pip', timeout: 10 * 60 * 1000 });
+    try { await getPip(); } catch (e) { if (!has(p.py)) throw e; await getPip(); } // сетевой сбой: одна повторная попытка (если Python исчез, повтор бесполезен)
     fs.rmSync(gp, { force: true });
   }
 
@@ -145,8 +178,10 @@ async function install(userData, onProgress, deps = {}) {
   say(0.15, 'Устанавливаю PyTorch (самый долгий шаг)');
   let frac = 0.15;
   const tick = setInterval(() => { frac = Math.min(0.8, frac + (0.8 - frac) * 0.04); say(frac, 'Устанавливаю PyTorch (самый долгий шаг)'); }, 3000);
-  try { await run(p.py, ['-m', 'pip', 'install', '--no-warn-script-location', '--disable-pip-version-check', 'torch', 'numpy'], { what: 'установка PyTorch', timeout: 45 * 60 * 1000 }); }
+  try { await run(p.py, ['-m', 'pip', 'install', '--no-warn-script-location', '--disable-pip-version-check', '--retries', '10', '--timeout', '60', 'torch', 'numpy'], { what: 'установка PyTorch', timeout: 45 * 60 * 1000 }); }
   finally { clearInterval(tick); }
+  // pip мог отчитаться об успехе, а библиотека не загружается (битая распаковка, антивирус): ловим это сразу и понятно
+  await run(p.py, ['-c', 'import torch, numpy'], { what: 'проверка PyTorch', timeout: 5 * 60 * 1000 });
 
   if (!has(p.model)) {
     say(0.82, 'Скачиваю голоса Silero');
@@ -174,4 +209,4 @@ function clientFor(userData) {
   return createClient({ pythonExe: p.py, script: p.script, modelPath: p.model });
 }
 
-module.exports = { VOICES, MODEL_URL, PY_URL, supported, paths, copyScripts, isInstalled, createClient, install, status, clientFor };
+module.exports = { VOICES, MODEL_URL, PY_URL, supported, paths, copyScripts, isInstalled, createClient, install, status, clientFor, runCapture };

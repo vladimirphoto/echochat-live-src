@@ -90,7 +90,7 @@ test('установщик: шаги по порядку, маркер толь�
   };
   const stages = [];
   const okClient = () => ({ synth: async () => Buffer.alloc(5000), stop() {} });
-  await silero.install(ud, (f, s) => stages.push([f, s]), { download, run, createTestClient: okClient, assumeSupported: true });
+  await silero.install(ud, (f, s) => stages.push([f, s]), { download, run, createTestClient: okClient, assumeSupported: true, settleMs: 0 });
   assert.ok(fs.existsSync(p.marker)); assert.ok(silero.isInstalled(ud));
   assert.match(fs.readFileSync(path.join(p.dir, 'python', 'python311._pth'), 'utf8'), /^import site$/m);
   const pipInstall = log.findIndex((l) => /pip install/.test(l)), model = log.indexOf('dl v5_ru.pt'), getPip = log.indexOf('dl get-pip.py');
@@ -102,7 +102,7 @@ test('установщик: шаги по порядку, маркер толь�
   // сбой проверки голоса: установка не считается завершённой
   fs.rmSync(p.marker);
   const badClient = () => ({ synth: async () => { throw new Error('silero: не запустился'); }, stop() {} });
-  await assert.rejects(silero.install(ud, null, { download, run, createTestClient: badClient, assumeSupported: true }), /не запустился/);
+  await assert.rejects(silero.install(ud, null, { download, run, createTestClient: badClient, assumeSupported: true, settleMs: 0 }), /не запустился/);
   assert.equal(silero.isInstalled(ud), false);
 });
 
@@ -111,4 +111,58 @@ test('установщик: не Windows — понятный отказ; ста
   await assert.rejects(silero.install(os.tmpdir(), null, {}), /только в Windows/);
   const st = silero.status(fs.mkdtempSync(path.join(os.tmpdir(), 'echo-sil-')));
   assert.equal(st.installed, false); assert.equal(st.supported, false); assert.equal(st.voices.length, 5);
+});
+
+test('установщик: python.exe исчез после распаковки — понятная ошибка про антивирус, а не «spawn ENOENT»', async () => {
+  const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-sil-'));
+  const p = silero.paths(ud);
+  let downloads = 0;
+  const download = async (url, dest) => { downloads++; fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, Buffer.alloc(5000, 1)); };
+  const run = async (cmd) => { // «распаковка» кладёт файлы, но python.exe нет (его удалил антивирус)
+    if (cmd === 'powershell') { const d = path.join(p.dir, 'python'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'python311.dll'), Buffer.alloc(5000)); }
+    return '';
+  };
+  await assert.rejects(silero.install(ud, null, { download, run, assumeSupported: true, settleMs: 0 }), (e) => /python\.exe пропал/.test(e.message) && /антивирус/.test(e.message) && /файлов в папке: 1/.test(e.message) && !/ENOENT/.test(e.message));
+  assert.equal(downloads, 2, 'одна повторная попытка с чистой папки');
+  assert.equal(silero.isInstalled(ud), false);
+});
+
+test('установщик: битый Python (есть, но не запускается) ставится заново', async () => {
+  const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-sil-'));
+  const p = silero.paths(ud);
+  fs.mkdirSync(path.dirname(p.py), { recursive: true });
+  fs.writeFileSync(p.py, Buffer.alloc(5000)); fs.writeFileSync(path.join(path.dirname(p.py), 'stale.txt'), 'старьё');
+  let downloads = 0, broken = true;
+  const download = async (url, dest) => { downloads++; fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, Buffer.alloc(5000, 1)); };
+  const run = async (cmd, args) => {
+    if (cmd === 'powershell') { broken = false; const d = path.join(p.dir, 'python'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'python.exe'), Buffer.alloc(5000)); fs.writeFileSync(path.join(d, 'python311._pth'), '#import site\n'); }
+    if (cmd === p.py && args[0] === '-c' && broken) throw new Error('проверка Python: не запускается');
+    if (args[0] === '-m' && args[2] === '--version') throw new Error('нет pip');
+    return '';
+  };
+  await silero.install(ud, null, { download, run, createTestClient: () => ({ synth: async () => Buffer.alloc(5000), stop() {} }), assumeSupported: true, settleMs: 0 });
+  assert.ok(downloads >= 3 && silero.isInstalled(ud)); // Python, get-pip, модель
+  assert.equal(fs.existsSync(path.join(path.dirname(p.py), 'stale.txt')), false, 'старая папка очищена');
+});
+
+test('установщик: pip и PyTorch ставятся с повторами и таймаутом сети, импорт проверяется', async () => {
+  const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-sil-'));
+  const p = silero.paths(ud);
+  fs.mkdirSync(path.dirname(p.py), { recursive: true }); fs.writeFileSync(p.py, Buffer.alloc(5000));
+  const calls = [];
+  const download = async (url, dest) => { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, Buffer.alloc(5000, 1)); };
+  const run = async (cmd, args) => { calls.push(args.join(' ')); if (args[0] === '-m' && args[2] === '--version') throw new Error('нет pip'); return ''; };
+  await silero.install(ud, null, { download, run, createTestClient: () => ({ synth: async () => Buffer.alloc(5000), stop() {} }), assumeSupported: true, settleMs: 0 });
+  const inst = calls.find((c) => /pip install/.test(c));
+  assert.match(inst, /--retries 10/); assert.match(inst, /--timeout 60/);
+  assert.ok(calls.some((c) => c === '-c import torch, numpy'), 'после pip проверяется import torch');
+  // import torch не прошёл: установка падает с понятным шагом
+  fs.rmSync(p.marker, { force: true });
+  const run2 = async (cmd, args) => { if (args[0] === '-c' && /torch/.test(args[1])) throw new Error('проверка PyTorch: DLL load failed'); return ''; };
+  await assert.rejects(silero.install(ud, null, { download, run: run2, assumeSupported: true, settleMs: 0 }), /проверка PyTorch/);
+  assert.equal(silero.isInstalled(ud), false);
+});
+
+test('запуск программы: отсутствующий файл — понятное сообщение, а не «spawn ENOENT»', async () => {
+  await assert.rejects(silero.runCapture(path.join(os.tmpdir(), 'нет-такого', 'python.exe'), ['-V'], { what: 'установка pip' }), (e) => /установка pip/.test(e.message) && /антивирус/.test(e.message) && !/ENOENT/.test(e.message));
 });
