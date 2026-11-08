@@ -31,10 +31,59 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run dist
+      # Electron и инструменты electron-builder (winCodeSign, nsis) качаются с github.com, который иногда отвечает 504
+      # (так упали сборки 2.4.0 и 2.4.1). Скачанное кладём в кэш, чтобы следующие сборки не зависели от этих загрузок.
+      - name: Restore Electron download cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-dl-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            electron-dl-${{ runner.os }}-
+      # установка и сборка идут с повторными попытками и длинными паузами
+      - name: Install dependencies (with retry)
+        shell: pwsh
+        run: |
+          for ($i = 1; $i -le 5; $i++) {
+            npm install
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "::warning::npm install failed (attempt $i of 5), retrying in 60s"
+            Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 60
+          }
+          exit 1
+      - name: Build portable exe (with retry)
+        shell: pwsh
+        run: |
+          for ($i = 1; $i -le 5; $i++) {
+            npm run dist
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "::warning::npm run dist failed (attempt $i of 5), retrying in 60s"
+            Start-Sleep -Seconds 60
+          }
+          exit 1
       # установщик для установленной версии: она обновляется сама, скачивая файл с «Setup» в имени
-      - run: npm run dist:setup
+      - name: Build Setup installer (with retry)
+        shell: pwsh
+        run: |
+          for ($i = 1; $i -le 5; $i++) {
+            npm run dist:setup
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "::warning::npm run dist:setup failed (attempt $i of 5), retrying in 60s"
+            Start-Sleep -Seconds 60
+          }
+          exit 1
+      # сохраняем кэш сразу после сборки, даже если дальше упадёт автотест: загрузки к этому моменту уже скачаны
+      - name: Save Electron download cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-dl-${{ runner.os }}-${{ github.run_id }}
 
       # Автотест собранного приложения: открывает окно, нажимает кнопки,
       # синтезирует голоса, проверяет подключение к несуществующему эфиру.
