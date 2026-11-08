@@ -5,7 +5,6 @@ const path = require('path');
 const { spawn, execFile } = require('child_process');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
-const { downloadWithRetry, retryableStatus } = require('./fetch-retry');
 
 const PIPER_VER = '2023.11.14-2';
 const PIPER_ZIP = { win32: 'piper_windows_amd64.zip', darwin: process.arch === 'arm64' ? 'piper_macos_aarch64.tar.gz' : 'piper_macos_x64.tar.gz' };
@@ -33,23 +32,15 @@ function status(ud, cfg) {
   };
 }
 
-// сервера загрузки (GitHub, python.org, HuggingFace) временами отвечают 5xx или рвут соединение: до 4 попыток с паузами
-async function download(url, dest, onProgress, retry = {}) {
+async function download(url, dest, onProgress) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  await downloadWithRetry(async () => {
-    const res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok || !res.body) {
-      const err = new Error('загрузка не удалась: HTTP ' + res.status);
-      if (!res.ok && !retryableStatus(res.status)) err.fatal = true;
-      throw err;
-    }
-    const total = Number(res.headers.get('content-length')) || 0; let got = 0;
-    const src = Readable.fromWeb(res.body);
-    src.on('data', (c) => { got += c.length; if (total && onProgress) onProgress(got / total); });
-    await pipeline(src, fs.createWriteStream(dest + '.part'));
-    if (total && got < total) throw new Error('загрузка прервана');
-    fs.renameSync(dest + '.part', dest);
-  }, { delays: [2000, 5000, 10000], ...retry });
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok || !res.body) throw new Error('загрузка не удалась: HTTP ' + res.status);
+  const total = Number(res.headers.get('content-length')) || 0; let got = 0;
+  const src = Readable.fromWeb(res.body);
+  src.on('data', (c) => { got += c.length; if (total && onProgress) onProgress(got / total); });
+  await pipeline(src, fs.createWriteStream(dest + '.part'));
+  fs.renameSync(dest + '.part', dest);
 }
 const run = (cmd, args) => new Promise((res, rej) => execFile(cmd, args, { windowsHide: true }, (e) => (e ? rej(e) : res())));
 
@@ -97,4 +88,4 @@ async function googleSynth(cfg, text, rate) {
   return Buffer.from(j.audioContent, 'base64');
 }
 
-module.exports = { status, install, download, piperSynth, googleSynth, piperArgs, PIPER_VOICES, GOOGLE_VOICES };
+module.exports = { status, install, piperSynth, googleSynth, piperArgs, PIPER_VOICES, GOOGLE_VOICES };

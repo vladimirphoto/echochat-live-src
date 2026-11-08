@@ -306,7 +306,7 @@ ipcMain.handle('app:settings:set', (_e, patch) => {
 
 // ---- крестик: спрашиваем «свернуть в трей или закрыть» (или делаем по сохранённому выбору)
 let quitting = false, askPending = false;
-app.on('before-quit', () => { quitting = true; ovHotkeyOff(); try { edgePool.close(); } catch (_) {} try { silClient && silClient.stop(); } catch (_) {} });
+app.on('before-quit', () => { quitting = true; ovHotkeyOff(); try { edgePool.close(); } catch (_) {} });
 function onWindowClose(e) {
   if (quitting || !useTray || !tray || appSet.closeMode === 'quit') return; // обычное закрытие
   if (win.webContents.isLoading()) return;
@@ -556,10 +556,7 @@ const edgePool = require('./edge-pool').createEdgeSynth({
 const edgeSynth = (text, voice, rate, pitch, o) => edgePool.synth(text, voice, rate, pitch, o);
 // окно просит заранее открыть соединения для выбранных голосов (при запуске и при подключении к эфиру)
 ipcMain.handle('tts:warm', (_e, voices) => {
-  const list = Array.isArray(voices) ? voices : [];
-  // голос Silero: модель грузится с диска несколько секунд — запускаем заранее, чтобы первая фраза эфира не ждала
-  if (list.some((v) => typeof v === 'string' && v.startsWith('silero:')) && silInstalled()) silGet().start().catch(() => {});
-  edgePool.setPinned(list.filter((v) => typeof v === 'string' && /^[\w-]{3,80}$/.test(v)).slice(0, 6));
+  edgePool.setPinned((Array.isArray(voices) ? voices : []).filter((v) => typeof v === 'string' && /^[\w-]{3,80}$/.test(v)).slice(0, 6));
   return true;
 });
 
@@ -582,36 +579,19 @@ ipcMain.handle('eng:install', async (e, id) => {
   try { await te.install(app.getPath('userData'), id, (p) => { try { e.sender.send('eng:progress', { id, p }); } catch (_) {} }); engLoad().piperVoice = id; engSave(); return { ok: true, status: te.status(app.getPath('userData'), engCfg) }; }
   catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });
-// ---------- Офлайн-голоса Silero (свой Python с PyTorch ставится по кнопке; только Windows) ----------
-const sil = require('./silero');
-const { createRouter } = require('./tts-router');
-let silClient = null, silInstalling = false;
-const silGet = () => {
-  if (!silClient) { try { sil.copyScripts(app.getPath('userData')); } catch (_) {} silClient = sil.clientFor(app.getPath('userData')); }
-  return silClient;
-};
-const silInstalled = () => { try { return sil.supported() && sil.isInstalled(app.getPath('userData')); } catch (_) { return false; } };
-// Edge остаётся основным; установленный Silero страхует его при сбое и долгом молчании, а голоса «silero:*» озвучивает сам
-const router = createRouter({ edge: edgeSynth, silero: { installed: silInstalled, synth: (t, s, sr) => silGet().synth(t, s, sr) } });
-ipcMain.handle('sil:status', () => ({ ...sil.status(app.getPath('userData')), installing: silInstalling }));
-ipcMain.handle('sil:install', async (e) => {
-  if (silInstalling) return { ok: false, error: 'установка уже идёт' };
-  silInstalling = true;
-  try {
-    const { download } = te;
-    await sil.install(app.getPath('userData'), (p, step) => { try { e.sender.send('sil:progress', { p, step }); } catch (_) {} }, { download });
-    try { silClient && silClient.stop(); } catch (_) {}
-    silClient = null;
-    return { ok: true, status: sil.status(app.getPath('userData')) };
-  } catch (err) {
-    return { ok: false, error: String((err && err.message) || err).slice(0, 400) };
-  } finally { silInstalling = false; }
-});
+// выбор движка (Piper/Google) пока убран из интерфейса: всегда озвучивает Edge, даже если раньше был выбран другой
+const ENGINES_ON = false;
 ipcMain.handle('tts:synth', async (_e, o) => {
   try {
     const text = String(o.text || '').slice(0, 400);
-    const r = await router.synth({ text, voice: o.voice, rate: o.rate, pitch: o.pitch, urgent: !!o.urgent, gender: o.gender });
-    return { ok: true, audio: r.audio, mime: r.mime, tempo: r.tempo, chars: text.length };
+    if (!text.trim()) return { ok: false, error: 'empty text' };
+    const cfg = engLoad();
+    if (ENGINES_ON && (cfg.engine === 'piper' || cfg.engine === 'google')) {
+      try { const b = cfg.engine === 'piper' ? await te.piperSynth(app.getPath('userData'), cfg, text, o.rate) : await te.googleSynth(cfg, text, o.rate); return { ok: true, audio: b.toString('base64'), chars: text.length }; }
+      catch (err) { console.warn('[tts] ' + cfg.engine + ' не сработал, откат на Edge:', String((err && err.message) || err).replace(cfg.googleKey || '\u0000', '***')); }
+    }
+    const buf = await edgeSynth(text, o.voice, o.rate, o.pitch, { urgent: !!o.urgent });
+    return { ok: true, audio: buf.toString('base64'), chars: text.length };
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };
   }

@@ -22,17 +22,6 @@ const BUILTIN = [
   { id: 'b-florian', name: 'Флориан', desc: 'Мужской · бодрый, энергичный', voice: 'de-DE-FlorianMultilingualNeural', gender: 'M' },
 ].map((v) => ({ rate: 0, pitch: 0, ...v, provider: 'edge', builtin: true }));
 
-// Офлайн-голоса Silero: появляются в списке только после установки (кнопка под списком голосов)
-const SILERO = [
-  { id: 's-aidar', name: 'Айдар', desc: 'Мужской · офлайн, Silero', voice: 'silero:aidar', gender: 'M' },
-  { id: 's-eugene', name: 'Евгений', desc: 'Мужской · офлайн, Silero', voice: 'silero:eugene', gender: 'M' },
-  { id: 's-baya', name: 'Бая', desc: 'Женский · офлайн, Silero', voice: 'silero:baya', gender: 'F' },
-  { id: 's-kseniya', name: 'Ксения', desc: 'Женский · офлайн, Silero', voice: 'silero:kseniya', gender: 'F' },
-  { id: 's-xenia', name: 'Ксения 2', desc: 'Женский · офлайн, Silero', voice: 'silero:xenia', gender: 'F' },
-].map((v) => ({ rate: 0, pitch: 0, ...v, provider: 'silero', builtin: true }));
-let siloOn = false;
-try { siloOn = localStorage.getItem('echosil') === '1'; } catch (_) {}
-
 const DEFAULTS = {
   selected: 'b-svetlana', vol: 80, maxLen: 140, nick: '',
   presets: [],
@@ -82,7 +71,7 @@ if (!S.widgets.length) S.widgets = [normWidget({ id: 'w1', name: 'OBS', tt: 'lef
 if (!S.widgets.some((w) => w.id === S.wSel)) S.wSel = S.widgets[0].id;
 const curW = () => S.widgets.find((w) => w.id === S.wSel) || S.widgets[0];
 // встроенные голоса всегда на месте, свои — добавляются после них
-S.presets = (siloOn ? [...BUILTIN, ...SILERO] : BUILTIN).map((b) => ({ ...b, ...((S.presets || []).find((p) => p.id === b.id) || {}), builtin: true }));
+S.presets = BUILTIN.map((b) => ({ ...b, ...((S.presets || []).find((p) => p.id === b.id) || {}), builtin: true }));
 if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id;
 delete S.subsOnly; // режим «только подписчики» убран
 delete S.showTwitch; // чат Twitch всегда показывается в ленте, если канал подключён
@@ -267,7 +256,7 @@ const BASE_IDS = ['b-svetlana', 'b-dmitry'];
 function applyCatalog(all) {
   if (!Array.isArray(all) || all.length < 10) return; // каталог не загрузился — показываем всё
   const have = new Set(all);
-  S.presets = S.presets.filter((p) => BASE_IDS.includes(p.id) || p.provider === 'silero' || have.has(p.voice)); // голоса Silero не из каталога Microsoft: их не скрываем
+  S.presets = S.presets.filter((p) => BASE_IDS.includes(p.id) || have.has(p.voice));
   if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id;
   ensureRouteVoices(); save();
   renderVoices(); refreshRate(); refreshPitch(); syncControls();
@@ -312,51 +301,6 @@ function previewPreset(p) {
   enqueue(item, true);
 }
 $('#btnTest').onclick = () => previewPreset(selectedPreset());
-
-/* ---------- офлайн-голоса Silero: установка по кнопке ---------- */
-let silBusy = false;
-function setSiloPresets(on) {
-  siloOn = !!on;
-  try { localStorage.setItem('echosil', on ? '1' : '0'); } catch (_) {}
-  const had = S.presets.some((p) => p.provider === 'silero');
-  if (on && !had) S.presets = [...S.presets, ...SILERO.map((v) => ({ ...v }))];
-  else if (!on && had) { S.presets = S.presets.filter((p) => p.provider !== 'silero'); if (!S.presets.some((p) => p.id === S.selected)) S.selected = BUILTIN[0].id; ensureRouteVoices(); }
-  else return;
-  save(); renderVoices(); refreshRate(); refreshPitch(); syncControls(); warmVoices();
-}
-function silUi(st, err) {
-  const box = $('#silBox'), btn = $('#silBtn'), text = $('#silText'), state = $('#silState');
-  if (!st || !st.supported) { box.hidden = true; return; }
-  box.hidden = false;
-  $('#silBarWrap').hidden = !silBusy;
-  if (st.installed) {
-    state.textContent = 'установлено'; state.dataset.s = 'ok'; btn.hidden = true;
-    text.textContent = 'Голоса Айдар, Евгений, Бая, Ксения и Ксения 2 работают без интернета. Если Microsoft-голос не отвечает, фраза озвучивается ими. Скорость настраивается, тон у этих голосов не меняется.';
-  } else {
-    state.textContent = silBusy ? 'устанавливается' : 'не установлено'; state.dataset.s = silBusy ? 'work' : 'off'; btn.hidden = false;
-    btn.disabled = silBusy; btn.textContent = silBusy ? 'Устанавливается…' : 'Установить офлайн-голоса';
-    text.textContent = err ? 'Не получилось: ' + err : 'Голоса без интернета и без ограничений по символам. Нужен интернет один раз: скачается несколько сотен МБ, установка идёт несколько минут.';
-  }
-  text.dataset.err = err ? '1' : '';
-}
-async function refreshSilero() {
-  try {
-    const st = await window.echo.silStatus();
-    if (st && st.supported) setSiloPresets(!!st.installed);
-    silBusy = !!(st && st.installing);
-    silUi(st);
-  } catch (_) { silUi(null); }
-}
-$('#silBtn').onclick = async () => {
-  if (silBusy) return;
-  silBusy = true; $('#silBar').style.width = '2%'; silUi({ supported: true, installed: false });
-  const r = await window.echo.silInstall().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
-  silBusy = false;
-  if (r && r.ok) { setSiloPresets(true); silUi(r.status); sys('Офлайн-голоса Silero установлены. Они появились в списке голосов'); }
-  else { silUi({ supported: true, installed: false }, (r && r.error) || 'неизвестная ошибка'); sys('Silero: установка не удалась: ' + ((r && r.error) || 'неизвестная ошибка')); }
-};
-window.echo.onSilProgress((d) => { if (!silBusy || !d) return; $('#silBar').style.width = Math.round(Math.min(1, d.p || 0) * 100) + '%'; $('#silState').textContent = (d.step || 'устанавливается'); });
-setTimeout(refreshSilero, 800);
 
 /* ---------- лента ---------- */
 const feed = $('#feed');
@@ -475,10 +419,10 @@ function stopCurrent() {
   if (curResolve) { const r = curResolve; curResolve = null; r(); }
 }
 
-function playBlob(b64, rate = 1, mime = 'audio/mpeg') {
+function playBlob(b64, rate = 1) {
   return new Promise((resolve, reject) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    curUrl = URL.createObjectURL(new Blob([bytes], { type: mime || 'audio/mpeg' }));
+    curUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
     cur = new Audio(curUrl);
     cur.volume = S.vol / 100;
     cur.preservesPitch = true;
@@ -492,7 +436,7 @@ function playBlob(b64, rate = 1, mime = 'audio/mpeg') {
 
 function synthFor(text, p, urgent) {
   return window.echo.synth({
-    text, voice: p.voice, urgent: !!urgent, gender: p.gender,
+    text, voice: p.voice, urgent: !!urgent,
     rate: Math.max(0.5, 1 + (p.rate || 0) / 100),
     pitch: ((p.pitch || 0) >= 0 ? '+' : '') + (p.pitch || 0) + 'Hz',
   }).catch((e) => ({ ok: false, error: String(e && e.message || e) }));
@@ -552,16 +496,14 @@ async function speakItem(item) {
   }
   if (r && r.ok) {
     const rate = item.force ? 1 : catchUpRate();
-    // tempo — скорость голоса, заданная для движка без собственной регулировки (Silero): высота тона при ускорении не меняется
-    const tempo = Number(r.tempo) > 0 ? Number(r.tempo) : 1;
-    try { await playBlob(r.audio, rate * tempo, r.mime); }
+    try { await playBlob(r.audio, rate); }
     catch (_) {
       // звук не проигрался (битый кусок, сбой устройства) — один раз синтезируем заново и играем ещё раз
       if (item.cancelled) return;
       item.p = null;
       const r2 = await withDeadline(ensureSynth(item));
       if (item.cancelled) return;
-      if (r2 && r2.ok) { try { await playBlob(r2.audio, rate * (Number(r2.tempo) > 0 ? Number(r2.tempo) : 1), r2.mime); } catch (_) {} }
+      if (r2 && r2.ok) { try { await playBlob(r2.audio, rate); } catch (_) {} }
     }
   }
 }
@@ -1313,9 +1255,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
-  '2.4.2': ['Установка офлайн-голосов Silero стала надёжнее: приложение проверяет, что Python распаковался и запускается, ставит его заново, если прошлая установка оборвалась, повторяет сбойные загрузки и pip-запросы. Если антивирус удалил python.exe, вместо «spawn ... ENOENT» показывается понятная причина и что делать'],
-  '2.4.1': ['Обновление по кнопке: если GitHub временно отвечает ошибкой (например 504) или обрывает загрузку, приложение само повторяет скачивание до 5 раз, а не сразу показывает «Не удалось скачать»'],
-  '2.4.0': ['Офлайн-голоса Silero (Айдар, Евгений, Бая, Ксения, Ксения 2): ставятся кнопкой под списком голосов, работают без интернета и без лимитов. Если голос Microsoft сбоит или долго молчит, фраза автоматически озвучивается установленным Silero'],
+  '2.4.3': ['Возврат к стабильной версии 2.3.9: офлайн-голоса Silero и автопереключение Edge → Silero из версий 2.4.0–2.4.2 убраны'],
   '2.3.9': ['Оверлей чата: рядом с ником подписчика канала появился значок Sub (в ленте и в нижней строке); у тех, кто не подписан, его нет. Если человек подписался во время эфира, значок появится сразу после подписки'],
   '2.3.8': ['Закрытые разделы: размытие лежит на всей странице сразу (вместе с шапкой и счётчиками), стало сильнее и больше не меняется от слабого к сильному'],
   '2.3.7': ['Закрытые разделы («Виджеты», «Донаты Каспи», «Оверлей чата»): размытие идёт до самых краёв окна и плавно нарастает сверху, без резких границ по краям'],
