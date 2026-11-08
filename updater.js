@@ -9,6 +9,11 @@ const REPO = 'vladimirphoto/jonny-chat-tiktok';
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const PAGE = `https://github.com/${REPO}/releases/latest`;
 
+// Любой запрос к GitHub ограничен по времени: если сеть «молчит» (провайдер режет api.github.com, зависшее соединение),
+// без таймаута проверка крутилась бесконечно и запасной путь через github.com не включался
+const CHECK_TIMEOUT_MS = 15000;
+const tfetch = (url, opts = {}, ms = CHECK_TIMEOUT_MS) => fetch(url, { ...opts, signal: AbortSignal.timeout(ms) });
+
 const parse = (v) => String(v).replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
 function isNewer(remote, local) {
   const a = parse(remote), b = parse(local);
@@ -47,7 +52,7 @@ function pickRelease(list, installed) {
 // Лента релизов (atom) даёт теги, страница expanded_assets — ссылку на exe
 async function pickViaWeb(installed) {
   const H = { 'User-Agent': 'EchoChat-LIVE' };
-  const feed = await fetch(`https://github.com/${REPO}/releases.atom`, { headers: H });
+  const feed = await tfetch(`https://github.com/${REPO}/releases.atom`, { headers: H });
   if (!feed.ok) throw new Error('GitHub ответил ' + feed.status);
   const xml = await feed.text();
   const tags = [...xml.matchAll(/<link[^>]+href="https:\/\/github\.com\/[^"]+\/releases\/tag\/([^"]+)"/g)].map((m) => decodeURIComponent(m[1]));
@@ -55,8 +60,8 @@ async function pickViaWeb(installed) {
   for (const tag of tags.slice(0, 8)) {
     const version = tag.replace(/^v/i, '');
     if (best && !isNewer(version, best.version)) continue;
-    const r = await fetch(`https://github.com/${REPO}/releases/expanded_assets/${encodeURIComponent(tag)}`, { headers: H });
-    if (!r.ok) continue;
+    const r = await tfetch(`https://github.com/${REPO}/releases/expanded_assets/${encodeURIComponent(tag)}`, { headers: H }).catch(() => null);
+    if (!r || !r.ok) continue;
     const links = [...(await r.text()).matchAll(/href="(\/[^"]+\/releases\/download\/[^"]+?\.exe)"/gi)].map((m) => ({ name: decodeURIComponent(m[1].split('/').pop()), href: m[1] }));
     const a = pickAsset(links, installed);
     if (a) best = { version, asset: { browser_download_url: 'https://github.com' + a.href.replace(/&amp;/g, '&'), size: 0 }, notes: '' };
@@ -68,14 +73,14 @@ async function check() {
   if (/paidtest/.test(app.getVersion())) return { ok: true, available: false, current: app.getVersion() }; // тестовая платная сборка не обновляется из основной ветки
   let best;
   const installed = isInstalled();
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=15`, {
+  const res = await tfetch(`https://api.github.com/repos/${REPO}/releases?per_page=15`, {
     headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'EchoChat-LIVE' },
   }).catch(() => null);
   if (res && res.status === 404) return { ok: true, available: false, current: app.getVersion() };
   if (res && res.ok) best = pickRelease(await res.json(), installed);
   else {
     try { best = await pickViaWeb(installed); }
-    catch (e) { throw new Error(res ? 'GitHub ответил ' + res.status + (res.status === 403 || res.status === 429 ? ' (лимит запросов, попробуй позже)' : '') : String((e && e.message) || e)); }
+    catch (e) { throw new Error(!res && /abort|timeout|timed out/i.test(String((e && (e.name + ' ' + e.message)) || e)) ? 'GitHub не отвечает (проверьте интернет или VPN и повторите)' : res ? 'GitHub ответил ' + res.status + (res.status === 403 || res.status === 429 ? ' (лимит запросов, попробуй позже)' : '') : String((e && e.message) || e)); }
   }
   if (!best) return { ok: true, available: false, current: app.getVersion() };
   const available = isNewer(best.version, app.getVersion());
@@ -100,8 +105,13 @@ async function install(onProgress) {
   try {
     await downloadWithRetry(async () => {
       onProgress(0);
-      const res = await fetch(found.url, { headers: { 'User-Agent': 'EchoChat-LIVE' } });
+      // нет ответа или данные не идут 30 с — попытка обрывается и повторяется
+      const ac = new AbortController(); let idle = 0;
+      const bump = () => { clearTimeout(idle); idle = setTimeout(() => ac.abort(), 30000); };
+      bump();
+      const res = await fetch(found.url, { headers: { 'User-Agent': 'EchoChat-LIVE' }, signal: ac.signal }).catch((e) => { clearTimeout(idle); throw (ac.signal.aborted ? new Error('Не удалось скачать: GitHub не отвечает') : e); });
       if (!res.ok || !res.body) {
+        clearTimeout(idle);
         const err = new Error('Не удалось скачать: ' + res.status);
         if (!res.ok && !retryableStatus(res.status)) err.fatal = true;
         throw err;
@@ -111,15 +121,15 @@ async function install(onProgress) {
       let got = 0;
       try {
         for await (const chunk of res.body) {
-          got += chunk.length;
+          got += chunk.length; bump();
           if (!out.write(chunk)) await new Promise((r) => out.once('drain', r));
           if (total) onProgress(Math.round((got / total) * 100));
         }
         await new Promise((r, j) => { out.on('error', j); out.end(r); });
       } catch (e) {
         out.destroy();
-        throw e;
-      }
+        throw (ac.signal.aborted ? new Error('Не удалось скачать: загрузка остановилась') : e);
+      } finally { clearTimeout(idle); }
       if (total && got < total) throw new Error('Загрузка прервана');
     });
   } catch (e) {
