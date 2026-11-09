@@ -447,6 +447,7 @@ async function doConnect(rawName) {
     if (seenFollow.has(key) && now - seenFollow.get(key) < 10000) return; // follow и social приходят парой
     seenFollow.set(key, now);
     if (seenFollow.size > 500) seenFollow.clear();
+    fireAlert(u); // плашка на экране стрима; раньше tt:follow, чтобы звук оповещения звучал перед голосом «спасибо за подписку»
     send('tt:follow', u);
   };
   // репост эфира: событие share, а если его нет в версии библиотеки — social с признаком репоста (оба могут прийти парой)
@@ -668,6 +669,51 @@ ipcMain.handle('likes:clear', () => { likesBoard.clear(); wsrv && wsrv.broadcast
 ipcMain.handle('likes:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/likes` : ''));
 ipcMain.handle('likes:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.LIKES_PAGES_URL } : { ok: false, url: '' }));
 ipcMain.handle('widget:clear', () => { wsrv && wsrv.broadcast('clear', {}); return { ok: true }; });
+
+// ---------- Оповещения о подписках: плашка на экране стрима (страница /alert), звук играет окно приложения ----------
+// Картинка и звук, которые загрузил человек, лежат в папке данных приложения (alerts.js); до 5 МБ каждый
+const alertsMod = require('./alerts');
+let aset = alertsMod.cleanSettings({});
+const alertsDir = () => app.getPath('userData');
+const alertImage = () => alertsMod.findImage(alertsDir());
+const alertWidgetSettings = () => alertsMod.widgetSettings(aset, alertImage());
+let alertSeq = 0;
+function fireAlert(u, test = false) {
+  if (locked('widgets') || (!test && !aset.enabled)) return false; // тариф Lite или оповещения выключены (кнопка «Тест» работает и при выключенных)
+  const name = String((u && u.name) || 'Гость').slice(0, 40);
+  const avatar = u && /^https?:\/\//.test(u.avatar || '') ? u.avatar : '';
+  wsrv && wsrv.broadcast('alert', { id: Date.now().toString(36) + (alertSeq++), name, avatar, test });
+  send('alert:show', { name, test }); // окно приложения играет звук
+  return true;
+}
+ipcMain.handle('alerts:set', (_e, s) => { aset = alertsMod.cleanSettings(s); wsrv && wsrv.broadcast('asettings', alertWidgetSettings()); return { ok: true, hasImage: !!alertImage() }; });
+const ALERT_SAMPLES = [{ name: 'Анна К.' }, { name: 'Max' }, { name: 'Игорь' }, { name: 'Дина Н.' }, { name: 'Марат' }];
+let alertSampleI = 0;
+ipcMain.handle('alerts:test', () => {
+  if (locked('widgets')) return { ok: false, locked: true };
+  fireAlert(ALERT_SAMPLES[alertSampleI++ % ALERT_SAMPLES.length], true);
+  return { ok: true };
+});
+async function pickAlertFile(title, name, exts, base, kind) {
+  const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title, properties: ['openFile'], filters: [{ name, extensions: Object.keys(exts) }] }).catch(() => null);
+  if (!r || r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  return alertsMod.saveFile(alertsDir(), base, exts, r.filePaths[0], kind);
+}
+ipcMain.handle('alerts:imgpick', async () => {
+  const r = await pickAlertFile('Своя картинка оповещения', 'Картинка', alertsMod.IMAGE_EXT, alertsMod.IMAGE_BASE, 'image');
+  if (r.ok) wsrv && wsrv.broadcast('asettings', alertWidgetSettings()); // предпросмотр и OBS сразу берут новую картинку
+  return r;
+});
+ipcMain.handle('alerts:imgclear', () => { alertsMod.clearFiles(alertsDir(), alertsMod.IMAGE_BASE); wsrv && wsrv.broadcast('asettings', alertWidgetSettings()); return { ok: true }; });
+ipcMain.handle('alerts:sndpick', () => pickAlertFile('Свой звук оповещения', 'Звук', alertsMod.SOUND_EXT, alertsMod.SOUND_BASE, 'sound'));
+ipcMain.handle('alerts:sndget', () => {
+  const f = alertsMod.findSound(alertsDir());
+  if (!f) return { ok: false };
+  try { return { ok: true, mime: f.mime, data: require('fs').readFileSync(f.file) }; } catch (_) { return { ok: false }; }
+});
+ipcMain.handle('alerts:sndclear', () => { alertsMod.clearFiles(alertsDir(), alertsMod.SOUND_BASE); return { ok: true }; });
+ipcMain.handle('alerts:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/alert` : ''));
+ipcMain.handle('alerts:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.ALERT_PAGES_URL } : { ok: false, url: '' }));
 
 // ---------- Интернет: проверяем связь, чтобы плашки в шапке горели жёлтым без сети ----------
 let netOnline = true, netFails = 0;
@@ -896,7 +942,12 @@ ipcMain.handle('upd:install', async () => {
 app.whenReady().then(async () => {
   if (!gotLock) return; // уже запущен другой экземпляр — он покажет своё окно
   ovHotkeyOn();
-  try { wsrv = await widget.start(() => wset, 7878, { getDonate: () => donateWidgetSettings(), getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }) }); } catch (_) { wsrv = null; }
+  try { wsrv = await widget.start(() => wset, 7878, {
+      getDonate: () => donateWidgetSettings(),
+      getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }),
+      getAlerts: () => alertWidgetSettings(),
+      getAlertImage: () => { const i = alertImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
+    }); } catch (_) { wsrv = null; }
   initLicense();
   createWindow();
   if (useTray) { try { createTray(); } catch (_) { tray = null; } }

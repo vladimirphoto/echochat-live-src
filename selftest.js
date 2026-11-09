@@ -26,6 +26,7 @@ function mainTests() {
   add('донаты: покупка и баланс не считаются донатом', kp.parse('Покупка 4 500 ₸ Magnum').ok === false && kp.parse('Баланс: 90 000 ₸. Перевод от Аня Б. 700 ₸').amount === 700);
   add('донаты: страница виджета входит в сборку', /addEventListener\('donate'/.test(require('./widget-donate-page')));
   add('топ лайков: страница виджета входит в сборку', /addEventListener\('likes'/.test(require('./widget-likes-page')));
+  add('оповещения: страница виджета и модуль входят в сборку', /addEventListener\('alert'/.test(require('./widget-alert-page')) && require('./alerts').cleanSettings({}).duration === 6);
   add('событие подарка: серия не считается, пока идёт', ev.giftOf({ giftDetails: { giftName: 'Rose', giftType: 1 }, repeatEnd: false }).done === false && ev.giftOf({ giftDetails: { giftName: 'Rose', giftType: 1 }, repeatEnd: true }).done === true);
   return R;
 }

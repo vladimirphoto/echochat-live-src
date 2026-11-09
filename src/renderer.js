@@ -29,12 +29,14 @@ const DEFAULTS = {
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
+  alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '' },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
 S.likes = { ...DEFAULTS.likes, ...(S.likes && typeof S.likes === 'object' ? S.likes : {}) };
 S.kaspi = { ...DEFAULTS.kaspi, ...(S.kaspi && typeof S.kaspi === 'object' ? S.kaspi : {}) };
+S.alerts = { ...DEFAULTS.alerts, ...(S.alerts && typeof S.alerts === 'object' ? S.alerts : {}) };
 S.kaspi.enabled = true; // приём всегда включён: переключателя больше нет
 // виджеты: у каждого своё выравнивание TikTok и Twitch и своя ссылка. Первый — для OBS, второй — для TikTok LIVE Studio.
 // Прежнее выравнивание (одно на всё приложение) переносится на первый виджет.
@@ -134,7 +136,7 @@ const TITLES = {
   live: ['Эфир', 'Подключись к TikTok LIVE и слушай чат вслух'],
   voice: ['Озвучка', 'Живые голоса, свои пресеты и события для озвучки'],
   filters: ['Фильтры', 'Что голос читает вслух, а что пропускает'],
-  widgets: ['Виджеты', 'Чат TikTok и Twitch для OBS и TikTok LIVE Studio'],
+  widgets: ['Виджеты', 'Чат, топ лайков и оповещения для OBS и TikTok LIVE Studio'],
   kaspi: ['Донаты Каспи', 'Донаты на экран стрима: имя, сумма и картинка'],
   overlay: ['Оверлей чата', 'Окно чата TikTok и Twitch поверх всех окон на время стрима'],
   license: ['Лицензия', 'Тариф, ключ и пробный период'],
@@ -144,7 +146,7 @@ $$('.nav').forEach((b) => b.addEventListener('click', () => {
   $$('.nav').forEach((x) => x.classList.toggle('active', x === b));
   $$('.tab').forEach((t) => t.classList.toggle('show', t.id === 'tab-' + b.dataset.tab));
   document.body.classList.toggle('t-widgets', b.dataset.tab === 'widgets');
-  if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); });
+  if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); initAlertPreview(); });
   if (b.dataset.tab === 'kaspi') requestAnimationFrame(() => { initGuideVideo(); initDonatePreview(); });
   $('#title').textContent = TITLES[b.dataset.tab][0];
   $('#subtitle').textContent = TITLES[b.dataset.tab][1];
@@ -400,7 +402,7 @@ function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук го
 
 let voiceCalls = 0; // сколько раз пытались озвучить (для автотеста)
 // подарки, подписки и донаты озвучиваются вне очереди чата (сразу после текущей фразы), а при переполнении отбрасывается самое старое сообщение чата
-const PRIO_SRC = new Set(['gifts', 'follows', 'donateSound', 'donateVoice']);
+const PRIO_SRC = new Set(['gifts', 'follows', 'donateSound', 'donateVoice', 'alertSound']);
 function enqueue(item, force = false) {
   voiceCalls++; // пауза относится только к ленте чата: озвучка идёт по настройкам на странице «Озвучка»
   if (queue.length >= QUEUE_MAX) { const i = queue.findIndex((q) => !PRIO_SRC.has(q.src)); queue.splice(i < 0 ? 0 : i, 1); }
@@ -449,9 +451,10 @@ function ensureSynth(item) {
   return item.p;
 }
 
-// звук доната: мягкий «колокольчик» из четырёх нот (до-ми-соль-до), собирается в браузере, без файлов; громкость как у озвучки
+// звук доната и оповещения: ноты собираются в браузере, без файлов; громкость как у озвучки.
+// notes: [частота, когда начать (с), сколько звучит (с), громкость]; endMs — когда считать звук законченным (следующая фраза начинается, пока он затихает)
 let actx = null;
-function playBell() {
+function playTones(notes, endMs) {
   return new Promise((resolve) => {
     let done = false, timer = 0, master = null, oscs = [];
     const finish = () => { if (done) return; done = true; clearTimeout(timer); chimeStop = null; resolve(); };
@@ -460,7 +463,7 @@ function playBell() {
       if (actx.state === 'suspended') actx.resume();
       const t0 = actx.currentTime + 0.04, vol = Math.max(0, Math.min(1, (S.vol == null ? 100 : S.vol) / 100));
       master = actx.createGain(); master.gain.value = 0.5 * vol; master.connect(actx.destination);
-      [[1046.5, 0, 0.8, 0.34], [1318.5, 0.12, 0.8, 0.34], [1568, 0.24, 0.9, 0.36], [2093, 0.38, 1.5, 0.46]].forEach(([f, at, len, peak]) => {
+      notes.forEach(([f, at, len, peak]) => {
         [[f, 1, len], [f * 2, 0.22, len * 0.55], [f * 3.01, 0.07, len * 0.3]].forEach(([fr, k, l]) => {
           const o = actx.createOscillator(), g = actx.createGain();
           o.type = 'sine'; o.frequency.value = fr;
@@ -474,19 +477,23 @@ function playBell() {
         try { master.gain.cancelScheduledValues(actx.currentTime); master.gain.setTargetAtTime(0, actx.currentTime, 0.015); oscs.forEach((o) => { try { o.stop(actx.currentTime + 0.08); } catch (_) {} }); } catch (_) {}
         finish();
       };
-      timer = setTimeout(finish, 1300); // следующая фраза (голос) начинается, пока звук ещё затихает
+      timer = setTimeout(finish, endMs);
     } catch (_) { finish(); }
   });
 }
+// донат: мягкий «колокольчик» из четырёх нот (до-ми-соль-до)
+const playBell = () => playTones([[1046.5, 0, 0.8, 0.34], [1318.5, 0.12, 0.8, 0.34], [1568, 0.24, 0.9, 0.36], [2093, 0.38, 1.5, 0.46]], 1300);
+// подписка: быстрый «блеск» вверх по пентатонике (соль-си-ре-соль-си) и высокая искорка в конце — отличается от доната на слух
+const playAlertBell = () => playTones([[783.99, 0, 0.7, 0.3], [987.77, 0.09, 0.7, 0.3], [1174.66, 0.18, 0.75, 0.32], [1567.98, 0.27, 0.9, 0.36], [1975.53, 0.36, 1.3, 0.4], [3135.96, 0.52, 0.8, 0.14]], 1500);
 
 // свой звук доната (файл, который человек загрузил): играет вместо колокольчика, не дольше 20 с; не заиграл — звучит колокольчик
 let customSound = null; // { url } — адрес загруженного звука
-function playCustom() {
+function playCustom(snd = customSound) {
   return new Promise((resolve) => {
     let done = false, timer = 0, a = null;
     const finish = (ok) => { if (done) return; done = true; clearTimeout(timer); chimeStop = null; if (a) { a.onended = a.onerror = null; try { a.pause(); } catch (_) {} } resolve(ok === true); };
     try {
-      a = new Audio(customSound.url);
+      a = new Audio(snd.url);
       a.volume = Math.max(0, Math.min(1, (S.vol == null ? 100 : S.vol) / 100));
       a.onended = () => finish(true);
       a.onerror = () => finish(false);
@@ -500,6 +507,12 @@ async function playChime() {
   if (customSound && customSound.url) { if (await playCustom()) return; }
   return playBell();
 }
+// звук оповещения о подписке: свой файл (отдельный от доната) или стандартный «блеск»
+let alertSound = null; // { url } — адрес загруженного звука оповещения
+async function playAlertChime() {
+  if (alertSound && alertSound.url) { if (await playCustom(alertSound)) return; }
+  return playAlertBell();
+}
 
 // Ждём синтез не дольше SYNTH_DEADLINE_MS: иначе одна зависшая фраза останавливает всю очередь на десятки секунд.
 // Фраза, которая не успела, пропускается; запрос в фоне доработает и будет забыт.
@@ -507,6 +520,7 @@ const SYNTH_DEADLINE_MS = 8000;
 const withDeadline = (p) => Promise.race([p, new Promise((res) => setTimeout(() => res({ ok: false, error: 'deadline' }), SYNTH_DEADLINE_MS))]);
 
 async function speakItem(item) {
+  if (item.alertChime) { await playAlertChime(); return; }
   if (item.chime) { await playChime(); return; }
   let r = await withDeadline(ensureSynth(item));
   if (item.cancelled) return; // нажали паузу, пока звук готовился
@@ -1320,13 +1334,123 @@ async function initLikesPreview() {
   fr.src = base;
 }
 
+/* ---------- оповещения о подписках ---------- */
+const A = S.alerts;
+A.duration = Math.max(3, Math.min(20, Math.round(+A.duration) || 6));
+A.scale = Math.max(50, Math.min(200, Math.round(+A.scale) || 100));
+function refreshAlertNamesUi() {
+  $('#aImgName').textContent = A.imageName ? 'Сейчас: ' + A.imageName : 'Сейчас: стандартное сердечко';
+  $('#aImgReset').hidden = !A.imageName;
+  $('#aSoundName').textContent = alertSound ? 'Сейчас: ' + (A.soundName || 'свой звук') : 'Сейчас: стандартный звук';
+  $('#aSoundReset').hidden = !alertSound;
+}
+// приложение сообщает, есть ли файл картинки: если его удалили, подпись не врёт
+async function pushAlerts() {
+  save();
+  const r = await window.echo.alertsSet({ ...A }).catch(() => null);
+  if (r && r.ok && r.hasImage === false && A.imageName) { A.imageName = ''; save(); refreshAlertNamesUi(); }
+}
+$$('input[data-ak]').forEach((el) => {
+  el.checked = !!A[el.dataset.ak];
+  el.addEventListener('change', () => {
+    A[el.dataset.ak] = el.checked; pushAlerts();
+    if (!el.checked && el.dataset.ak === 'sound') { dropSrc('alertSound'); alertTest = null; refreshAlertTestUi(); } // выключили — звук обрывается сразу
+  });
+});
+// «Прослушать звук»: как у доната — пока звук играет, треугольник превращается в две полоски; повторное нажатие останавливает
+let alertTest = null; // пункт очереди, который сейчас звучит как проба
+function refreshAlertTestUi() {
+  const on = !!alertTest;
+  $('#aSoundIcon').innerHTML = on ? SND_PAUSE : SND_PLAY;
+  $('#aSoundLbl').textContent = on ? 'Остановить' : 'Прослушать звук';
+  $('#aSoundTest').classList.toggle('active', on);
+}
+function stopAlertTest() {
+  const it = alertTest; if (!it) return;
+  alertTest = null; it.cancelled = true;
+  const i = queue.indexOf(it); if (i >= 0) queue.splice(i, 1);
+  else if (curItem === it) skipPhrase();
+  refreshAlertTestUi();
+}
+$('#aSoundTest').addEventListener('click', () => {
+  if (alertTest) return stopAlertTest();
+  const item = { el: null, chime: true, alertChime: true, src: 'alertSound', onEnd: () => { if (alertTest === item) { alertTest = null; refreshAlertTestUi(); } } };
+  alertTest = item; refreshAlertTestUi();
+  enqueue(item, true);
+});
+// свой звук: файл копируется в папку данных, играет окно приложения
+async function loadAlertSound() {
+  const r = await window.echo.alertsSoundGet().catch(() => null);
+  if (alertSound) { URL.revokeObjectURL(alertSound.url); alertSound = null; }
+  if (r && r.ok && r.data) alertSound = { url: URL.createObjectURL(new Blob([r.data], { type: r.mime || 'audio/mpeg' })) };
+  else if (A.soundName) { A.soundName = ''; save(); }
+  refreshAlertNamesUi();
+}
+$('#aSoundPick').addEventListener('click', async () => {
+  const r = await window.echo.alertsSoundPick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#aSoundName').textContent = r.error || 'Не удалось загрузить звук'; return; }
+  stopAlertTest();
+  A.soundName = r.name || ''; save();
+  await loadAlertSound();
+});
+$('#aSoundReset').addEventListener('click', async () => {
+  stopAlertTest();
+  await window.echo.alertsSoundClear().catch(() => {});
+  A.soundName = ''; save();
+  await loadAlertSound();
+});
+// своя картинка: вместо сердечка. Предпросмотр и OBS получают её сразу
+$('#aImgPick').addEventListener('click', async () => {
+  const r = await window.echo.alertsImagePick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#aImgName').textContent = r.error || 'Не удалось загрузить картинку'; return; }
+  A.imageName = r.name || 'своя картинка'; refreshAlertNamesUi(); pushAlerts();
+});
+$('#aImgReset').addEventListener('click', async () => {
+  await window.echo.alertsImageClear().catch(() => {});
+  A.imageName = ''; refreshAlertNamesUi(); pushAlerts();
+});
+bindRange('aDur', 'aDurVal', (v) => v + ' с', () => A.duration, (v) => { A.duration = v; pushAlerts(); })();
+bindRange('aScale', 'aScaleVal', (v) => v + '%', () => A.scale, (v) => { A.scale = v; pushAlerts(); })();
+async function refreshAlertLink() {
+  const r = await window.echo.alertsLink().catch(() => null);
+  $('#aUrl').value = r && r.ok ? r.url : 'Не удалось запустить сервер виджета';
+}
+$('#aUrl').onfocus = (e) => e.target.select();
+$('#aCopy').onclick = () => copyFrom('#aUrl', $('#aCopy'), 'Копировать');
+$('#aTest').onclick = () => window.echo.alertsTest();
+// подписка (или «Тест»): звук оповещения встаёт в очередь раньше голоса «спасибо за подписку»
+window.echo.onAlert(() => { if (A.sound) enqueue({ el: null, chime: true, alertChime: true, src: 'alertSound' }, true); });
+// предпросмотр: страница виджета в рамке, масштаб подгоняем под окошко
+let alInit = false;
+function fitAlert() {
+  const box = $('#alBox'), fr = $('#alFrame'), w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  const k = Math.min(1, w / 520, h / 420);
+  fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
+  fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
+}
+async function initAlertPreview() {
+  if (alInit) { fitAlert(); return; }
+  alInit = true;
+  const base = await window.echo.alertsUrl();
+  if (!base) return;
+  $('#alFrame').addEventListener('load', () => { pushAlerts(); fitAlert(); });
+  if (window.ResizeObserver) new ResizeObserver(fitAlert).observe($('#alBox'));
+  window.addEventListener('resize', fitAlert);
+  $('#alFrame').src = base + '?preview=1'; // в предпросмотре образец плашки висит, пока нет оповещений
+}
+loadAlertSound();
+
 /* ---------- старт ---------- */
-renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L });
+renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L }); refreshAlertLink(); pushAlerts();
 window.echo.voices().then((r) => applyCatalog(r && r.all)).catch(() => {});
 window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get voiceCalls() { return voiceCalls; }, setPauseMs(v) { PAUSE_MS = v; }, setFeedReturnMs(v) { FEED_RETURN_MS = v; }, stopAllVoice() { queue.length = 0; stopCurrent(); }, feedFromBottom, addMsg, get PAUSE_MS() { return PAUSE_MS; }, S, clean, speakName, renderVoices, builtin: BUILTIN, get presets() { return S.presets; }, since, ttPreset, twPreset, eventPreset, setNk };
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.6.0': ['Новый виджет «Оповещения» во вкладке «Виджеты»: когда кто-то подписывается, на экране стрима появляется красивая плашка с сердечком, аватаркой, ником и летящими сердечками, и играет звук', 'Оповещения: можно загрузить свою картинку (png, jpg, gif, webp) вместо сердечка и свой звук (mp3, wav, ogg и др., до 5 МБ каждый); есть предпросмотр, кнопки «Тест» и «Прослушать звук», ссылка для OBS и TikTok LIVE Studio'],
   '2.5.3': ['Свой звук доната: между кнопками и названием файла появился отступ, ссылка «Сбросить» стоит в одной строке с названием'],
   '2.5.2': ['Окно «Что нового» прокручивается, кнопка «Закрыть» всегда видна, закрыть можно кликом по пустому месту или клавишей Esc. Кнопки «Прослушать звук» и «Загрузить свой звук» стоят рядом, одного размера, и не меняют размер при нажатии'],
   '2.5.1': ['Обновление: проверка и скачивание больше не зависают, если GitHub не отвечает. Через 15 секунд проверка идёт запасным путём или показывает понятную ошибку, а скачивание, которое встало на 30 секунд, повторяется само'],

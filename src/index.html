@@ -225,6 +225,38 @@
             <div class="lk-prev"><iframe id="lkFrame" title="Предпросмотр топа лайков" tabindex="-1"></iframe></div>
           </div>
         </div>
+        <div class="cols alert-row">
+          <div class="card alert-card">
+            <h2>Оповещения</h2>
+            <p class="muted">Когда кто-то подписывается на канал, на экране стрима появляется красивая плашка с ником и звуком. Ссылка подходит и для OBS, и для TikTok LIVE Studio</p>
+            <div class="toggles" style="margin-top:8px">
+              <label class="sw"><input type="checkbox" data-ak="enabled" checked /><i></i><span>Показывать оповещения о подписках</span></label>
+              <label class="sw"><input type="checkbox" data-ak="showAvatar" checked /><i></i><span>Аватарка подписчика</span></label>
+              <label class="sw"><input type="checkbox" data-ak="sound" checked /><i></i><span>Звук при подписке</span></label>
+            </div>
+            <div class="snd-row one">
+              <button class="btn ghost" id="aImgPick" type="button">Загрузить свою картинку</button>
+            </div>
+            <div class="snd-name"><small class="muted" id="aImgName">Сейчас: стандартное сердечко</small><button class="snd-reset" id="aImgReset" type="button" hidden>Сбросить</button></div>
+            <div class="snd-row">
+              <button class="btn ghost" id="aSoundTest" type="button"><span id="aSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="aSoundLbl">Прослушать звук</span></button>
+              <button class="btn ghost" id="aSoundPick" type="button">Загрузить свой звук</button>
+            </div>
+            <div class="snd-name"><small class="muted" id="aSoundName">Сейчас: стандартный звук</small><button class="snd-reset" id="aSoundReset" type="button" hidden>Сбросить</button></div>
+            <div class="ctl"><div class="row"><label>Показывать оповещение</label><b id="aDurVal">6 с</b></div><input type="range" id="aDur" min="3" max="20" value="6" /></div>
+            <div class="ctl"><div class="row"><label>Масштаб</label><b id="aScaleVal">100%</b></div><input type="range" id="aScale" min="50" max="200" value="100" /></div>
+            <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
+            <div class="nick-field"><input id="aUrl" readonly spellcheck="false" /></div>
+            <div class="wbtn-row"><button class="btn wbtn primary" id="aCopy">Копировать</button></div>
+          </div>
+          <div class="card preview-card">
+            <div class="prev-head">
+              <div><h2>Предпросмотр</h2><small>Так оповещение выглядит в OBS. Картинка и настройки применяются сразу, «Тест» ещё и играет звук</small></div>
+              <button class="btn ghost" id="aTest">Тест</button>
+            </div>
+            <div class="prev-box" id="alBox"><iframe id="alFrame" title="Предпросмотр оповещения" tabindex="-1"></iframe></div>
+          </div>
+        </div>
       </section>
 
       <!-- ДОНАТЫ КАСПИ -->
@@ -372,7 +404,7 @@
           <div class="card lic-plan hot">
             <div class="lp-tag">Рекомендуем</div>
             <div class="lp-name">Pro</div><div class="lp-price"><b id="licPlanPrice">5 000 ₸</b><span id="licPlanDays">/ 30 дней</span></div>
-            <ul><li>Всё из Lite</li><li>Виджеты чата и топ лайков</li><li>Донаты Каспи на экран стрима</li><li>Перенос на другой компьютер</li></ul>
+            <ul><li>Всё из Lite</li><li>Виджеты чата, топ лайков и оповещения о подписках</li><li>Донаты Каспи на экран стрима</li><li>Перенос на другой компьютер</li></ul>
             <button class="btn primary" id="licBuy" type="button">Купить Pro</button>
           </div>
           <div class="card lic-plan">
@@ -446,7 +478,7 @@
       <div class="le-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2c0 5 3 6 5 10-2 4-5 5-5 10M17 2c0 5-3 6-5 10 2 4 5 5 5 10"/></svg></div>
       <h2 id="licEndTitle">Пробный период закончился</h2>
       <p id="licEndText">Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты» и «Донаты Каспи» откроются с Pro</p>
-      <ul><li>Виджеты чата и топ лайков для OBS и TikTok LIVE Studio</li><li>Донаты Каспи на экране стрима</li><li>Перенос лицензии на другой компьютер</li></ul>
+      <ul><li>Виджеты чата, топ лайков и оповещения о подписках для OBS и TikTok LIVE Studio</li><li>Донаты Каспи на экране стрима</li><li>Перенос лицензии на другой компьютер</li></ul>
       <div class="cf-row"><button class="btn ghost" id="licEndLite" type="button">Остаться на Lite</button><button class="btn primary" id="licEndPro" type="button">Открыть Pro</button></div>
     </div>
   </div>

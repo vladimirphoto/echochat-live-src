@@ -1,6 +1,6 @@
 name: Sync public repo (pages and addresses)
 
-# Исходники закрыты. В публичный репозиторий jonny-chat-tiktok попадают только страницы виджетов (docs/chat, docs/donate, docs/likes)
+# Исходники закрыты. В публичный репозиторий jonny-chat-tiktok попадают только страницы виджетов (docs/chat, docs/donate, docs/likes, docs/alert)
 # и два текстовых файла с адресами (assets/relay-url.txt, assets/shortcut-link.txt).
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
         run: |
           # только страницы виджетов: главная страница docs/index.html и картинки docs/img ведутся вручную в публичном репозитории
           mkdir -p pub/docs pub/assets
-          for d in chat donate likes; do rm -rf "pub/docs/$d" && cp -r "docs/$d" "pub/docs/$d"; done
+          for d in chat donate likes alert; do rm -rf "pub/docs/$d" && cp -r "docs/$d" "pub/docs/$d"; done
           touch pub/docs/.nojekyll
           cp assets/relay-url.txt assets/shortcut-link.txt pub/assets/
       - name: Commit and push
