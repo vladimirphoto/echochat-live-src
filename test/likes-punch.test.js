@@ -8,8 +8,9 @@ const rd = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
 test('топ лайков: удар рукой срабатывает только при смене лидера и отключается настройкой', () => {
   assert.match(LIKES, /function punch\(/);
-  assert.match(LIKES, /top!==prev/); // только когда лидер сменился
-  assert.match(LIKES, /prev!==null/); // первая таблица после подключения/сброса не бьёт
+  assert.match(LIKES, /nm\[0\]!==pv\[0\]\)punch\(0\)/); // сменился лидер
+  assert.match(LIKES, /nm\[2\]===pv\[1\]\)punch\(1\)/); // новый второй бьёт вытесненного на 3 место
+  assert.match(LIKES, /!pv\.length/); // первая таблица после подключения/сброса не бьёт
   assert.match(LIKES, /S\.punch!==false/);
 });
 

@@ -665,13 +665,20 @@ ipcMain.handle('likes:test', () => {
   const base = names.map((name, i) => ({ name, avatar: '', likes: Math.max(20, 1200 - i * 97 - i * i * 5) }));
   wsrv && wsrv.broadcast('likes', []); // пустая таблица: страница забывает прежнего лидера, поэтому показ таблицы сам по себе не вызывает удар
   wsrv && wsrv.broadcast('likes', base);
-  // через 1,6 с второй обгоняет первого — виджет показывает «удар рукой» (если он включён)
+  // через 1,6 с второй обгоняет первого, ещё через 2 с третий обгоняет второго — виджет показывает «удар рукой» (если он включён)
   clearTimeout(likesTestTimer);
   likesTestTimer = setTimeout(() => {
     const t = base.map((x) => ({ ...x }));
     t[1].likes = t[0].likes + 25;
     t.sort((a, b) => b.likes - a.likes);
     wsrv && wsrv.broadcast('likes', t);
+    // ещё через 2 с третий обгоняет второго и бьёт его: показываем и удар «2 место → 3 место»
+    likesTestTimer = setTimeout(() => {
+      const u = t.map((x) => ({ ...x }));
+      u[2].likes = u[1].likes + 20;
+      u.sort((a, b) => b.likes - a.likes);
+      wsrv && wsrv.broadcast('likes', u);
+    }, 2000);
   }, 1600);
   return { ok: true };
 });
