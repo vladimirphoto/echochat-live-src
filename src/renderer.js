@@ -1336,6 +1336,45 @@ async function initLikesPreview() {
   fr.src = base;
 }
 
+/* ---------- виджет «Топ подарков» ---------- */
+const G = S.gifts;
+const pushGiftsSet = () => { save(); window.echo.giftsSet({ ...G }); };
+const refreshGCount = bindRange('gCount', 'gCountVal', (v) => String(v), () => G.count, (v) => { G.count = v; pushGiftsSet(); fitGifts(); });
+G.scale = 100; G.align = 'center';
+$$('input[data-gf]').forEach((el) => { el.checked = !!G[el.dataset.gf]; el.addEventListener('change', () => { G[el.dataset.gf] = el.checked; pushGiftsSet(); }); });
+refreshGCount();
+async function refreshGiftsLink() {
+  const r = await window.echo.giftsLink().catch(() => null);
+  $('#gUrl').value = r && r.ok ? r.url : 'Не удалось запустить сервер виджета';
+}
+$('#gUrl').onfocus = (e) => e.target.select();
+$('#gCopy').onclick = async () => {
+  const u = $('#gUrl').value, b = $('#gCopy');
+  try { await navigator.clipboard.writeText(u); } catch (_) { $('#gUrl').select(); document.execCommand('copy'); }
+  b.textContent = '✓'; setTimeout(() => { b.textContent = 'Копировать'; }, 1500);
+};
+$('#gTest').onclick = () => window.echo.giftsTest();
+$('#gClear').onclick = () => window.echo.giftsClear();
+let gfInit = false;
+function fitGifts() {
+  const box = $('#gkPrev'), fr = $('#gkFrame'), w = box.clientWidth;
+  if (!w) return;
+  const rows = Math.ceil(G.count / 5);
+  const k = 0.9 * Math.min(1.5, w / 640, box.clientHeight / (rows * 191 + 20));
+  try { fr.contentWindow.postMessage({ echochat: 'fit', k: Math.max(0.15, k) }, '*'); } catch (_) {}
+}
+async function initGiftsPreview() {
+  if (gfInit) { fitGifts(); return; }
+  gfInit = true;
+  const base = await window.echo.giftsUrl();
+  if (!base) return;
+  const fr = $('#gkFrame');
+  window.addEventListener('message', (e) => { if (e.source === fr.contentWindow && e.data && e.data.echochat === 'gifts-ready') { window.echo.giftsSet({ ...G }); fitGifts(); window.echo.giftsTest(); } });
+  fr.addEventListener('load', () => { window.echo.giftsSet({ ...G }); fitGifts(); });
+  if (window.ResizeObserver) new ResizeObserver(fitGifts).observe($('#gkPrev'));
+  fr.src = base;
+}
+
 /* ---------- оповещения о подписках ---------- */
 const A = S.alerts;
 A.duration = Math.max(3, Math.min(20, Math.round(+A.duration) || 6));
@@ -1449,45 +1488,6 @@ loadAlertSound();
 renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L }); refreshGiftsLink(); window.echo.giftsSet({ ...G }); refreshAlertLink(); pushAlerts();
 window.echo.voices().then((r) => applyCatalog(r && r.all)).catch(() => {});
 window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get voiceCalls() { return voiceCalls; }, setPauseMs(v) { PAUSE_MS = v; }, setFeedReturnMs(v) { FEED_RETURN_MS = v; }, stopAllVoice() { queue.length = 0; stopCurrent(); }, feedFromBottom, addMsg, get PAUSE_MS() { return PAUSE_MS; }, S, clean, speakName, renderVoices, builtin: BUILTIN, get presets() { return S.presets; }, since, ttPreset, twPreset, eventPreset, setNk };
-
-/* ---------- виджет «Топ подарков» ---------- */
-const G = S.gifts;
-const pushGiftsSet = () => { save(); window.echo.giftsSet({ ...G }); };
-const refreshGCount = bindRange('gCount', 'gCountVal', (v) => String(v), () => G.count, (v) => { G.count = v; pushGiftsSet(); fitGifts(); });
-G.scale = 100; G.align = 'center';
-$$('input[data-gf]').forEach((el) => { el.checked = !!G[el.dataset.gf]; el.addEventListener('change', () => { G[el.dataset.gf] = el.checked; pushGiftsSet(); }); });
-refreshGCount();
-async function refreshGiftsLink() {
-  const r = await window.echo.giftsLink().catch(() => null);
-  $('#gUrl').value = r && r.ok ? r.url : 'Не удалось запустить сервер виджета';
-}
-$('#gUrl').onfocus = (e) => e.target.select();
-$('#gCopy').onclick = async () => {
-  const u = $('#gUrl').value, b = $('#gCopy');
-  try { await navigator.clipboard.writeText(u); } catch (_) { $('#gUrl').select(); document.execCommand('copy'); }
-  b.textContent = '✓'; setTimeout(() => { b.textContent = 'Копировать'; }, 1500);
-};
-$('#gTest').onclick = () => window.echo.giftsTest();
-$('#gClear').onclick = () => window.echo.giftsClear();
-let gfInit = false;
-function fitGifts() {
-  const box = $('#gkPrev'), fr = $('#gkFrame'), w = box.clientWidth;
-  if (!w) return;
-  const rows = Math.ceil(G.count / 5);
-  const k = 0.9 * Math.min(1.5, w / 640, box.clientHeight / (rows * 191 + 20));
-  try { fr.contentWindow.postMessage({ echochat: 'fit', k: Math.max(0.15, k) }, '*'); } catch (_) {}
-}
-async function initGiftsPreview() {
-  if (gfInit) { fitGifts(); return; }
-  gfInit = true;
-  const base = await window.echo.giftsUrl();
-  if (!base) return;
-  const fr = $('#gkFrame');
-  window.addEventListener('message', (e) => { if (e.source === fr.contentWindow && e.data && e.data.echochat === 'gifts-ready') { window.echo.giftsSet({ ...G }); fitGifts(); window.echo.giftsTest(); } });
-  fr.addEventListener('load', () => { window.echo.giftsSet({ ...G }); fitGifts(); });
-  if (window.ResizeObserver) new ResizeObserver(fitGifts).observe($('#gkPrev'));
-  fr.src = base;
-}
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {

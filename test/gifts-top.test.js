@@ -38,3 +38,8 @@ test('топ подарков подключён: сервер, настройк
   assert.match(rd('src/index.html'), /data-gf="celebrate"/);
   assert.ok(JSON.parse(rd('package.json')).build.files.includes('widget-gifts-page.js'));
 });
+
+test('в renderer.js блок топа подарков объявлен раньше стартовой инициализации (иначе const G в мёртвой зоне и приложение падает при запуске)', () => {
+  const js = rd('src/renderer.js');
+  assert.ok(js.indexOf('const G = S.gifts') < js.indexOf('refreshGiftsLink(); window.echo.giftsSet'));
+});
