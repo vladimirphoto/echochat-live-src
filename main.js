@@ -25,9 +25,9 @@ const wmsg = (m) => !locked('widgets') && wsrv && wsrv.broadcast('msg', m);
 // ---- виджет «Топ лайков»: считаем лайки каждого зрителя и отдаём страницам виджета лучших (до 10, сколько показать — решает страница)
 const likesBoard = new ev.LikesBoard();
 const LIKES_MAX = 10;
-let lset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true };
+let lset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true };
 const clampN = (v, a, b, d) => { v = Math.round(+v); return Number.isFinite(v) ? Math.max(a, Math.min(b, v)) : d; };
-let likesTimer = null;
+let likesTimer = null, likesTestTimer = null;
 function pushLikes() { // не чаще раза в 0,4 с: лайки сыплются пачками
   if (likesTimer) return;
   likesTimer = setTimeout(() => { likesTimer = null; if (!locked('widgets')) wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
@@ -655,14 +655,24 @@ ipcMain.handle('widget:test', () => {
 });
 ipcMain.handle('likes:set', (_e, s) => {
   s = s || {};
-  lset = { count: clampN(s.count, 5, LIKES_MAX, 5),scale: clampN(s.scale, 30, 300, 100), align: ['left', 'center', 'right'].includes(s.align) ? s.align : 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false };
+  lset = { count: clampN(s.count, 5, LIKES_MAX, 5),scale: clampN(s.scale, 30, 300, 100), align: ['left', 'center', 'right'].includes(s.align) ? s.align : 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, punch: s.punch !== false };
   wsrv && wsrv.broadcast('lsettings', lset);
   return { ok: true };
 });
 ipcMain.handle('likes:test', () => {
   if (locked('widgets')) return { ok: false, locked: true };
   const names = ['Анна', 'Max', 'Игорь', 'Дина', 'Марат', 'Света', 'Олег', 'Ксюша', 'Тимур', 'Лера'];
-  wsrv && wsrv.broadcast('likes', names.map((name, i) => ({ name, avatar: '', likes: Math.max(20, 1200 - i * 97 - i * i * 5) })));
+  const base = names.map((name, i) => ({ name, avatar: '', likes: Math.max(20, 1200 - i * 97 - i * i * 5) }));
+  wsrv && wsrv.broadcast('likes', []); // пустая таблица: страница забывает прежнего лидера, поэтому показ таблицы сам по себе не вызывает удар
+  wsrv && wsrv.broadcast('likes', base);
+  // через 1,6 с второй обгоняет первого — виджет показывает «удар рукой» (если он включён)
+  clearTimeout(likesTestTimer);
+  likesTestTimer = setTimeout(() => {
+    const t = base.map((x) => ({ ...x }));
+    t[1].likes = t[0].likes + 25;
+    t.sort((a, b) => b.likes - a.likes);
+    wsrv && wsrv.broadcast('likes', t);
+  }, 1600);
   return { ok: true };
 });
 ipcMain.handle('likes:clear', () => { likesBoard.clear(); wsrv && wsrv.broadcast('likes', []); return { ok: true }; });

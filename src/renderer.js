@@ -28,7 +28,7 @@ const DEFAULTS = {
   widgets: [], wSel: '', twNick: '',
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
-  likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true },
+  likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '' },
 };
@@ -1450,6 +1450,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.7.0': ['Топ лайков: когда кто-то обгоняет лидера и выходит на 1 место, из его аватарки выскакивает рука и бьёт по аватарке 2 места, а та слегка трясётся. Включается и выключается переключателем «Удар рукой» в настройках топа лайков, кнопка «Тест» показывает удар'],
   '2.6.0': ['Новый виджет «Оповещения» во вкладке «Виджеты»: когда кто-то подписывается, на экране стрима появляется красивая плашка с сердечком, аватаркой, ником и летящими сердечками, и играет звук', 'Оповещения: можно загрузить свою картинку (png, jpg, gif, webp) вместо сердечка и свой звук (mp3, wav, ogg и др., до 5 МБ каждый); есть предпросмотр, кнопки «Тест» и «Прослушать звук», ссылка для OBS и TikTok LIVE Studio'],
   '2.5.3': ['Свой звук доната: между кнопками и названием файла появился отступ, ссылка «Сбросить» стоит в одной строке с названием'],
   '2.5.2': ['Окно «Что нового» прокручивается, кнопка «Закрыть» всегда видна, закрыть можно кликом по пустому месту или клавишей Esc. Кнопки «Прослушать звук» и «Загрузить свой звук» стоят рядом, одного размера, и не меняют размер при нажатии'],
