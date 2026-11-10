@@ -33,6 +33,15 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
   likesTimer = setTimeout(() => { likesTimer = null; if (!locked('widgets')) wsrv && wsrv.broadcast('likes', likesBoard.top(LIKES_MAX)); }, 400);
 }
 
+// ---- виджет «Топ подарков»: очки = цена подарка в монетах × количество; обнуляется с новым эфиром
+const giftsBoard = new ev.GiftsBoard();
+let gset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true };
+let giftsTimer = null, giftsTestTimer = null;
+function pushGifts() {
+  if (giftsTimer) return;
+  giftsTimer = setTimeout(() => { giftsTimer = null; if (!locked('widgets')) wsrv && wsrv.broadcast('gifts', giftsBoard.top(LIKES_MAX)); }, 400);
+}
+
 // ---- оверлей чата: отдельное окно поверх всех окон (как окно чата в TikTok LIVE Studio) с чатом TikTok + Twitch, счётчиками и таймером.
 // Его питают те же события, что и главное окно (см. send ниже): модель считает счётчики всегда, поэтому оверлей, включённый посреди эфира, сразу показывает верные цифры.
 // Включается и выключается переключателем во вкладке «Виджеты» и пунктом в меню трея. Как и виджеты, входит в тариф Pro.
@@ -436,6 +445,7 @@ async function doConnect(rawName) {
     const g = ev.giftOf(d);
     if (!g.done) return; // серия подарков идёт — считаем один раз, когда она закончилась
     send('tt:gift', g);
+    if (giftsBoard.add(g, ev.giftScore(g))) pushGifts();
     wmsg({ platform: 'tiktok', name: g.name, avatar: g.avatar, color: colorOf(g.name), gift: { name: g.gift, count: g.count, image: g.image } });
   });
   // подписка: событие follow, а если его нет в версии библиотеки — social с признаком подписки
@@ -510,6 +520,7 @@ async function doConnect(rawName) {
 
 ipcMain.handle('tt:connect', async (_e, rawName) => {
   likesBoard.clear(); wsrv && wsrv.broadcast('likes', []); // новый эфир — таблица с нуля
+  giftsBoard.clear(); wsrv && wsrv.broadcast('gifts', []);
   try { return await doConnect(rawName); } catch (err) { return { ok: false, ...explain(err) }; }
 });
 
@@ -683,6 +694,30 @@ ipcMain.handle('likes:test', () => {
   return { ok: true };
 });
 ipcMain.handle('likes:clear', () => { likesBoard.clear(); wsrv && wsrv.broadcast('likes', []); return { ok: true }; });
+ipcMain.handle('gifts:set', (_e, s) => {
+  s = s || {};
+  gset = { count: clampN(s.count, 5, LIKES_MAX, 5), scale: 100, align: 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, celebrate: s.celebrate !== false };
+  wsrv && wsrv.broadcast('gsettings', gset);
+  return { ok: true };
+});
+ipcMain.handle('gifts:test', () => {
+  if (locked('widgets')) return { ok: false, locked: true };
+  const names = ['Анна', 'Max', 'Игорь', 'Дина', 'Марат', 'Света', 'Олег', 'Ксюша', 'Тимур', 'Лера'];
+  const base = names.map((name, i) => ({ name, avatar: '', likes: Math.max(10, 5200 - i * 430 - i * i * 25) }));
+  wsrv && wsrv.broadcast('gifts', []); // пустая таблица: страница забывает прежнего лидера, поэтому показ таблицы сам по себе не вызывает ликования
+  wsrv && wsrv.broadcast('gifts', base);
+  clearTimeout(giftsTestTimer);
+  giftsTestTimer = setTimeout(() => { // через 1,6 с второй обгоняет первого — аватарка нового лидера прыгает и светится
+    const t = base.map((x) => ({ ...x }));
+    t[1].likes = t[0].likes + 150;
+    t.sort((a, b) => b.likes - a.likes);
+    wsrv && wsrv.broadcast('gifts', t);
+  }, 1600);
+  return { ok: true };
+});
+ipcMain.handle('gifts:clear', () => { giftsBoard.clear(); wsrv && wsrv.broadcast('gifts', []); return { ok: true }; });
+ipcMain.handle('gifts:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/gifts` : ''));
+ipcMain.handle('gifts:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.GIFTS_PAGES_URL } : { ok: false, url: '' }));
 ipcMain.handle('likes:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/likes` : ''));
 ipcMain.handle('likes:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.LIKES_PAGES_URL } : { ok: false, url: '' }));
 ipcMain.handle('widget:clear', () => { wsrv && wsrv.broadcast('clear', {}); return { ok: true }; });
@@ -962,6 +997,7 @@ app.whenReady().then(async () => {
   try { wsrv = await widget.start(() => wset, 7878, {
       getDonate: () => donateWidgetSettings(),
       getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }),
+      getGifts: () => ({ settings: gset, top: giftsBoard.top(LIKES_MAX) }),
       getAlerts: () => alertWidgetSettings(),
       getAlertImage: () => { const i = alertImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
     }); } catch (_) { wsrv = null; }

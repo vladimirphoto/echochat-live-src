@@ -226,6 +226,29 @@
             <div class="lk-prev"><iframe id="lkFrame" title="Предпросмотр топа лайков" tabindex="-1"></iframe></div>
           </div>
         </div>
+        <div class="cols likes-row">
+          <div class="card likes-card">
+            <h2>Топ подарков</h2>
+            <p class="muted">Отдельный виджет, такой же, как «Топ лайков», но по подаркам: сколько монет в подарках отправил каждый зритель TikTok за эфир. Когда кто-то выходит на 1 место, его аватарка слегка подпрыгивает и светится. Таблица обнуляется при новом подключении к эфиру. Ссылка подходит и для OBS, и для Twitch Studio (источник «Браузер»)</p>
+            <div class="ctl"><div class="row"><label>Сколько показывать</label><b id="gCountVal">5</b></div><input type="range" id="gCount" min="5" max="10" value="5" /></div>
+            <div class="toggles" style="margin-top:10px">
+              <label class="sw"><input type="checkbox" data-gf="showCount" checked /><i></i><span>Число монет под аватаркой</span></label>
+              <label class="sw"><input type="checkbox" data-gf="showRank" checked /><i></i><span>Номер места</span></label>
+              <label class="sw"><input type="checkbox" data-gf="celebrate" checked /><i></i><span>Ликование, когда кто-то выходит на 1 место</span></label>
+              <label class="sw"><input type="checkbox" data-gf="shadow" checked /><i></i><span>Лёгкая тень за никами</span></label>
+            </div>
+            <label>Ссылка на виджет (OBS и Twitch)</label>
+            <div class="nick-field"><input id="gUrl" readonly spellcheck="false" /></div>
+            <div class="wbtn-row"><button class="btn wbtn primary" id="gCopy">Копировать</button><button class="btn wbtn ghost" id="gClear">Сбросить</button></div>
+          </div>
+          <div class="card preview-card">
+            <div class="prev-head">
+              <div><h2>Предпросмотр</h2><small>Так виджет выглядит в OBS. Настройки применяются сразу</small></div>
+              <button class="btn ghost" id="gTest">Тест</button>
+            </div>
+            <div class="lk-prev" id="gkPrev"><iframe id="gkFrame" title="Предпросмотр топа подарков" tabindex="-1"></iframe></div>
+          </div>
+        </div>
         <div class="cols alert-row">
           <div class="card alert-card">
             <h2>Оповещения</h2>

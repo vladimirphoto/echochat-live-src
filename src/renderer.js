@@ -29,12 +29,14 @@ const DEFAULTS = {
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
+  gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '' },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
 S.likes = { ...DEFAULTS.likes, ...(S.likes && typeof S.likes === 'object' ? S.likes : {}) };
+S.gifts = { ...DEFAULTS.gifts, ...(S.gifts && typeof S.gifts === 'object' ? S.gifts : {}) };
 S.kaspi = { ...DEFAULTS.kaspi, ...(S.kaspi && typeof S.kaspi === 'object' ? S.kaspi : {}) };
 S.alerts = { ...DEFAULTS.alerts, ...(S.alerts && typeof S.alerts === 'object' ? S.alerts : {}) };
 S.kaspi.enabled = true; // приём всегда включён: переключателя больше нет
@@ -146,7 +148,7 @@ $$('.nav').forEach((b) => b.addEventListener('click', () => {
   $$('.nav').forEach((x) => x.classList.toggle('active', x === b));
   $$('.tab').forEach((t) => t.classList.toggle('show', t.id === 'tab-' + b.dataset.tab));
   document.body.classList.toggle('t-widgets', b.dataset.tab === 'widgets');
-  if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); initAlertPreview(); });
+  if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); initGiftsPreview(); initAlertPreview(); });
   if (b.dataset.tab === 'kaspi') requestAnimationFrame(() => { initGuideVideo(); initDonatePreview(); });
   $('#title').textContent = TITLES[b.dataset.tab][0];
   $('#subtitle').textContent = TITLES[b.dataset.tab][1];
@@ -1444,12 +1446,52 @@ async function initAlertPreview() {
 loadAlertSound();
 
 /* ---------- старт ---------- */
-renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L }); refreshAlertLink(); pushAlerts();
+renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L }); refreshGiftsLink(); window.echo.giftsSet({ ...G }); refreshAlertLink(); pushAlerts();
 window.echo.voices().then((r) => applyCatalog(r && r.all)).catch(() => {});
 window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get voiceCalls() { return voiceCalls; }, setPauseMs(v) { PAUSE_MS = v; }, setFeedReturnMs(v) { FEED_RETURN_MS = v; }, stopAllVoice() { queue.length = 0; stopCurrent(); }, feedFromBottom, addMsg, get PAUSE_MS() { return PAUSE_MS; }, S, clean, speakName, renderVoices, builtin: BUILTIN, get presets() { return S.presets; }, since, ttPreset, twPreset, eventPreset, setNk };
 
+/* ---------- виджет «Топ подарков» ---------- */
+const G = S.gifts;
+const pushGiftsSet = () => { save(); window.echo.giftsSet({ ...G }); };
+const refreshGCount = bindRange('gCount', 'gCountVal', (v) => String(v), () => G.count, (v) => { G.count = v; pushGiftsSet(); fitGifts(); });
+G.scale = 100; G.align = 'center';
+$$('input[data-gf]').forEach((el) => { el.checked = !!G[el.dataset.gf]; el.addEventListener('change', () => { G[el.dataset.gf] = el.checked; pushGiftsSet(); }); });
+refreshGCount();
+async function refreshGiftsLink() {
+  const r = await window.echo.giftsLink().catch(() => null);
+  $('#gUrl').value = r && r.ok ? r.url : 'Не удалось запустить сервер виджета';
+}
+$('#gUrl').onfocus = (e) => e.target.select();
+$('#gCopy').onclick = async () => {
+  const u = $('#gUrl').value, b = $('#gCopy');
+  try { await navigator.clipboard.writeText(u); } catch (_) { $('#gUrl').select(); document.execCommand('copy'); }
+  b.textContent = '✓'; setTimeout(() => { b.textContent = 'Копировать'; }, 1500);
+};
+$('#gTest').onclick = () => window.echo.giftsTest();
+$('#gClear').onclick = () => window.echo.giftsClear();
+let gfInit = false;
+function fitGifts() {
+  const box = $('#gkPrev'), fr = $('#gkFrame'), w = box.clientWidth;
+  if (!w) return;
+  const rows = Math.ceil(G.count / 5);
+  const k = 0.9 * Math.min(1.5, w / 640, box.clientHeight / (rows * 191 + 20));
+  try { fr.contentWindow.postMessage({ echochat: 'fit', k: Math.max(0.15, k) }, '*'); } catch (_) {}
+}
+async function initGiftsPreview() {
+  if (gfInit) { fitGifts(); return; }
+  gfInit = true;
+  const base = await window.echo.giftsUrl();
+  if (!base) return;
+  const fr = $('#gkFrame');
+  window.addEventListener('message', (e) => { if (e.source === fr.contentWindow && e.data && e.data.echochat === 'gifts-ready') { window.echo.giftsSet({ ...G }); fitGifts(); window.echo.giftsTest(); } });
+  fr.addEventListener('load', () => { window.echo.giftsSet({ ...G }); fitGifts(); });
+  if (window.ResizeObserver) new ResizeObserver(fitGifts).observe($('#gkPrev'));
+  fr.src = base;
+}
+
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.8.0': ['Новый виджет «Топ подарков» во вкладке «Виджеты»: такой же, как «Топ лайков», но по подаркам (очки считаются в монетах: цена подарка × количество). Когда кто-то выходит на 1 место, его аватарка слегка подпрыгивает и светится. Есть предпросмотр, кнопка «Тест», сброс и ссылка для OBS и TikTok LIVE Studio'],
   '2.7.1': ['Топ лайков: удар рукой теперь и на 2 месте: кто обогнал соседа и вышел на 2 место, бьёт того, кого вытеснил на 3 место, и его аватарка слегка трясётся'],
   '2.7.0': ['Топ лайков: когда кто-то обгоняет лидера и выходит на 1 место, из его аватарки выскакивает рука и бьёт по аватарке 2 места, а та слегка трясётся. Включается и выключается переключателем «Удар рукой» в настройках топа лайков, кнопка «Тест» показывает удар'],
   '2.6.0': ['Новый виджет «Оповещения» во вкладке «Виджеты»: когда кто-то подписывается, на экране стрима появляется красивая плашка с сердечком, аватаркой, ником и летящими сердечками, и играет звук', 'Оповещения: можно загрузить свою картинку (png, jpg, gif, webp) вместо сердечка и свой звук (mp3, wav, ogg и др., до 5 МБ каждый); есть предпросмотр, кнопки «Тест» и «Прослушать звук», ссылка для OBS и TikTok LIVE Studio'],

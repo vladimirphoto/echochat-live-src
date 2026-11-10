@@ -5,6 +5,7 @@ const path = require('path');
 const PAGE = require('../widget-page');
 const DONATE = require('../widget-donate-page');
 const LIKES = require('../widget-likes-page');
+const GIFTS = require('../widget-gifts-page');
 const ALERT = require('../widget-alert-page');
 
 const docs = path.join(__dirname, '..', 'docs');
@@ -14,6 +15,8 @@ fs.mkdirSync(path.join(docs, 'donate'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'donate', 'index.html'), DONATE);
 fs.mkdirSync(path.join(docs, 'likes'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'likes', 'index.html'), LIKES);
+fs.mkdirSync(path.join(docs, 'gifts'), { recursive: true });
+fs.writeFileSync(path.join(docs, 'gifts', 'index.html'), GIFTS);
 fs.mkdirSync(path.join(docs, 'alert'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'alert', 'index.html'), ALERT);
 fs.writeFileSync(path.join(docs, '.nojekyll'), '');

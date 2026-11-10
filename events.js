@@ -119,6 +119,11 @@ class LikesBoard {
   clear() { this.m.clear(); this.seq = 0; }
 }
 
+// Таблица лидеров по подаркам: та же логика, что у лайков (поле likes внутри — набранные очки, т. е. монеты за подарки)
+class GiftsBoard extends LikesBoard {}
+// сколько очков приносит подарок: цена в монетах × количество (если цена неизвестна, каждый подарок считается за 1)
+const giftScore = (g) => Math.max(1, (g.diamonds > 0 ? g.diamonds : 1) * Math.max(1, g.count || 1));
+
 // done=false — серия подарков ещё идёт: озвучиваем один раз, когда она закончилась
 function giftOf(d) {
   d = d || {};
@@ -131,6 +136,7 @@ function giftOf(d) {
     image: (() => { const i = det.giftPictureUrl || det.giftImage || det.image || d.giftPictureUrl; const x = typeof i === 'string' ? i : (i && (i.url || (i.urlList && i.urlList[0]) || (i.url_list && i.url_list[0]))) || ''; return /^https?:\/\//.test(x) ? x : ''; })(),
     gift: str(det.giftName || det.name || d.giftName || (typeof d.gift === 'string' ? d.gift : '')) || 'подарок',
     count: Math.max(1, pick(d.repeatCount, d.comboCount) || 1),
+    diamonds: Math.max(0, num(pick(det.diamondCount, det.diamond_count, d.diamondCount)) || 0), // цена одного подарка в монетах (0 — неизвестна)
     done: !streakable || ended,
   };
 }
@@ -152,4 +158,4 @@ function socialKind(d) {
 const isFollowSocial = (d) => socialKind(d) === 'follow';
 const isShareSocial = (d) => socialKind(d) === 'share';
 
-module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, totalViewsOf, likesOf, likerOf, LikesBoard, giftOf, isFollowSocial, isShareSocial, socialKind };
+module.exports = { avatarOf, num, pick, userOf, timeMs, chatOf, viewersOf, totalViewsOf, likesOf, likerOf, LikesBoard, GiftsBoard, giftScore, giftOf, isFollowSocial, isShareSocial, socialKind };

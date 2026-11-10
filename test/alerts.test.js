@@ -199,7 +199,7 @@ test('звук оповещения: свой файл играет вместо
 test('сборка: новые файлы входят в exe, страница уходит на GitHub Pages', () => {
   const pkg = JSON.parse(read('package.json'));
   for (const f of ['alerts.js', 'widget-alert-page.js']) assert.ok(pkg.build.files.includes(f), f + ' должен быть в build.files, иначе в exe его не будет');
-  assert.match(read('.github/workflows/sync-public.yml'), /for d in chat donate likes alert;/);
+  assert.match(read('.github/workflows/sync-public.yml'), /for d in chat donate likes gifts alert;/);
   assert.match(read('tools/build-pages.js'), /widget-alert-page/);
   assert.equal(widget.ALERT_PAGES_URL, 'https://vladimirphoto.github.io/jonny-chat-tiktok/alert/');
   // у новой версии есть запись «что нового» в окне и в README

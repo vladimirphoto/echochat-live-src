@@ -6,12 +6,14 @@ const http = require('http');
 const PAGE = require('./widget-page');
 const DONATE_PAGE = require('./widget-donate-page');
 const LIKES_PAGE = require('./widget-likes-page');
+const GIFTS_PAGE = require('./widget-gifts-page');
 const ALERT_PAGE = require('./widget-alert-page');
 
 const PAGES_ORIGIN = 'https://vladimirphoto.github.io';
 const PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/chat/';
 const DONATE_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/donate/';
 const LIKES_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/likes/';
+const GIFTS_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/gifts/';
 const ALERT_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/alert/';
 
 // страница-обёртка с плеером YouTube (идентификатор ролика проверяется в маршруте: 11 символов a-z, A-Z, 0-9, _ и -)
@@ -34,6 +36,7 @@ function start(getSettings, port = 7878, opts = {}) {
     }
     if (u === '/' || u === '/chat') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(PAGE); }
     if (u === '/donate') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(DONATE_PAGE); }
+    if (u === '/gifts') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(GIFTS_PAGE); }
     if (u === '/likes') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(LIKES_PAGE); }
     if (u === '/alert') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(ALERT_PAGE); }
     // своя картинка оповещения о подписке: страница на GitHub Pages забирает её отсюда (CORS как у /events), версия в адресе — чтобы не показывалась старая
@@ -58,6 +61,7 @@ function start(getSettings, port = 7878, opts = {}) {
       if (opts.getDonate) res.write('event: dsettings\ndata: ' + JSON.stringify(opts.getDonate()) + '\n\n');
       if (opts.getAlerts) res.write('event: asettings\ndata: ' + JSON.stringify(opts.getAlerts()) + '\n\n');
       if (opts.getLikes) { const l = opts.getLikes(); res.write('event: lsettings\ndata: ' + JSON.stringify(l.settings) + '\n\n'); res.write('event: likes\ndata: ' + JSON.stringify(l.top) + '\n\n'); }
+      if (opts.getGifts) { const g = opts.getGifts(); res.write('event: gsettings\ndata: ' + JSON.stringify(g.settings) + '\n\n'); res.write('event: gifts\ndata: ' + JSON.stringify(g.top) + '\n\n'); }
       clients.add(res);
       req.on('close', () => clients.delete(res));
       return;
@@ -85,4 +89,4 @@ function start(getSettings, port = 7878, opts = {}) {
     server.listen(p, host);
   });
 }
-module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, ALERT_PAGES_URL, PAGES_ORIGIN };
+module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, GIFTS_PAGES_URL, ALERT_PAGES_URL, PAGES_ORIGIN };
