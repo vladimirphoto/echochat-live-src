@@ -11,7 +11,7 @@ test('топ лайков: удар рукой срабатывает тольк
   assert.match(LIKES, /nm\[0\]!==pv\[0\]\)punch\(0\)/); // сменился лидер
   assert.match(LIKES, /nm\[2\]===pv\[1\]\)punch\(1\)/); // новый второй бьёт вытесненного на 3 место
   assert.match(LIKES, /!pv\.length/); // первая таблица после подключения/сброса не бьёт
-  assert.match(LIKES, /S\.punch!==false/);
+  assert.match(LIKES, /S\.punch===false/);
 });
 
 test('настройка «Удар рукой» есть в приложении и доходит до виджета', () => {
