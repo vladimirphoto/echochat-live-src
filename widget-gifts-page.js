@@ -1,17 +1,17 @@
 'use strict';
-// Страница виджета «Топ подарков»: как «Топ лайков» (5–10 квадратиков с аватарками, под каждым — ник), но по подаркам; у вышедшего на 1 место аватарка прыгает и светится.
+// Страница виджета «Топ подарков»: вертикальный список (5–10 строк: аватарка, справа ник и монеты), в остальном как «Топ лайков», но по подаркам; у вышедшего на 1 место аватарка прыгает и светится.
 // Настройки (сколько показывать, масштаб, выравнивание) приходят от приложения по SSE и применяются на лету.
 module.exports = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Топ подарков</title>
 <style>
 html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI",Arial,sans-serif;height:100%}
-#root{position:fixed;left:0;top:0;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:18px 16px;padding:10px;box-sizing:border-box;width:640px;transform-origin:top left}
-.t{width:108px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff;animation:in .3s ease-out}
-.a{position:relative;width:108px;height:108px;border-radius:25px;background:#6b7280 center/cover no-repeat;display:grid;place-items:center;font-weight:700;font-size:42px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-.r{position:absolute;left:7px;top:7px;min-width:26px;height:26px;padding:0 6px;box-sizing:border-box;border-radius:13px;background:rgba(0,0,0,.62);font-size:15px;font-weight:700;line-height:26px;text-align:center}
+#root{position:fixed;left:0;top:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:14px;padding:10px;box-sizing:border-box;width:320px;transform-origin:top left}
+.t{width:300px;display:grid;grid-template-columns:84px 1fr;grid-template-rows:1fr 1fr;column-gap:14px;row-gap:4px;align-items:center;color:#fff;animation:in .3s ease-out}
+.a{grid-row:1/3;position:relative;width:84px;height:84px;border-radius:21px;background:#6b7280 center/cover no-repeat;display:grid;place-items:center;font-weight:700;font-size:34px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.r{position:absolute;left:5px;top:5px;min-width:24px;height:24px;padding:0 6px;box-sizing:border-box;border-radius:12px;background:rgba(0,0,0,.62);font-size:14px;font-weight:700;line-height:24px;text-align:center}
 .t:nth-of-type(1) .r{background:#f5b301;color:#2a1c00}.t:nth-of-type(2) .r{background:#cfd4dc;color:#1c2230}.t:nth-of-type(3) .r{background:#c98542;color:#2b1800}
-.l{display:flex;align-items:center;justify-content:center;gap:5px;min-width:64px;height:30px;padding:0 12px;box-sizing:border-box;border-radius:15px;background:rgba(0,0,0,.72);color:#fff;font-size:20px;font-weight:800;line-height:30px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.l{grid-column:2;grid-row:2;align-self:start;justify-self:start;display:flex;align-items:center;justify-content:center;gap:5px;min-width:64px;height:30px;padding:0 12px;box-sizing:border-box;border-radius:15px;background:rgba(0,0,0,.72);color:#fff;font-size:20px;font-weight:800;line-height:30px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .l i{display:flex;color:#ff6bd6}.l svg{width:19px;height:19px}
-.n{max-width:112px;font-size:19px;font-weight:700;text-align:center;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n{grid-column:2;grid-row:1;align-self:end;max-width:100%;min-width:0;font-size:22px;font-weight:700;text-align:left;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sh .n{text-shadow:0 0 3px rgba(0,0,0,.95),0 1px 4px rgba(0,0,0,.9),0 2px 8px rgba(0,0,0,.8)}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes lk{50%{transform:scale(1.25);background:#ff6bd6}}
@@ -35,9 +35,9 @@ function apply(){
   document.body.className=S.shadow?'sh':'';
   root.style.transform='scale('+sc+')';
   root.style.height=(100/sc)+'vh';
-  // ряд всегда 640 px, по центру экрана (и по вертикали через align-content)
-  // левый край блока с учётом масштаба: (ширина экрана − видимая ширина ряда) / 2
-  root.style.left='calc((100vw - '+(640*sc)+'px) / 2)';
+  // колонка всегда 320 px, по центру экрана (и по вертикали через justify-content)
+  // левый край блока с учётом масштаба: (ширина экрана − видимая ширина колонки) / 2
+  root.style.left='calc((100vw - '+(320*sc)+'px) / 2)';
   render();
 }
 function render(){

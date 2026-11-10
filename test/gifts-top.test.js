@@ -43,3 +43,8 @@ test('в renderer.js блок топа подарков объявлен ран�
   const js = rd('src/renderer.js');
   assert.ok(js.indexOf('const G = S.gifts') < js.indexOf('refreshGiftsLink(); window.echo.giftsSet'));
 });
+
+test('топ подарков вертикальный: колонка, а не ряд', () => {
+  assert.match(GIFTS, /#root\{[^}]*flex-direction:column/);
+  assert.doesNotMatch(GIFTS, /flex-wrap:wrap/);
+});

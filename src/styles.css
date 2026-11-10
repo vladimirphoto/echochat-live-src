@@ -471,6 +471,7 @@ label+.csel{margin-top:0}
 /* виджет «Топ лайков» */
 .likes-card select{width:100%}
 #tab-widgets .likes-row .preview-card{min-height:300px}
+#gkPrev{min-height:440px}
 .lk-prev{flex:1;min-height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--line);position:relative;
   background:linear-gradient(135deg,#1b2a3d,#2b1f3d 55%,#3a1f33),#111}
 .lk-prev iframe{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:transparent;pointer-events:none}
