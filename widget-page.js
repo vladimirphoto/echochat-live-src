@@ -63,7 +63,7 @@ function apply(){
 }
 function sideOf(m){return (m.dataset.p==='twitch'?S.alignTw:S.alignTt)==='right'?'right':'left';}
 function restyle(m){
-  m.className='m '+sideOf(m);
+  m.className='m '+sideOf(m)+(m._gone?' out':'');
   var a=m.querySelector('.av'),pi=m.querySelector('.pi'),g=m.querySelector('.gift');
   if(a)a.style.display=S.avatars?'':'none';
   if(pi)pi.style.display=S.icons?'':'none';
@@ -109,8 +109,17 @@ function add(d){
     var gt=document.createElement('span');gt.textContent='🎁 '+d.gift.name+' ×'+d.gift.count;g.appendChild(gt);b.appendChild(g);}
   m.appendChild(av);m.appendChild(b);root.appendChild(m);restyle(m);
   while(root.children.length>40)root.firstChild.remove();
-  if(S.fade){var ms=Math.max(2,+S.fadeSec||20)*1000;setTimeout(function(){m.classList.add('out');setTimeout(function(){m.remove()},700)},ms);}
+  m._t=Date.now(); // время появления: исчезновение проверяется по текущим настройкам, а не по тому, что было при появлении сообщения
 }
+// «Исчезающие сообщения»: смотрим на настройки виджета в момент проверки, одинаково для TikTok и Twitch. Выключили — сообщения остаются, поменяли секунды — действует сразу
+setInterval(function(){
+  if(!S.fade)return;
+  var ms=Math.max(2,+S.fadeSec||20)*1000,now=Date.now();
+  Array.prototype.slice.call(root.children).forEach(function(m){
+    if(m._gone||!m._t||now-m._t<ms)return;
+    m._gone=true;m.classList.add('out');setTimeout(function(){m.remove()},700);
+  });
+},500);
 // Страница из GitHub Pages сама находит приложение на этом компьютере: пробует порты 7878-7898
 // (или тот, что указан в ?port=). Локальный предпросмотр в приложении работает с тем же сервером напрямую.
 var Q=new URLSearchParams(location.search),FIXED=+Q.get('port')||0;
