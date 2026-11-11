@@ -50,13 +50,46 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 @keyframes slide{from{opacity:0;transform:translateX(-46px)}to{opacity:1;transform:none}}
 @keyframes boing{0%{opacity:0;transform:scale(.3) rotate(-6deg)}50%{opacity:1;transform:scale(1.08) rotate(2deg)}70%{transform:scale(.96)}100%{opacity:1;transform:none}}
 @keyframes conf{0%{opacity:1;transform:translate(-50%,-50%) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r))}}
+.d-gold{position:relative;overflow:hidden;background:linear-gradient(135deg,#241804,#4a3208 55%,#241804);border:2px solid #f5c542;border-radius:16px;box-shadow:0 0 28px rgba(245,197,66,.5),0 10px 30px rgba(0,0,0,.5);animation:pop .55s cubic-bezier(.2,1.4,.4,1) both}
+.d-gold::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,244,190,.35),transparent);transform:skewX(-18deg);animation:shine 2.4s ease-in-out .5s infinite}
+.d-gold .art{background:radial-gradient(circle at 30% 25%,rgba(255,230,140,.35),rgba(255,230,140,.06));box-shadow:inset 0 0 0 2px #f5c542}
+.d-gold .cap{color:#f5c542;letter-spacing:2px}
+.d-gold .nm{color:#ffe9a8}
+.d-gold .am{background:linear-gradient(180deg,#fff6c4,#f5b301);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.d-gold .ms{color:#f4e3b0}
+.d-gold .sp{background:#f5c542}
+.d-arc{background:#0b0b2b;border:4px solid #ff3df2;border-radius:0;font-family:"Courier New",Consolas,monospace;box-shadow:6px 6px 0 #00e5ff;animation:arc .6s steps(6) both}
+.d-arc .art{border-radius:0;width:80px;height:80px;font-size:46px;background:transparent;box-shadow:inset 0 0 0 3px #00e5ff;animation:none}
+.d-arc .cap{color:#00e5ff;letter-spacing:2px;font-weight:700}
+.d-arc .nm{text-transform:uppercase;font-size:26px;letter-spacing:1px}
+.d-arc .am{color:#ffe600;text-shadow:3px 3px 0 #ff3df2}
+.d-arc .sp{display:none}
+.d-glass{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05)),rgba(18,20,40,.45);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.5);border-radius:28px;box-shadow:0 12px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.55);text-shadow:0 1px 8px rgba(0,0,0,.55);animation:fadeb .7s ease-out both}
+.d-glass .art{background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.5);animation:none}
+.d-glass .cap{color:rgba(255,255,255,.85)}
+.d-glass .am{color:#fff;text-shadow:0 0 16px var(--ac,#f14635),0 1px 8px rgba(0,0,0,.5)}
+.d-glass .sp{display:none}
+.d-candy{background:linear-gradient(135deg,#ffd6ea,#ffc0d8 55%,#ffe6f2);color:#6b1f4a;border:3px solid #fff;border-radius:34px;box-shadow:0 10px 28px rgba(255,105,180,.55);animation:wob .8s both}
+.d-candy .art{background:rgba(255,255,255,.65);box-shadow:inset 0 0 0 2px #fff;animation:bob 1.3s ease-in-out infinite}
+.d-candy .cap{color:#b24a82}
+.d-candy .nm{color:#6b1f4a}
+.d-candy .am{color:#e0357e;text-shadow:none}
+.d-candy .ms{color:#7d3a62}
+.d-candy .sp{display:none}
+.sp.ht{width:auto;height:auto;border-radius:0;background:none;color:var(--c);font-size:var(--s);line-height:1;animation:rise 1.9s ease-out both}
+@keyframes shine{0%{left:-60%}55%,100%{left:130%}}
+@keyframes arc{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:none}}
+@keyframes fadeb{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes wob{0%{opacity:0;transform:scale(.5) rotate(8deg)}40%{opacity:1;transform:scale(1.06) rotate(-4deg)}60%{transform:rotate(3deg)}80%{transform:rotate(-1.5deg)}100%{opacity:1;transform:none}}
+@keyframes rise{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1)}}
 </style></head><body>
 <div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div>
 <div id="stage" class="c b"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
 var S={duration:8,scale:100,align:'center',vpos:'bottom',showMessage:true,design:'classic'};
-var DESIGNS=['classic','neon','minimal','party'];
+var DESIGNS=['classic','neon','minimal','party','gold','arcade','glass','candy'];
+var DCLS={neon:'d-neon',minimal:'d-min',party:'d-party',gold:'d-gold',arcade:'d-arc',glass:'d-glass',candy:'d-candy'};
 function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
 var stage=document.getElementById('stage');
 // картинка в тему суммы (в тенге)
@@ -84,9 +117,14 @@ function confetti(card){ // «Праздник»: разноцветное ко�
     s.style.setProperty('--c','hsl('+Math.floor(Math.random()*360)+',90%,60%)');s.style.setProperty('--x',Math.cos(a)*d+'px');s.style.setProperty('--y',(Math.sin(a)*d-40)+'px');
     s.style.setProperty('--r',(Math.random()*720-360)+'deg');s.style.animationDelay=(Math.random()*.3)+'s';card.appendChild(s);}
 }
+function hearts(card){ // «Конфетка»: сердечки поднимаются от карточки
+  for(var i=0;i<16;i++){var s=document.createElement('i');s.className='sp ht';s.textContent='\u2665';
+    s.style.setProperty('--c','hsl('+(325+Math.floor(Math.random()*30))+',85%,'+(55+Math.floor(Math.random()*15))+'%)');s.style.setProperty('--s',(14+Math.random()*16)+'px');
+    s.style.setProperty('--x',(Math.random()*240-120)+'px');s.style.setProperty('--y',-(60+Math.random()*130)+'px');s.style.animationDelay=(Math.random()*.7)+'s';card.appendChild(s);}
+}
 function show(d){
   var t=tierOf(+d.amount||0);
-  var c=document.createElement('div');var ds=designOf();c.className='card'+(ds==='classic'?'':' d-'+(ds==='minimal'?'min':ds));c.style.setProperty('--ac',t.ac);
+  var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'');c.style.setProperty('--ac',t.ac);
   var a=document.createElement('div');a.className='art';a.textContent=t.art;
   var x=document.createElement('div');x.className='tx';
   var cap=document.createElement('div');cap.className='cap';cap.textContent='Донат · '+t.cap;
@@ -94,7 +132,7 @@ function show(d){
   var am=document.createElement('div');am.className='am';am.textContent=fmt(+d.amount||0);
   x.appendChild(cap);x.appendChild(nm);x.appendChild(am);
   if(S.showMessage&&d.message){var m=document.createElement('div');m.className='ms';m.textContent=d.message;x.appendChild(m);}
-  c.style.zoom=zoomOf();c.appendChild(a);c.appendChild(x);stage.innerHTML='';stage.appendChild(c);if(ds==='party')confetti(c);else sparks(c,t.ac);
+  c.style.zoom=zoomOf();c.appendChild(a);c.appendChild(x);stage.innerHTML='';stage.appendChild(c);if(ds==='party')confetti(c);else if(ds==='candy')hearts(c);else sparks(c,t.ac);
   var ms=Math.max(2,+S.duration||8)*1000;
   setTimeout(function(){c.classList.add('out');setTimeout(function(){c.remove();busy=false;next();},500);},ms);
 }
