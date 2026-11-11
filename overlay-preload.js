@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('overlay', {
   state: () => ipcRenderer.invoke('ov:state'),      // { settings, stats, feed }
   set: (patch) => ipcRenderer.invoke('ov:set', patch),
   clear: () => ipcRenderer.invoke('ov:clear'),
+  pin: (entry, mins) => ipcRenderer.invoke('ov:pin', entry, mins), // закрепить сообщение: mins — минуты или 'end' (до конца эфира)
+  unpin: () => ipcRenderer.invoke('ov:unpin'),
   grip: (m) => ipcRenderer.send('ov:grip', m),      // растягивание за край: { phase: start|move|end, dir, dx, dy }
   close: () => ipcRenderer.send('ov:close'),
   onMsg: on('ov:msg'),
@@ -17,4 +19,5 @@ contextBridge.exposeInMainWorld('overlay', {
   onStats: on('ov:stats'),
   onSettings: on('ov:settings'),
   onClear: on('ov:clear-feed'),
+  onPin: on('ov:pin'),
 });

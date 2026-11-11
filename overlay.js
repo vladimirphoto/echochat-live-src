@@ -11,6 +11,7 @@
 // hotkey — глобальное сочетание клавиш, которое открывает и закрывает оверлей (формат Electron: «Ctrl+Alt+I»); пустая строка — сочетание выключено
 const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true, hotkey: 'Ctrl+Alt+I' };
 const LIMITS = { opacity: [0, 100] };
+const PIN_MAX_MIN = 24 * 60; // дольше суток закреплять нельзя: до конца эфира есть отдельный вариант
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
 const clampInt = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : d; };
@@ -96,6 +97,7 @@ class OverlayModel {
     this.ttOn = false; this.twOn = false; this.since = 0;
     this.resetCounters();
     this.twViewers = null;
+    this.pin = null; // закреплённое сообщение: { entry, until } (until — время окончания в мс, 0 — до конца эфира)
   }
   // views — сколько человек зашло за весь эфир: число от TikTok, а если его нет — уникальные зрители, которых мы увидели сами (входы, чат, подарки, подписки)
   resetCounters() { this.likes = 0; this.gifts = 0; this.follows = 0; this.ttViewers = null; this.libViews = null; this.users = new Set(); this.joined = new Set(); this.subs = new Set(); }
@@ -112,12 +114,33 @@ class OverlayModel {
     return { ttOn: this.ttOn, twOn: this.twOn, twLive: this.twOn && isNum(this.twViewers), since: this.since, ttViewers: this.ttViewers, twViewers: this.twViewers, views: this.views(), likes: this.likes, gifts: this.gifts, follows: this.follows };
   }
   feed() { return this.entries.slice(); }
+  // Закреп: одно сообщение чата поверх ленты. mins — число минут (1…1440) или 'end' / 0 — до конца эфира.
+  // Запись приходит из окна, поэтому поля чистятся так же, как у записей ленты; закрепить можно только сообщение чата.
+  setPin(src, mins) {
+    if (!src || typeof src !== 'object' || src.kind !== 'chat') return null;
+    const text = cut(src.text, 500);
+    if (!text.trim()) return null;
+    const entry = { platform: src.platform === 'twitch' ? 'twitch' : 'tiktok', kind: 'chat', name: cut(src.name, 60) || 'Гость', text, avatar: cut(src.avatar, 500), color: /^#[0-9a-f]{3,8}$/i.test(src.color || '') ? src.color : '#6b7280' };
+    if (src.sub === true) entry.sub = true;
+    const m = mins === 'end' || mins === 0 || mins === '0' ? 0 : Math.round(Number(mins));
+    if (!Number.isFinite(m) || m < 0 || m > PIN_MAX_MIN) return null;
+    this.pin = { entry, until: m ? this.now() + m * 60000 : 0 };
+    return this.getPin();
+  }
+  // текущий закреп; истёкший исчезает сам
+  getPin() {
+    if (this.pin && this.pin.until && this.now() >= this.pin.until) this.pin = null;
+    return this.pin ? { entry: { ...this.pin.entry }, until: this.pin.until } : null;
+  }
+  clearPin() { this.pin = null; }
   clearFeed() { this.entries = []; }
   // таймер идёт с первой подключённой платформы и останавливается, когда не осталось ни одной
   _timer() {
     if (!this.since && (this.ttOn || this.twOn)) this.since = this.now();
     else if (!this.ttOn && !this.twOn) this.since = 0;
   }
+  // эфир закончился (таймер остановился) — закреп снимается: он нужен только на время стрима
+  _endPin(was) { if (was && !this.since && this.pin) { this.pin = null; return true; } return false; }
   _push(e) {
     e.id = ++this.seq; e.t = this.now();
     this.entries.push(e);
@@ -125,21 +148,24 @@ class OverlayModel {
     return e;
   }
   // → { stats: изменились ли счётчики/статус, entry: новая запись ленты или null, like: сколько лайков пришло (для сердечек) или 0,
-  //     liker: кто поставил лайки (для строки внизу, если ник известен) или null, join: кто зашёл на эфир (для строки внизу) или null }
+  //     liker: кто поставил лайки (для строки внизу, если ник известен) или null, join: кто зашёл на эфир (для строки внизу) или null,
+//     pinCleared: эфир закончился и закреп снят }
   track(channel, p) {
     p = p && typeof p === 'object' ? p : {};
-    const r = { stats: false, entry: null, like: 0, liker: null, join: null };
+    const r = { stats: false, entry: null, like: 0, liker: null, join: null, pinCleared: false };
     switch (channel) {
       case 'tt:status': {
         const on = p.state === 'live';
         this.ttOn = on;
         if (!on) this.resetCounters(); // эфир закончился или отключили: счётчики с нуля, как в главном окне
-        this._timer(); r.stats = true; break;
+        { const was = !!this.since; this._timer(); r.pinCleared = this._endPin(was); }
+        r.stats = true; break;
       }
       case 'tw:status': {
         this.twOn = p.state === 'live' || p.state === 'reconnect';
         if (!this.twOn) this.twViewers = null;
-        this._timer(); r.stats = true; break;
+        { const was = !!this.since; this._timer(); r.pinCleared = this._endPin(was); }
+        r.stats = true; break;
       }
       case 'tt:viewers': if (isNum(p.count)) { this.ttViewers = p.count; r.stats = true; } break;
       case 'tt:views': if (isNum(p.count)) { this.libViews = Math.max(this.libViews || 0, p.count); r.stats = true; } break;

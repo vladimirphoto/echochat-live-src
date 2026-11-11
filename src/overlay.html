@@ -38,6 +38,26 @@
       <button class="clear" id="btnClear" type="button">Очистить чат</button>
     </div>
 
+    <section class="pinbar" id="pinBar" hidden>
+      <div class="pin-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 2.5 21.5 9.5l-1.8 1.8-1.7-.5-3.3 3.3.4 4.2-1.6 1.6-4-4-5.2 5.2-1.4-1.4 5.2-5.2-4-4L7.7 9.9l4.2.4 3.3-3.3-.5-1.7z"/></svg></div>
+      <div class="pin-body">
+        <div class="pin-nm" id="pinNm"></div>
+        <div class="pin-tx" id="pinTx"></div>
+        <div class="pin-meta" id="pinMeta"></div>
+      </div>
+      <button class="pin-x" id="pinX" type="button" title="Открепить сообщение"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </section>
+
+    <div class="pinmenu" id="pinMenu" hidden>
+      <div class="pinmenu-h">Закрепить сообщение</div>
+      <button type="button" data-m="1">На 1 минуту</button>
+      <button type="button" data-m="5">На 5 минут</button>
+      <button type="button" data-m="15">На 15 минут</button>
+      <button type="button" data-m="30">На 30 минут</button>
+      <button type="button" data-m="60">На 1 час</button>
+      <button type="button" data-m="end" class="end">До конца эфира</button>
+    </div>
+
     <main class="wrap">
       <div class="feed" id="feed"></div>
       <div class="empty" id="empty">Здесь появится чат TikTok и Twitch.<br />Подключитесь к эфиру в приложении ЭхоЧат.</div>

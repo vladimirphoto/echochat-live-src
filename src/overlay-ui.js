@@ -16,6 +16,7 @@
     gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8c-1.5-4-6-4-6-1.5S10 8 12 8zm0 0c1.5-4 6-4 6-1.5S14 8 12 8z"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>',
     heart: '<svg viewBox="0 0 24 24"><path d="M12 21.4 10.6 20.1C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.4 3c1.7 0 3.4.8 4.6 2.1C13.2 3.8 14.9 3 16.6 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6L12 21.4z"/></svg>',
+    dots: '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></svg>',
     star: '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17l-5.6 3 1.1-6.3L2.9 9.3l6.3-.9L12 2.6z"/></svg>',
   };
   const fmtNum = (n) => (Number.isFinite(n) ? n.toLocaleString('ru-RU') : '—');
@@ -54,6 +55,10 @@
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
       nm.appendChild(el('span', '', e.name));
       if (e.sub) nm.appendChild(subTag());
+      // три точки напротив ника: меню «Закрепить сообщение» (при замке их не видно)
+      const dots = el('button', 'dots'); dots.type = 'button'; dots.title = 'Закрепить сообщение'; dots.insertAdjacentHTML('beforeend', ICON.dots);
+      dots.onclick = (ev) => { ev.stopPropagation(); openPinMenu(dots, e); };
+      nm.appendChild(dots);
       b.appendChild(nm); b.appendChild(el('div', 'tx', e.text));
       row.appendChild(b);
       return row;
@@ -113,6 +118,63 @@
   if (typeof ResizeObserver === 'function') new ResizeObserver(() => { if (stuck) toBottom(); syncDown(); }).observe(feed);
   down.onclick = () => { toBottom(); unread = 0; syncDown(); };
   window.addEventListener('resize', () => { syncDown(); });
+
+  /* ---------- закреплённое сообщение ----------
+     Точки «⋯» у ника (только при открытом замке) открывают меню сроков: 1, 5, 15, 30 минут, 1 час или до конца эфира.
+     Закреп — плашка над лентой; срок проверяет и приложение (модель), и окно, а конец эфира снимает его совсем. */
+  const pinBar = $('#pinBar'), pinMenu = $('#pinMenu');
+  let PIN = null, pinMenuFor = null;
+  const fmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, c = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(c).padStart(2, '0'); };
+  function pinMeta() { $('#pinMeta').textContent = !PIN ? '' : PIN.until ? 'Закреплено ещё ' + fmtLeft(PIN.until - Date.now()) : 'Закреплено до конца эфира'; }
+  function applyPin(p) {
+    const ok = p && typeof p === 'object' && p.entry && typeof p.entry === 'object' && String(p.entry.text || '').trim() && (!p.until || p.until > Date.now());
+    PIN = ok ? { entry: p.entry, until: Number(p.until) || 0 } : null;
+    pinBar.hidden = !PIN;
+    const nm = $('#pinNm'), tx = $('#pinTx');
+    nm.replaceChildren(); tx.textContent = '';
+    if (PIN) {
+      const e = PIN.entry;
+      nm.className = 'pin-nm' + (e.platform === 'twitch' ? ' twitch' : '');
+      nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
+      nm.firstChild.style.cssText = 'width:13px;height:13px;flex:none';
+      nm.appendChild(el('span', '', String(e.name || 'Гость')));
+      if (e.sub) nm.appendChild(subTag());
+      tx.textContent = String(e.text);
+    }
+    pinMeta();
+    const stick = stuck || nearBottom(); syncDown(); if (stick) toBottom();
+  }
+  function closePinMenu() { pinMenu.hidden = true; if (pinMenuFor) pinMenuFor.classList.remove('on'); pinMenuFor = null; }
+  function openPinMenu(btn, entry) {
+    if (SET.locked) return;
+    if (pinMenuFor === btn) return closePinMenu();
+    closePinMenu();
+    pop.hidden = true;
+    pinMenuFor = btn; btn.classList.add('on'); pinMenu._e = entry;
+    pinMenu.hidden = false;
+    // меню под точками, прижато к правому краю окна; не хватает места снизу — открывается вверх
+    const pr = $('#panel').getBoundingClientRect(), br = btn.getBoundingClientRect(), mh = pinMenu.offsetHeight, mw = pinMenu.offsetWidth;
+    let top = br.bottom - pr.top + 4; if (top + mh > pr.height - 8) top = Math.max(8, br.top - pr.top - mh - 4);
+    pinMenu.style.top = top.toFixed(0) + 'px';
+    pinMenu.style.left = Math.max(8, Math.min(pr.width - mw - 8, br.right - pr.left - mw)).toFixed(0) + 'px';
+  }
+  pinMenu.addEventListener('click', async (ev) => {
+    const b = ev.target.closest && ev.target.closest('button[data-m]');
+    if (!b) return;
+    const e = pinMenu._e, m = b.dataset.m;
+    closePinMenu();
+    if (!e) return;
+    const entry = { platform: e.platform, kind: 'chat', name: e.name, text: e.text, avatar: e.avatar, color: e.color, sub: e.sub };
+    const mins = m === 'end' ? 'end' : Number(m);
+    let res = null;
+    try { res = await api.pin(entry, mins); } catch (_) {}
+    // если ответ приложения не пришёл (например, тест без приложения), показываем закреп по выбранному сроку сами
+    applyPin(res || { entry, until: mins === 'end' ? 0 : Date.now() + mins * 60000 });
+  });
+  $('#pinX').onclick = () => { applyPin(null); try { api.unpin(); } catch (_) {} };
+  document.addEventListener('click', (e) => { if (!pinMenu.hidden && !pinMenu.contains(e.target)) closePinMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePinMenu(); });
+  feed.addEventListener('scroll', closePinMenu, { passive: true });
 
   /* ---------- строка внизу: действия зрителей (подарок, репост, «зашёл», лайк) ----------
      Обычно эта строка — чат: места под действия нет, лента занимает всё окно. Пришло действие — оно на 5 секунд встаёт на нижнюю строку,
@@ -238,7 +300,7 @@
     $('#vLikes').textContent = fmtNum(s.likes);
     tick();
   }
-  setInterval(tick, 1000);
+  setInterval(() => { tick(); if (PIN && PIN.until && Date.now() >= PIN.until) applyPin(null); else if (PIN) pinMeta(); }, 1000);
 
   /* ---------- настройки (меняются во вкладке «Оверлей чата» приложения; здесь только замок) ---------- */
   let SET = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true };
@@ -249,6 +311,7 @@
     // прозрачность — только у фона; 2% оставляем, чтобы окно по-прежнему ловило мышь
     document.documentElement.style.setProperty('--a', String(Math.max(0.02, Math.min(1, SET.opacity / 100))));
     document.body.classList.toggle('locked', !!SET.locked);
+    if (SET.locked) closePinMenu();
     feed.classList.toggle('no-ev', !SET.events);
     document.body.classList.toggle('no-jn', !SET.joins);
     if (!SET.joins) clearJoin();
@@ -272,7 +335,7 @@
   $('#sJoins').addEventListener('change', (e) => push({ joins: e.target.checked }));
   $('#sHearts').addEventListener('change', (e) => push({ hearts: e.target.checked }));
   $('#sStats').addEventListener('change', (e) => push({ stats: e.target.checked }));
-  $('#btnSet').onclick = (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; };
+  $('#btnSet').onclick = (e) => { e.stopPropagation(); closePinMenu(); pop.hidden = !pop.hidden; };
   $('#btnClear').onclick = () => { try { api.clear(); } catch (_) {} pop.hidden = true; };
   document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target) && !$('#btnSet').contains(e.target)) pop.hidden = true; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pop.hidden = true; });
@@ -301,12 +364,13 @@
   api.onStats(applyStats);
   api.onSettings(applySettings);
   api.onClear(clearFeed);
+  api.onPin(applyPin);
   Promise.resolve(api.state()).then((st) => {
     if (!st) return;
-    applySettings(st.settings); applyStats(st.stats);
+    applySettings(st.settings); applyStats(st.stats); applyPin(st.pin);
     (Array.isArray(st.feed) ? st.feed : []).forEach((e) => addEntry(e, false));
     toBottom(); unread = 0; syncDown();
   }).catch(() => {});
   syncEmpty(); syncDown(); tick();
-  window.__overlay = { addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: showLike, setTiming: (t) => Object.assign(T, t), setReturnMs: (v) => { RETURN_MS = v; }, bar: () => ({ cur: cur ? cur.kind : null, queue: queue.map((x) => x.kind) }), get SET() { return SET; } }; // для автотестов
+  window.__overlay = { applyPin, pinned: () => PIN, addEntry, applyStats, applySettings, clearFeed, like: burst, join: showJoin, liker: showLike, setTiming: (t) => Object.assign(T, t), setReturnMs: (v) => { RETURN_MS = v; }, bar: () => ({ cur: cur ? cur.kind : null, queue: queue.map((x) => x.kind) }), get SET() { return SET; } }; // для автотестов
 })();

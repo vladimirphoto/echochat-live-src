@@ -84,6 +84,7 @@ function ovTrack(channel, payload) {
   if (r.like) wc.send('ov:like', { count: r.like }); // лайки: сердечки в окне, в историю ленты не попадают
   if (r.join) wc.send('ov:join', r.join); // кто зашёл: временная строка внизу, в историю ленты не попадает
   if (r.liker) wc.send('ov:liker', r.liker); // кто лайкает: та же строка внизу
+  if (r.pinCleared) wc.send('ov:pin', null); // эфир закончился — закреплённое сообщение снимается
 }
 // применить настройки к окну; echo=false — не отправлять их обратно окну, которое их само и прислало (иначе ползунок «дёргается»)
 function ovApply(echo = true) {
@@ -148,7 +149,14 @@ function setOverlay(on) {
 }
 // окно оверлея обращается только за своим: чужие окна эти каналы не используют
 const fromOv = (e) => ovOpen() && e.sender === ovWin.webContents;
-ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed() } : null));
+ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed(), pin: ovModel.getPin() } : null));
+// закрепление сообщения (точки «⋯» рядом с ником, видны при открытом замке): запись и срок проверяет модель, окно получает итог
+ipcMain.handle('ov:pin', (e, entry, mins) => {
+  if (!fromOv(e)) return null;
+  const p = ovModel.setPin(entry, mins);
+  return p;
+});
+ipcMain.handle('ov:unpin', (e) => { if (!fromOv(e)) return false; ovModel.clearPin(); return true; });
 // из самого окна (замок и шестерёнка) настройки меняются так же, как во вкладке «Оверлей чата» главного окна: обе стороны видят одно и то же
 ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
 // растягивание окна за края: страница присылает смещение курсора, окно меняет размер (при замке — никак)

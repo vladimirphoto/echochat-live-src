@@ -343,3 +343,63 @@ test('оверлей: в примерах «Теста» есть подписч
   assert.ok(chats.some((e) => e.sub === true) && chats.some((e) => !e.sub));
   assert.ok(ov.SAMPLE.some((e) => e.kind === 'join' && e.sub) && ov.SAMPLE.some((e) => e.kind === 'like' && e.name && e.sub) && ov.SAMPLE.some((e) => e.kind === 'gift' && e.sub));
 });
+
+test('закреп: сообщение чата закрепляется на срок и сам исчезает по истечении', () => {
+  const t = clock(10000);
+  const m = new ov.OverlayModel({ now: t, color: () => '#6b7280' });
+  assert.equal(m.getPin(), null);
+  const e = m.track('tt:chat', { name: 'Madara', text: 'ты уже 15 лет куришь?', isFollower: true }).entry;
+  const p = m.setPin(e, 1);
+  assert.equal(p.until, 10000 + 60000);
+  assert.equal(p.entry.name, 'Madara'); assert.equal(p.entry.text, 'ты уже 15 лет куришь?'); assert.equal(p.entry.sub, true);
+  t.set(10000 + 59999); assert.ok(m.getPin());
+  t.set(10000 + 60000); assert.equal(m.getPin(), null, 'через минуту закреп снимается');
+  assert.equal(m.setPin(e, 5).until, t() + 300000);
+  m.clearPin(); assert.equal(m.getPin(), null);
+});
+
+test('закреп: «до конца эфира» не истекает по времени, а эфир снимает любой закреп', () => {
+  const t = clock(1000);
+  const m = new ov.OverlayModel({ now: t });
+  m.track('tt:status', { state: 'live' });
+  const e = m.track('tt:chat', { name: 'A', text: 'важно' }).entry;
+  assert.equal(m.setPin(e, 'end').until, 0);
+  t.set(1000 + 5 * 3600 * 1000); assert.ok(m.getPin(), 'пять часов спустя закреп на месте');
+  m.track('tw:status', { state: 'live' });
+  assert.equal(m.track('tt:status', { state: 'offline' }).pinCleared, false, 'Twitch ещё идёт — эфир не закончился');
+  assert.ok(m.getPin());
+  const r = m.track('tw:status', { state: 'offline' });
+  assert.equal(r.pinCleared, true); assert.equal(m.getPin(), null);
+  // закреп с таймером тоже снимается концом эфира
+  m.track('tt:status', { state: 'live' });
+  m.setPin(e, 60); assert.equal(m.track('tt:status', { state: 'offline' }).pinCleared, true);
+  // без эфира (проверка «Тест») закреп живёт по своему сроку и не считается снятым
+  assert.equal(m.track('tt:status', { state: 'offline' }).pinCleared, false);
+});
+
+test('закреп: чужие и неверные данные отбрасываются, поля чистятся', () => {
+  const m = new ov.OverlayModel();
+  assert.equal(m.setPin(null, 5), null);
+  assert.equal(m.setPin('x', 5), null);
+  assert.equal(m.setPin({ kind: 'gift', name: 'A', text: 'x' }, 5), null, 'закрепить можно только сообщение чата');
+  assert.equal(m.setPin({ kind: 'chat', name: 'A', text: '   ' }, 5), null, 'пустое не закрепляется');
+  const ok = { kind: 'chat', name: 'A', text: 'привет' };
+  assert.equal(m.setPin(ok, 0).until, 0, '0 — то же, что до конца эфира');
+  assert.equal(m.setPin(ok, 'мусор'), null);
+  assert.equal(m.setPin(ok, -3), null);
+  assert.equal(m.setPin(ok, 24 * 60 + 1), null, 'дольше суток — нельзя');
+  assert.ok(m.setPin(ok, 24 * 60));
+  const p = m.setPin({ kind: 'chat', platform: 'evil', name: 'x'.repeat(500), text: 'y'.repeat(5000), avatar: 'z'.repeat(900), color: 'url(javascript:1)', sub: 'yes', hack: '<script>' }, 5);
+  assert.equal(p.entry.platform, 'tiktok'); assert.equal(p.entry.name.length, 60); assert.equal(p.entry.text.length, 500); assert.equal(p.entry.avatar.length, 500);
+  assert.equal(p.entry.color, '#6b7280'); assert.ok(!('sub' in p.entry)); assert.ok(!('hack' in p.entry));
+  assert.equal(m.setPin({ kind: 'chat', platform: 'twitch', name: 'T', text: 'hi' }, 5).entry.platform, 'twitch');
+});
+
+test('закреп: очистка ленты закреп не трогает, а getPin отдаёт копию', () => {
+  const m = new ov.OverlayModel();
+  const e = m.track('tt:chat', { name: 'A', text: 'держим' }).entry;
+  m.setPin(e, 'end');
+  m.clearFeed();
+  const p = m.getPin(); assert.equal(p.entry.text, 'держим');
+  p.entry.text = 'испорчено'; assert.equal(m.getPin().entry.text, 'держим');
+});
