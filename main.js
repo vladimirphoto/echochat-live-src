@@ -790,9 +790,10 @@ ipcMain.handle('net:state', () => netOnline);
 
 // ---------- Донаты Каспи ----------
 const kaspi = require('./kaspi');
-let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true };
+let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, design: 'classic' };
+const DONATE_DESIGNS = ['classic', 'neon', 'minimal', 'party'];
 let krx = null, krxP = null;
-const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage });
+const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage, design: DONATE_DESIGNS.includes(dset.design) ? dset.design : 'classic' });
 let lastDon = { key: '', t: 0 };
 function handleDonation(d, test = false) {
   if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };
@@ -934,6 +935,12 @@ const SAMPLES = [
   { name: 'Тимур Б.', amount: 15000, message: 'Ракета для тебя!' },
 ];
 let sampleI = 0;
+// пробный показ только в виджете (без озвучки и звука): так видно выбранное оформление
+ipcMain.handle('donate:preview', () => {
+  const d = SAMPLES[sampleI++ % SAMPLES.length];
+  wsrv && wsrv.broadcast('donate', { id: 'pv' + Date.now().toString(36), name: d.name, amount: d.amount, message: d.message || '', test: true });
+  return { ok: true };
+});
 ipcMain.handle('donate:test', () => { handleDonation(SAMPLES[sampleI++ % SAMPLES.length], true); return { ok: true }; });
 // проверка приёма целиком: приложение само отправляет «уведомление» на свой приёмник, как это сделает телефон
 ipcMain.handle('kaspi:probe', () => new Promise((resolve) => {

@@ -22,12 +22,39 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 @keyframes bye{to{opacity:0;transform:translateY(-14px) scale(.96)}}
 @keyframes bob{50%{transform:translateY(-5px) rotate(-4deg)}}
 @keyframes spark{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.4)}}
+/* ---- оформления (S.design): classic — стандарт выше; neon, minimal, party ---- */
+.d-neon{background:rgba(6,8,22,.9);border:2px solid var(--ac,#22d3ee);border-radius:14px;font-family:Consolas,"Courier New",monospace;
+ box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 24px color-mix(in srgb,var(--ac,#22d3ee) 70%,transparent),inset 0 0 24px color-mix(in srgb,var(--ac,#22d3ee) 24%,transparent);animation:flick .8s both}
+.d-neon .art{width:80px;height:80px;font-size:46px;border-radius:12px;background:transparent;animation:none;box-shadow:inset 0 0 0 2px var(--ac,#22d3ee),0 0 14px var(--ac,#22d3ee)}
+.d-neon .cap{color:var(--ac,#22d3ee);letter-spacing:3px}
+.d-neon .nm{text-transform:uppercase;letter-spacing:1px;font-size:27px}
+.d-neon .am{color:#fff;text-shadow:0 0 8px var(--ac,#22d3ee),0 0 22px var(--ac,#22d3ee)}
+.d-min{background:#fff;color:#14161f;border:none;border-radius:40px;padding:12px 32px 12px 12px;gap:14px;min-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.3);animation:slide .5s cubic-bezier(.2,.9,.3,1) both}
+.d-min .art{width:66px;height:66px;font-size:36px;animation:none;background:color-mix(in srgb,var(--ac,#f14635) 16%,#fff);box-shadow:none}
+.d-min .cap{font-size:12px;color:#7a7f90}
+.d-min .nm{font-size:22px;color:#14161f}
+.d-min .am{font-size:28px;color:var(--ac,#f14635);text-shadow:none}
+.d-min .ms{font-size:16px;color:#444a5c}
+.d-min .sp{display:none}
+.d-party{background:linear-gradient(135deg,var(--ac,#f14635),#7c3aed);border:3px solid rgba(255,255,255,.92);border-radius:28px;box-shadow:0 12px 34px rgba(0,0,0,.45);animation:boing .85s both}
+.d-party .art{width:100px;height:100px;font-size:60px;background:rgba(255,255,255,.26);box-shadow:inset 0 0 0 3px rgba(255,255,255,.6);animation:bob 1s ease-in-out infinite}
+.d-party .cap{color:rgba(255,255,255,.88)}
+.d-party .nm{color:#fff;font-size:32px}
+.d-party .am{display:inline-block;background:#fff;color:var(--ac,#f14635);padding:2px 16px;border-radius:999px;margin-top:8px;text-shadow:none}
+.d-party .ms{color:#fff}
+.sp.cf{width:8px;height:14px;border-radius:2px;background:var(--c);animation:conf 1.7s ease-out both}
+@keyframes flick{0%{opacity:0}8%{opacity:1}12%{opacity:.3}18%{opacity:1}24%{opacity:.55}32%,100%{opacity:1}}
+@keyframes slide{from{opacity:0;transform:translateX(-46px)}to{opacity:1;transform:none}}
+@keyframes boing{0%{opacity:0;transform:scale(.3) rotate(-6deg)}50%{opacity:1;transform:scale(1.08) rotate(2deg)}70%{transform:scale(.96)}100%{opacity:1;transform:none}}
+@keyframes conf{0%{opacity:1;transform:translate(-50%,-50%) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r))}}
 </style></head><body>
 <div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div>
 <div id="stage" class="c b"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
-var S={duration:8,scale:100,align:'center',vpos:'bottom',showMessage:true};
+var S={duration:8,scale:100,align:'center',vpos:'bottom',showMessage:true,design:'classic'};
+var DESIGNS=['classic','neon','minimal','party'];
+function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
 var stage=document.getElementById('stage');
 // картинка в тему суммы (в тенге)
 var TIERS=[
@@ -49,9 +76,14 @@ function sparks(card,ac){
   for(var i=0;i<14;i++){var s=document.createElement('i');s.className='sp';var a=Math.random()*6.283,d=70+Math.random()*90;
     s.style.setProperty('--x',Math.cos(a)*d+'px');s.style.setProperty('--y',Math.sin(a)*d+'px');s.style.animationDelay=(Math.random()*.25)+'s';card.appendChild(s);}
 }
+function confetti(card){ // «Праздник»: разноцветное конфетти из центра карточки
+  for(var i=0;i<28;i++){var s=document.createElement('i');s.className='sp cf';var a=Math.random()*6.283,d=90+Math.random()*130;
+    s.style.setProperty('--c','hsl('+Math.floor(Math.random()*360)+',90%,60%)');s.style.setProperty('--x',Math.cos(a)*d+'px');s.style.setProperty('--y',(Math.sin(a)*d-40)+'px');
+    s.style.setProperty('--r',(Math.random()*720-360)+'deg');s.style.animationDelay=(Math.random()*.3)+'s';card.appendChild(s);}
+}
 function show(d){
   var t=tierOf(+d.amount||0);
-  var c=document.createElement('div');c.className='card';c.style.setProperty('--ac',t.ac);
+  var c=document.createElement('div');var ds=designOf();c.className='card'+(ds==='classic'?'':' d-'+(ds==='minimal'?'min':ds));c.style.setProperty('--ac',t.ac);
   var a=document.createElement('div');a.className='art';a.textContent=t.art;
   var x=document.createElement('div');x.className='tx';
   var cap=document.createElement('div');cap.className='cap';cap.textContent='Донат · '+t.cap;
@@ -59,7 +91,7 @@ function show(d){
   var am=document.createElement('div');am.className='am';am.textContent=fmt(+d.amount||0);
   x.appendChild(cap);x.appendChild(nm);x.appendChild(am);
   if(S.showMessage&&d.message){var m=document.createElement('div');m.className='ms';m.textContent=d.message;x.appendChild(m);}
-  c.style.zoom=zoomOf();c.appendChild(a);c.appendChild(x);stage.innerHTML='';stage.appendChild(c);sparks(c,t.ac);
+  c.style.zoom=zoomOf();c.appendChild(a);c.appendChild(x);stage.innerHTML='';stage.appendChild(c);if(ds==='party')confetti(c);else sparks(c,t.ac);
   var ms=Math.max(2,+S.duration||8)*1000;
   setTimeout(function(){c.classList.add('out');setTimeout(function(){c.remove();busy=false;next();},500);},ms);
 }

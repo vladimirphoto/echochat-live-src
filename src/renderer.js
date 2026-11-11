@@ -31,7 +31,7 @@ const DEFAULTS = {
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
   gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' },
-  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '' },
+  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic' },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
@@ -1099,6 +1099,8 @@ window.echo.overlayState().then(ovShow).catch(() => {});
 
 /* ---------- донаты Каспи ---------- */
 const K = S.kaspi;
+const DONATE_DESIGNS = ['classic', 'neon', 'minimal', 'party'];
+if (!DONATE_DESIGNS.includes(K.design)) K.design = 'classic';
 const newToken = () => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('');
 if (!K.token) { K.token = newToken(); save(); }
 const kmoney = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₸';
@@ -1108,6 +1110,10 @@ async function pushDonate() {
   const r = await window.echo.donateSet({ ...K }).catch(() => null);
   if (r && r.ok) { kState = r; refreshKaspiUi(); }
 }
+// выбор дизайна виджета доната: сохраняем и сразу показываем пробный донат в предпросмотре (без озвучки и звука)
+function refreshDesignUi() { $$('.dz-opt').forEach((b) => { const on = b.dataset.design === K.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.dz-opt').forEach((b) => b.addEventListener('click', async () => { K.design = b.dataset.design; refreshDesignUi(); await pushDonate(); window.echo.donatePreview(); }));
+refreshDesignUi();
 $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
   el.addEventListener('change', () => {
@@ -1491,6 +1497,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.9.0': ['Донаты Каспи: под «Подключением» появился выбор дизайна виджета доната. Кроме стандартного есть «Неон», «Минимал» и «Праздник» (с конфетти). Выбранный дизайн сразу виден в предпросмотре и применяется в OBS и TikTok LIVE Studio'],
   '2.8.1': ['Топ подарков стал вертикальным: список строк сверху вниз, у каждой слева аватарка с номером места, справа ник и число монет. Ликование лидера осталось'],
   '2.8.0': ['Новый виджет «Топ подарков» во вкладке «Виджеты»: такой же, как «Топ лайков», но по подаркам (очки считаются в монетах: цена подарка × количество). Когда кто-то выходит на 1 место, его аватарка слегка подпрыгивает и светится. Есть предпросмотр, кнопка «Тест», сброс и ссылка для OBS и TikTok LIVE Studio'],
   '2.7.1': ['Топ лайков: удар рукой теперь и на 2 месте: кто обогнал соседа и вышел на 2 место, бьёт того, кого вытеснил на 3 место, и его аватарка слегка трясётся'],

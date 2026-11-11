@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('echo', {
   giftsLink: () => ipcRenderer.invoke('gifts:link'),
   donateSet: (s) => ipcRenderer.invoke('donate:set', s),
   donateTest: () => ipcRenderer.invoke('donate:test'),
+  donatePreview: () => ipcRenderer.invoke('donate:preview'),
   donateSoundPick: () => ipcRenderer.invoke('donsound:pick'),
   donateSoundGet: () => ipcRenderer.invoke('donsound:get'),
   donateSoundClear: () => ipcRenderer.invoke('donsound:clear'),
