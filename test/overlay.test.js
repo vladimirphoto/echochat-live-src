@@ -403,3 +403,18 @@ test('закреп: очистка ленты закреп не трогает, 
   const p = m.getPin(); assert.equal(p.entry.text, 'держим');
   p.entry.text = 'испорчено'; assert.equal(m.getPin().entry.text, 'держим');
 });
+
+test('закреп: из оверлея и из вкладки «Виджеты» всё идёт через одну рассылку (виджет, оверлей, главное окно)', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const rd = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+  const main = rd('main.js'), pre = rd('preload.js'), opre = rd('overlay-preload.js'), ui = rd('src/renderer.js'), html = rd('src/index.html');
+  for (const ch of ['ov:pin', 'ov:unpin', 'pin:set', 'pin:clear', 'pin:state']) assert.match(main, new RegExp("ipcMain\\.handle\\('" + ch + "'"), ch + ' должен обрабатываться в main.js');
+  // каждое закрепление и снятие идёт через pinApply, а он шлёт и виджету, и оверлею, и главному окну
+  assert.match(main, /function pinApply\(p\)[\s\S]*wsrv\.broadcast\('pin'[\s\S]*'ov:pin'[\s\S]*send\('pin:state'/);
+  assert.equal((main.match(/pinApply\(/g) || []).length >= 7, true);
+  assert.match(pre, /pinSet:/); assert.match(pre, /pinClear:/); assert.match(pre, /onPinState:/);
+  assert.match(opre, /pin:/); assert.match(opre, /onPin:/);
+  // список для закрепа ведётся отдельно от ленты виджета, поэтому исчезающие сообщения его не трогают
+  assert.match(ui, /function pcAdd\(/); assert.match(ui, /pcAdd\(\{ platform, kind: 'chat'/);
+  for (const id of ['pcCur', 'pcCurNm', 'pcCurTx', 'pcCurMeta', 'pcUnpin', 'pcList', 'pcEmpty']) assert.ok(html.includes('id="' + id + '"'), id + ' есть в index.html');
+});

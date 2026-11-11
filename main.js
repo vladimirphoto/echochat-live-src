@@ -77,7 +77,7 @@ function ovSave() {
 function ovTrack(channel, payload) {
   let r;
   try { r = ovModel.track(channel, payload); } catch (_) { return; }
-  if (r.pinCleared) wpin(null); // эфир закончился — закреп снимается и в виджете на стриме
+  if (r.pinCleared) pinApply(null); // эфир закончился — закреп снимается везде: в виджете на стриме, в оверлее и во вкладке «Виджеты»
   if (!ovOpen()) return;
   const wc = ovWin.webContents;
   if (r.stats) wc.send('ov:stats', ovModel.stats());
@@ -151,23 +151,28 @@ function setOverlay(on) {
 // окно оверлея обращается только за своим: чужие окна эти каналы не используют
 const fromOv = (e) => ovOpen() && e.sender === ovWin.webContents;
 ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel.stats(), feed: ovModel.feed(), pin: ovModel.getPin() } : null));
-// закрепление сообщения (точки «⋯» рядом с ником, видны при открытом замке): запись и срок проверяет модель, окно получает итог
+// Закрепление сообщения. Закрепить можно из окна оверлея (точки «⋯» у ника, когда замок открыт) и из вкладки «Виджеты» главного окна.
+// Модель хранит закреп и срок, а pinApply рассылает итог всем: виджету на стриме (OBS, TikTok LIVE Studio), окну оверлея и главному окну
+let pinT = null;
+function pinApply(p) {
+  clearTimeout(pinT); pinT = null;
+  if (wsrv && !locked('widgets')) wsrv.broadcast('pin', p || null);
+  if (ovOpen()) { try { ovWin.webContents.send('ov:pin', p || null); } catch (_) {} }
+  send('pin:state', p || null);
+  // срок вышел — модель сама отдаёт null; все окна и виджет получают это же (страница при этом снимает закреп и сама по времени)
+  if (p && p.until) pinT = setTimeout(() => { pinT = null; if (!ovModel.getPin()) pinApply(null); }, Math.max(0, p.until - Date.now()) + 300);
+}
 ipcMain.handle('ov:pin', (e, entry, mins) => {
   if (!fromOv(e)) return null;
   const p = ovModel.setPin(entry, mins);
-  wpin(p);
+  pinApply(p);
   return p;
 });
-ipcMain.handle('ov:unpin', (e) => { if (!fromOv(e)) return false; ovModel.clearPin(); wpin(null); return true; });
-// Закреп виден и в виджете чата на стриме (OBS, TikTok LIVE Studio): ему уходит то же сообщение и срок. Срок кончился — виджет получает null
-// (страница убирает закреп и сама по времени; это на случай, если у неё часы ушли)
-let wpinT = null;
-function wpin(p) {
-  clearTimeout(wpinT); wpinT = null;
-  if (!wsrv || locked('widgets')) return;
-  wsrv.broadcast('pin', p || null);
-  if (p && p.until) wpinT = setTimeout(() => { wpinT = null; if (!ovModel.getPin() && wsrv) wsrv.broadcast('pin', null); }, Math.max(0, p.until - Date.now()) + 300);
-}
+ipcMain.handle('ov:unpin', (e) => { if (!fromOv(e)) return false; ovModel.clearPin(); pinApply(null); return true; });
+// из главного окна (карточка «Закреп сообщения» во вкладке «Виджеты»)
+ipcMain.handle('pin:state', () => ovModel.getPin());
+ipcMain.handle('pin:set', (_e, entry, mins) => { const p = ovModel.setPin(entry, mins); pinApply(p); return p; });
+ipcMain.handle('pin:clear', () => { ovModel.clearPin(); pinApply(null); return true; });
 // из самого окна (замок и шестерёнка) настройки меняются так же, как во вкладке «Оверлей чата» главного окна: обе стороны видят одно и то же
 ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
 // растягивание окна за края: страница присылает смещение курсора, окно меняет размер (при замке — никак)

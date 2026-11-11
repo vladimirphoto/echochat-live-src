@@ -476,7 +476,7 @@ label+.csel{margin-top:0}
   background:linear-gradient(135deg,#1b2a3d,#2b1f3d 55%,#3a1f33),#111}
 .lk-prev iframe{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:transparent;pointer-events:none}
 #tab-widgets>*{flex:none}
-#tab-widgets .wtop,#tab-widgets .wsettings,#tab-widgets .likes-row,#tab-widgets .alert-row{margin-bottom:16px}
+#tab-widgets .wtop,#tab-widgets .wsettings,#tab-widgets .wpin,#tab-widgets .likes-row,#tab-widgets .alert-row{margin-bottom:16px}
 /* оповещения о подписках: предпросмотр высокий, потому что плашка стоит под картинкой */
 #tab-widgets .alert-row .preview-card{flex:1;min-height:280px}
 #tab-widgets .alert-row .alert-dz{flex:none}
@@ -740,3 +740,28 @@ main{position:relative}
 .alert-dz .dz em{font-size:11px;font-weight:700;letter-spacing:0}
 .alert-dz .dz-party em{padding:0 7px;font-size:10px}
 .alert-dz .dz-arcade em{text-shadow:none}
+
+/* закреп сообщения (вкладка «Виджеты») */
+#tab-widgets .cols.wpin{grid-template-columns:minmax(0,1fr)}
+.wpin .card{width:100%}
+.pc-cur{display:flex;align-items:center;gap:14px;margin:4px 0 14px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(236,72,153,.14));border:1px solid rgba(167,139,250,.45)}
+.pc-cur[hidden]{display:none}
+.pc-cur-body{flex:1;min-width:0}
+.pc-nm{font-weight:700;font-size:13px}
+.pc-tx{margin-top:2px;font-weight:600;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.pc-meta{margin-top:3px;font-size:12px;font-weight:600;color:#c4b5fd;font-variant-numeric:tabular-nums}
+.pc-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+.pc-empty{padding:14px 4px;color:var(--muted);font-size:13px}
+.pc-empty[hidden]{display:none}
+.pc-it{padding:8px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.pc-it.open{border-color:rgba(167,139,250,.5)}
+.pc-row{display:flex;align-items:flex-start;gap:10px}
+.pc-who{flex:1;min-width:0}
+.pc-who b{font-size:13px;margin-right:6px}
+.pc-who span{word-break:break-word}
+.pc-dots{all:unset;cursor:pointer;flex:none;display:grid;place-items:center;width:30px;height:26px;border-radius:8px;color:var(--muted);font-size:18px;line-height:1;letter-spacing:1px}
+.pc-dots:hover,.pc-it.open .pc-dots{background:rgba(255,255,255,.1);color:#fff}
+.pc-opts{display:none;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pc-it.open .pc-opts{display:flex}
+.pc-opts button{all:unset;cursor:pointer;padding:6px 11px;border-radius:999px;font-size:12px;background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.35)}
+.pc-opts button:hover{background:var(--grad);border-color:transparent}
