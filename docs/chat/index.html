@@ -15,12 +15,20 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 .sh .n,.sh .t,.sh .gift{text-shadow:0 0 3px rgba(0,0,0,.95),0 1px 4px rgba(0,0,0,.9),0 2px 8px rgba(0,0,0,.8)}
 .sh .av,.sh .pi{filter:drop-shadow(0 1px 3px rgba(0,0,0,.8))}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#pinw{position:fixed;left:0;display:none;box-sizing:border-box;padding:10px 10px 0;transform-origin:top left;pointer-events:none;z-index:5}
+.pn{display:flex;align-items:flex-start;gap:10px;box-sizing:border-box;padding:10px 14px 10px 10px;border-radius:14px;color:#fff;font-size:20px;line-height:1.25;background:rgba(18,18,22,.82);border:1px solid rgba(167,139,250,.6);box-shadow:0 4px 18px rgba(0,0,0,.45);animation:in .25s ease-out}
+.pn .n{gap:8px}
+.pn .pk{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;margin-left:auto;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#ec4899)}
+.pn .pk svg{width:12px;height:12px}
+.pn .pt{margin-top:1px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;font-weight:600}
+.pn .b{flex:1}
+.sh .pn .n,.sh .pn .pt{text-shadow:0 1px 3px rgba(0,0,0,.9)}
 </style></head><body class="sh">
-<div id="wh" style="display:none;position:fixed;left:0;right:0;pointer-events:none;z-index:9999;box-sizing:border-box;border-top:2px solid rgba(139,92,246,.85);background:rgba(139,92,246,.07)"><div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);background:rgba(139,92,246,.85);color:#fff;font:700 11px/1 sans-serif;padding:3px 8px;border-radius:6px;white-space:nowrap">граница чата</div></div><div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div><div id="root"></div>
+<div id="wh" style="display:none;position:fixed;left:0;right:0;pointer-events:none;z-index:9999;box-sizing:border-box;border-top:2px solid rgba(139,92,246,.85);background:rgba(139,92,246,.07)"><div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);background:rgba(139,92,246,.85);color:#fff;font:700 11px/1 sans-serif;padding:3px 8px;border-radius:6px;white-space:nowrap">граница чата</div></div><div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div><div id="pinw"></div><div id="root"></div>
 <script>
 var PV=false,PK=1;
 var S={alignTt:'left',alignTw:'left',icons:true,avatars:true,gifts:true,scale:100,height:100,fade:true,fadeSec:20,shadow:true};
-var root=document.getElementById('root');
+var root=document.getElementById('root'),pinw=document.getElementById('pinw'),PIN=null,pinT=null;
 var TT='<svg class="pi" viewBox="0 0 24 24"><path fill="#fff" d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></svg>';
 var TW='<svg class="pi" viewBox="0 0 24 24"><path fill="#a970ff" d="M4 2 2.5 6v14H8v2.5h3L13.5 20H18l3.5-3.5V2H4zm15.5 13-2.5 2.5h-4.5L10 20v-2.5H6V4h13.5v11zM16 7.5h-2v5h2v-5zm-5 0H9v5h2v-5z"/></svg>';
 function applyPreviewHeight(on){
@@ -39,8 +47,15 @@ function apply(){
   var sc=Math.max(30,Math.min(300,+S.scale||100))/100*PK;
   root.style.transform='scale('+sc+')';
   root.style.width=(100/sc)+'%';
-  root.style.height=(Math.max(10,Math.min(100,+S.height||100))/sc)+'vh';
-  root.style.maxHeight=(100/sc)+'vh';
+  // закреп стоит сверху области чата (чат прижат к низу), поэтому лента становится ниже на высоту плашки
+  var hp=Math.max(10,Math.min(100,+S.height||100));
+  pinw.style.width=(100/sc)+'%';
+  pinw.style.transform='scale('+sc+')';
+  pinw.style.top=(window.innerHeight*(1-hp/100))+'px';
+  var pav=pinw.querySelector('.av');if(pav)pav.style.display=S.avatars?'':'none';
+  var ph=PIN?pinw.offsetHeight:0;
+  root.style.height=ph?'calc('+(hp/sc)+'vh - '+ph+'px)':(hp/sc)+'vh';
+  root.style.maxHeight=ph?'calc('+(100/sc)+'vh - '+ph+'px)':(100/sc)+'vh';
   Array.prototype.forEach.call(root.children,restyle);
   applyPreviewHeight(PV);
 }
@@ -51,6 +66,30 @@ function restyle(m){
   if(a)a.style.display=S.avatars?'':'none';
   if(pi)pi.style.display=S.icons?'':'none';
   if(g)g.style.display=S.gifts?'':'none';
+}
+var PK_ICON='<svg viewBox="0 0 24 24"><path fill="#fff" d="M14.5 2.5 21.5 9.5l-1.8 1.8-1.7-.5-3.3 3.3.4 4.2-1.6 1.6-4-4-5.2 5.2-1.4-1.4 5.2-5.2-4-4L7.7 9.9l4.2.4 3.3-3.3-.5-1.7z"/></svg>';
+// закреплённое сообщение: плашка над лентой; снимается по сроку (until, мс; 0 — до конца эфира) или когда приложение пришлёт null
+function setPin(d){
+  clearTimeout(pinT);pinT=null;
+  var e=d&&d.entry;
+  PIN=e&&e.text&&(!d.until||d.until>Date.now())?d:null;
+  pinw.innerHTML='';
+  if(!PIN){pinw.style.display='none';apply();return;}
+  var box=document.createElement('div');box.className='pn';
+  var av=document.createElement('div');av.className='av';
+  if(e.avatar)av.style.backgroundImage='url("'+String(e.avatar).replace(/"/g,'%22')+'")';
+  else{av.textContent=(String(e.name||'?')[0]||'?').toUpperCase();av.style.background=e.color||'#6b7280';}
+  if(!S.avatars)av.style.display='none';
+  var b=document.createElement('div');b.className='b';
+  var n=document.createElement('div');n.className='n';
+  n.insertAdjacentHTML('beforeend',e.platform==='twitch'?TW:TT);
+  var nm=document.createElement('span');nm.textContent=e.name||'Гость';nm.style.color=e.color||'#fff';n.appendChild(nm);
+  var pk=document.createElement('span');pk.className='pk';pk.innerHTML=PK_ICON;n.appendChild(pk);
+  var t=document.createElement('div');t.className='pt';t.textContent=e.text;
+  b.appendChild(n);b.appendChild(t);box.appendChild(av);box.appendChild(b);pinw.appendChild(box);
+  pinw.style.display='block';
+  if(PIN.until)pinT=setTimeout(function(){setPin(null);},Math.max(0,PIN.until-Date.now()));
+  apply();
 }
 function add(d){
   var m=document.createElement('div');m.dataset.p=d.platform;
@@ -100,6 +139,7 @@ function bind(es){
   es.addEventListener('settings',function(e){var d=JSON.parse(e.data),pv=d._previewHeight;PV=pv===true||(!!pv&&pv===MYID);S=Object.assign(S,mine(d),OV);apply();if(d.widgets||d.scale!==undefined)tellReady();});
   es.addEventListener('msg',function(e){add(JSON.parse(e.data));});
   es.addEventListener('clear',function(){root.innerHTML='';});
+  es.addEventListener('pin',function(e){setPin(JSON.parse(e.data));});
 }
 function connect(){
   if(!REMOTE){var es0=new EventSource('/events');bind(es0);return;}

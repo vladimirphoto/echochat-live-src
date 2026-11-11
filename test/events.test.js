@@ -128,3 +128,26 @@ test('события: просмотры за весь эфир отдельно
   assert.equal(ev2.totalViewsOf({ viewerCount: 50 }), null); // числа нет — считаем сами
   assert.equal(ev2.viewersOf({ viewerCount: 50, totalUser: 1200 }), 50);
 });
+
+test('сервер виджета: закреп приходит новым подключениям, снимается null и истёкший не отдаётся', async () => {
+  const W = require('../widget');
+  const srv = await W.start(() => ({}), 7960);
+  const read = async (until) => {
+    const res = await fetch(`http://127.0.0.1:${srv.port}/events`);
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let got = '';
+    while (!until.test(got)) got += dec.decode((await reader.read()).value);
+    await reader.cancel();
+    return got;
+  };
+  // закрепа нет: страница всё равно получает pin = null (после обрыва связи она не должна оставить снятый закреп)
+  assert.match(await read(/event: pin\ndata: null/), /event: pin\ndata: null/);
+  const pin = { entry: { platform: 'tiktok', kind: 'chat', name: 'Madara', text: 'закреплено' }, until: 0 };
+  srv.broadcast('pin', pin);
+  assert.match(await read(/закреплено/), /event: pin\ndata: \{"entry":\{"platform":"tiktok"/);
+  srv.broadcast('pin', null);
+  assert.match(await read(/event: pin\ndata: null/), /event: pin\ndata: null/);
+  srv.broadcast('pin', { entry: pin.entry, until: Date.now() - 1000 }); // срок вышел, а страница ещё не подключалась
+  assert.match(await read(/event: pin\ndata: null/), /event: pin\ndata: null/);
+  srv.close();
+});

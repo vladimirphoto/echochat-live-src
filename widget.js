@@ -23,6 +23,7 @@ function start(getSettings, port = 7878, opts = {}) {
   const origins = opts.origins || [PAGES_ORIGIN];
   const clients = new Set();
   const history = [];
+  let lastPin = null; // закреплённое сообщение: страница, подключившаяся позже (или после обрыва), сразу получает его
   const host = '127.0.0.1';
   const server = http.createServer((req, res) => {
     const u = req.url.split('?')[0];
@@ -58,6 +59,8 @@ function start(getSettings, port = 7878, opts = {}) {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', ...cors });
       res.write('retry: 2000\n\n');
       res.write('event: settings\ndata: ' + JSON.stringify(getSettings()) + '\n\n');
+      // закреп шлётся всегда, а если его нет — null: страница после обрыва связи не должна оставить закреп, который уже сняли
+      res.write('event: pin\ndata: ' + JSON.stringify(lastPin && (!lastPin.until || lastPin.until > Date.now()) ? lastPin : null) + '\n\n');
       if (opts.getDonate) res.write('event: dsettings\ndata: ' + JSON.stringify(opts.getDonate()) + '\n\n');
       if (opts.getAlerts) res.write('event: asettings\ndata: ' + JSON.stringify(opts.getAlerts()) + '\n\n');
       if (opts.getLikes) { const l = opts.getLikes(); res.write('event: lsettings\ndata: ' + JSON.stringify(l.settings) + '\n\n'); res.write('event: likes\ndata: ' + JSON.stringify(l.top) + '\n\n'); }
@@ -77,7 +80,7 @@ function start(getSettings, port = 7878, opts = {}) {
     let p = port, tries = 0, ready = false;
     const api = {
       port: 0,
-      broadcast(event, data) { if (event === 'msg') { history.push(data); if (history.length > 50) history.shift(); } broadcast(event, data); },
+      broadcast(event, data) { if (event === 'pin') lastPin = data || null; if (event === 'msg') { history.push(data); if (history.length > 50) history.shift(); } broadcast(event, data); },
       close() { clearInterval(ping); clients.forEach((c) => { try { c.end(); } catch (_) {} }); server.close(); },
     };
     server.on('error', (e) => {

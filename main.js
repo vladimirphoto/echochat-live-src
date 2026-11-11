@@ -77,6 +77,7 @@ function ovSave() {
 function ovTrack(channel, payload) {
   let r;
   try { r = ovModel.track(channel, payload); } catch (_) { return; }
+  if (r.pinCleared) wpin(null); // эфир закончился — закреп снимается и в виджете на стриме
   if (!ovOpen()) return;
   const wc = ovWin.webContents;
   if (r.stats) wc.send('ov:stats', ovModel.stats());
@@ -154,9 +155,19 @@ ipcMain.handle('ov:state', (e) => (fromOv(e) ? { settings: ovSet, stats: ovModel
 ipcMain.handle('ov:pin', (e, entry, mins) => {
   if (!fromOv(e)) return null;
   const p = ovModel.setPin(entry, mins);
+  wpin(p);
   return p;
 });
-ipcMain.handle('ov:unpin', (e) => { if (!fromOv(e)) return false; ovModel.clearPin(); return true; });
+ipcMain.handle('ov:unpin', (e) => { if (!fromOv(e)) return false; ovModel.clearPin(); wpin(null); return true; });
+// Закреп виден и в виджете чата на стриме (OBS, TikTok LIVE Studio): ему уходит то же сообщение и срок. Срок кончился — виджет получает null
+// (страница убирает закреп и сама по времени; это на случай, если у неё часы ушли)
+let wpinT = null;
+function wpin(p) {
+  clearTimeout(wpinT); wpinT = null;
+  if (!wsrv || locked('widgets')) return;
+  wsrv.broadcast('pin', p || null);
+  if (p && p.until) wpinT = setTimeout(() => { wpinT = null; if (!ovModel.getPin() && wsrv) wsrv.broadcast('pin', null); }, Math.max(0, p.until - Date.now()) + 300);
+}
 // из самого окна (замок и шестерёнка) настройки меняются так же, как во вкладке «Оверлей чата» главного окна: обе стороны видят одно и то же
 ipcMain.handle('ov:set', (e, patch) => (fromOv(e) ? ovUpdate(patch, false).settings : null));
 // растягивание окна за края: страница присылает смещение курсора, окно меняет размер (при замке — никак)

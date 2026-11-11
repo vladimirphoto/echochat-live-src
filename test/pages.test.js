@@ -39,3 +39,12 @@ test('страница топа лайков подключается к при�
   assert.match(LIKES, /addEventListener\('likes'/);
   assert.match(LIKES, /addEventListener\('lsettings'/);
 });
+
+test('страница чата показывает закреп: слушает pin, ставит плашку сверху и убирает по сроку', () => {
+  assert.match(PAGE, /addEventListener\('pin'/);
+  assert.match(PAGE, /id="pinw"/);
+  assert.match(PAGE, /function setPin\(/);
+  assert.match(PAGE, /PIN\.until/); // срок проверяется на самой странице
+  assert.match(PAGE, /textContent=e\.text/); // текст вставляется только как текст, без разметки
+  assert.doesNotMatch(PAGE, /innerHTML=e\.text|innerHTML\+=e\.text/);
+});
