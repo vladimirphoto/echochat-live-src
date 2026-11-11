@@ -16,7 +16,7 @@ let conn = null;
 let tw = null;           // подключение к чату Twitch
 let wsrv = null;         // сервер виджета
 let wset = {};           // настройки виджета (приходят из окна)
-const NAME_COLORS = ['#a78bfa', '#f472b6', '#22d3ee', '#fbbf24', '#34d399', '#818cf8', '#fb7185'];
+const NAME_COLORS = ['#7fa8f8', '#2dc4e0', '#22d3ee', '#fbbf24', '#34d399', '#818cf8', '#f97316'];
 const colorOf = (s) => NAME_COLORS[[...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % NAME_COLORS.length];
 // лицензия (license.js): в тарифе Lite вкладки «Виджеты» и «Донаты Каспи» закрыты — виджеты ничего не получают, донаты не принимаются
 let license = null;

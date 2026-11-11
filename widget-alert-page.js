@@ -104,7 +104,7 @@ var CONF=['#ff5c93','#7c3aed','#22d3ee','#facc15','#34d399','#fb923c'];
 function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
 var stage=document.getElementById('stage');
 var BASE='',imgUrl='',imgFor=0;
-var COLORS=['#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#a855f7','#f97316','#22c55e'];
+var COLORS=['#2f6fed','#0e9fbc','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#a855f7','#f97316','#22c55e'];
 function colorOf(s){var h=0,i;for(i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return COLORS[h%COLORS.length];}
 function zoomOf(){return Math.max(40,Math.min(250,+S.scale||100))/100;}
 function apply(){
