@@ -95,10 +95,10 @@ var stage=document.getElementById('stage');
 // картинка в тему суммы (в тенге)
 var TIERS=[
  {max:500,art:'\\u2615',cap:'Кофе',ac:'#f59e0b'},
- {max:2000,art:'\\ud83c\\udf55',cap:'Пицца',ac:'#f97316'},
+ {max:2000,art:'\\ud83c\\udf55',cap:'Пицца',ac:'#fb7185'},
  {max:5000,art:'\\ud83c\\udf81',cap:'Подарок',ac:'#f14635'},
  {max:10000,art:'\\ud83d\\udc8e',cap:'Бриллиант',ac:'#22d3ee'},
- {max:Infinity,art:'\\ud83d\\ude80',cap:'Ракета',ac:'#7fa8f8'}
+ {max:Infinity,art:'\\ud83d\\ude80',cap:'Ракета',ac:'#a78bfa'}
 ];
 function tierOf(a){for(var i=0;i<TIERS.length;i++)if(a<TIERS[i].max)return TIERS[i];return TIERS[TIERS.length-1];}
 function fmt(n){return String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,'\\u00a0')+'\\u00a0\\u20b8';}

@@ -182,7 +182,7 @@
     const wow = $('#licWow');
     $('#licWowT').textContent = s.plan === 'lifetime' ? 'Lifetime активирован' : 'Pro активирован';
     $('#licWowS').textContent = s.plan === 'lifetime' ? 'Все разделы открыты навсегда' : s.until ? `Все разделы открыты до ${fmtDate(s.until)}` : 'Все разделы открыты';
-    const sp = $('#licSpark'), colors = ['#2f6fed', '#0e9fbc', '#22d3ee', '#fbbf24', '#ffffff'];
+    const sp = $('#licSpark'), colors = ['#8b5cf6', '#ec4899', '#22d3ee', '#fbbf24', '#ffffff'];
     sp.textContent = '';
     for (let i = 0; i < 18; i++) {
       const a = (Math.PI * 2 * i) / 18 + Math.random() * 0.35, r = 150 + Math.random() * 130, e = document.createElement('i');

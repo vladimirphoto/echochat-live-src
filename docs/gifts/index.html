@@ -24,7 +24,7 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 <script>
 var S={count:5,scale:100,align:'center',showCount:true,showRank:true,shadow:true,celebrate:true},PK=1,LIST=[],PREV={},TOP=null;
 var root=document.getElementById('root');
-var COLORS=['#2f6fed','#0e9fbc','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#a855f7','#f97316','#22c55e'];
+var COLORS=['#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#a855f7','#f97316','#22c55e'];
 function colorOf(s){var h=0,i;for(i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return COLORS[h%COLORS.length];}
 function fmt(n){n=+n||0;if(n>=1e6)return (n/1e6).toFixed(n>=1e7?0:1).replace('.0','')+'M';if(n>=1e4)return (n/1e3).toFixed(n>=1e5?0:1).replace('.0','')+'K';return String(n);}
 function apply(){

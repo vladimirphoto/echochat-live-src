@@ -21,6 +21,6 @@ fs.mkdirSync(path.join(docs, 'alert'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'alert', 'index.html'), ALERT);
 fs.writeFileSync(path.join(docs, '.nojekyll'), '');
 fs.writeFileSync(path.join(docs, 'index.html'), `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ЭхоЧат LIVE</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090c12;color:#e8edf5;font:16px/1.5 "Segoe UI",system-ui,sans-serif}main{max-width:520px;padding:24px}h1{margin:0 0 8px}a{color:#7fa8f8}</style></head>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b12;color:#ecebf5;font:16px/1.5 "Segoe UI",system-ui,sans-serif}main{max-width:520px;padding:24px}h1{margin:0 0 8px}a{color:#a78bfa}</style></head>
 <body><main><h1>ЭхоЧат LIVE</h1><p>Здесь живут страницы виджетов чата и донатов для TikTok LIVE Studio и OBS. Ссылку на виджет показывает само приложение: вкладка «Виджеты» → «Копировать».</p><p><a href="https://github.com/vladimirphoto/jonny-chat-tiktok/releases">Скачать приложение</a></p></main></body></html>`);
 console.log('docs/ собрана');
