@@ -30,10 +30,6 @@ contextBridge.exposeInMainWorld('echo', {
   widgetSet: (s) => ipcRenderer.invoke('widget:set', s),
   widgetTest: () => ipcRenderer.invoke('widget:test'),
   widgetClear: () => ipcRenderer.invoke('widget:clear'),
-  pinState: () => ipcRenderer.invoke('pin:state'),
-  pinSet: (entry, mins) => ipcRenderer.invoke('pin:set', entry, mins), // закрепить сообщение: mins — минуты или 'end' (до конца эфира)
-  pinClear: () => ipcRenderer.invoke('pin:clear'),
-  onPinState: on('pin:state'),
   overlayState: () => ipcRenderer.invoke('overlay:state'),
   overlayToggle: (on) => ipcRenderer.invoke('overlay:toggle', on),
   overlaySet: (patch) => ipcRenderer.invoke('overlay:set', patch),

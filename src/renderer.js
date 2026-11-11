@@ -608,61 +608,11 @@ const isBacklog = (m, platform) => !!(m.created && since[platform] && Date.now()
 function handleChat(m, platform) {
   if (!m.text || isBacklog(m, platform)) return; // пустые и старые сообщения не показываем и не озвучиваем
   const el = addMsg({ name: m.name, text: m.text, sub: m.isSub, avatar: m.avatar, platform });
-  pcAdd({ platform, kind: 'chat', name: m.name || 'Гость', text: m.text, avatar: m.avatar || '', color: colorOf(m.name || '') });
   if (platform === 'twitch' ? !S.twChat : !S.ttChat) return; // озвучка этой платформы выключена — сообщение остаётся в ленте
   const t = clean(m.text);
   if (!t) return;
   enqueue({ el, src: platform === 'twitch' ? 'twChat' : 'ttChat', say: S.readName ? `${speakName(m.name)}: ${t}` : t, preset: platform === 'twitch' ? twPreset() : ttPreset() });
 }
-/* ---------- закреп сообщения (вкладка «Виджеты») ---------- */
-// Список последних сообщений чата живёт отдельно от ленты виджета: исчезающие сообщения (настройка «Исчезать через») на него и на закреп не влияют
-const PC_MAX = 12, PC_OPTS = [[1, '1 мин'], [5, '5 мин'], [15, '15 мин'], [30, '30 мин'], [60, '1 час'], ['end', 'До конца эфира']];
-const pcRecent = [];
-let PC_PIN = null;
-const pcFmtLeft = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, c = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(c).padStart(2, '0'); };
-function pcMeta() { $('#pcCurMeta').textContent = !PC_PIN ? '' : PC_PIN.until ? 'Закреплено ещё ' + pcFmtLeft(PC_PIN.until - Date.now()) : 'Закреплено до конца эфира'; }
-function pcShowPin(p) {
-  const ok = p && p.entry && String(p.entry.text || '').trim() && (!p.until || p.until > Date.now());
-  PC_PIN = ok ? p : null;
-  $('#pcCur').hidden = !PC_PIN;
-  if (PC_PIN) { const nm = $('#pcCurNm'); nm.textContent = String(PC_PIN.entry.name || 'Гость'); nm.style.color = PC_PIN.entry.platform === 'twitch' ? '#a970ff' : '#25d5ec'; $('#pcCurTx').textContent = String(PC_PIN.entry.text); }
-  pcMeta();
-}
-function pcRender() {
-  const list = $('#pcList');
-  const open = list.querySelector('.pc-it.open'), keep = open ? +open.dataset.i : -1;
-  list.replaceChildren();
-  pcRecent.forEach((e, i) => {
-    const it = document.createElement('div'); it.className = 'pc-it' + (i === keep ? ' open' : ''); it.dataset.i = String(i);
-    const row = document.createElement('div'); row.className = 'pc-row';
-    const who = document.createElement('div'); who.className = 'pc-who';
-    const b = document.createElement('b'); b.textContent = e.name; b.style.color = e.platform === 'twitch' ? '#a970ff' : '#25d5ec';
-    const t = document.createElement('span'); t.textContent = e.text;
-    who.append(b, t);
-    const dots = document.createElement('button'); dots.type = 'button'; dots.className = 'pc-dots'; dots.textContent = '···'; dots.title = 'Закрепить сообщение';
-    dots.onclick = () => { const was = it.classList.contains('open'); list.querySelectorAll('.pc-it.open').forEach((x) => x.classList.remove('open')); if (!was) it.classList.add('open'); };
-    row.append(who, dots);
-    const opts = document.createElement('div'); opts.className = 'pc-opts';
-    PC_OPTS.forEach(([m, label]) => {
-      const o = document.createElement('button'); o.type = 'button'; o.textContent = label;
-      o.onclick = async () => { it.classList.remove('open'); try { pcShowPin(await window.echo.pinSet(e, m)); } catch (_) {} };
-      opts.appendChild(o);
-    });
-    it.append(row, opts); list.appendChild(it);
-  });
-  $('#pcEmpty').hidden = !!pcRecent.length;
-}
-function pcAdd(e) {
-  if (!e || !e.text || !String(e.text).trim()) return;
-  pcRecent.unshift({ ...e, text: String(e.text).slice(0, 500) }); // свежие сверху
-  if (pcRecent.length > PC_MAX) pcRecent.pop();
-  pcRender();
-}
-$('#pcUnpin').onclick = async () => { pcShowPin(null); try { await window.echo.pinClear(); } catch (_) {} };
-window.echo.onPinState(pcShowPin);
-Promise.resolve(window.echo.pinState()).then(pcShowPin).catch(() => {});
-setInterval(() => { if (PC_PIN && PC_PIN.until && Date.now() >= PC_PIN.until) pcShowPin(null); else if (PC_PIN) pcMeta(); }, 1000);
-pcRender();
 window.echo.onChat((m) => handleChat(m, 'tiktok'));
 // Twitch: сообщения есть только если канал указан и подключён
 window.echo.onTwChat((m) => handleChat(m, 'twitch'));
@@ -1553,6 +1503,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '3.0.2': ['Закреп сообщения теперь только в оверлее чата: из вкладки «Виджеты» лишний блок убран. Закрепили сообщение в оверлее — оно сразу появляется и в виджете чата на стриме'],
   '3.0.1': ['Во вкладке «Виджеты» появился блок «Закреп сообщения»: последние сообщения чата с кнопкой «⋯», выбор срока (от 1 минуты до конца эфира), текущий закреп и кнопка «Открепить». Закреп сразу появляется в виджете чата на стриме и в оверлее и не зависит от исчезающих сообщений. Закреплять можно и из оверлея, и из этого блока'],
   '3.0.0': ['Оверлей чата: закрепление сообщений. Когда замок открыт, напротив ника у каждого сообщения появляются три точки «⋯». В меню можно закрепить сообщение на 1, 5, 15, 30 минут, на 1 час или до конца эфира. Закреп виден плашкой над лентой с обратным отсчётом и крестиком «Открепить»; когда эфир заканчивается, он снимается сам. При замке точки, крестик и отсчёт скрыты, виден только сам закреплённый текст', 'Закреплённое сообщение видно и в виджете чата на стриме (OBS, TikTok LIVE Studio): плашка с аватаркой, ником и текстом стоит над лентой, лента становится ниже на её высоту. Плашка исчезает, когда срок закрепа вышел, закреп сняли в оверлее или закончился эфир'],
   '2.10.0': ['Оповещения о подписках: выбор дизайна плашки («Стандарт», «Неон», «Минимал», «Праздник», «Золото», «Аркада», «Стекло», «Конфетка»), те же, что у донатов Каспи. Предпросмотр стал короче, колонки выровнены'],
