@@ -273,12 +273,28 @@
             <div class="nick-field"><input id="aUrl" readonly spellcheck="false" /></div>
             <div class="wbtn-row"><button class="btn wbtn primary" id="aCopy">Копировать</button></div>
           </div>
-          <div class="card preview-card">
-            <div class="prev-head">
-              <div><h2>Предпросмотр</h2><small>Так оповещение выглядит в OBS. Картинка и настройки применяются сразу, «Тест» ещё и играет звук</small></div>
-              <button class="btn ghost" id="aTest">Тест</button>
+          <div class="col-right alert-right">
+            <div class="card preview-card">
+              <div class="prev-head">
+                <div><h2>Предпросмотр</h2><small>Так оповещение выглядит в OBS. «Тест» ещё и играет звук</small></div>
+                <button class="btn ghost" id="aTest">Тест</button>
+              </div>
+              <div class="prev-box" id="alBox"><iframe id="alFrame" title="Предпросмотр оповещения" tabindex="-1"></iframe></div>
             </div>
-            <div class="prev-box" id="alBox"><iframe id="alFrame" title="Предпросмотр оповещения" tabindex="-1"></iframe></div>
+            <div class="card dz-card alert-dz">
+              <h2>Дизайн оповещения</h2>
+              <p class="muted">Оформление плашки подписчика, то же что у донатов</p>
+              <div class="dz-grid" id="adzGrid" role="radiogroup" aria-label="Дизайн оповещения">
+                <button type="button" class="dz-opt" data-adesign="classic" role="radio"><div class="dz dz-classic"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Стандарт</span></button>
+                <button type="button" class="dz-opt" data-adesign="neon" role="radio"><div class="dz dz-neon"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Неон</span></button>
+                <button type="button" class="dz-opt" data-adesign="minimal" role="radio"><div class="dz dz-minimal"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Минимал</span></button>
+                <button type="button" class="dz-opt" data-adesign="party" role="radio"><div class="dz dz-party"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Праздник</span></button>
+                <button type="button" class="dz-opt" data-adesign="gold" role="radio"><div class="dz dz-gold"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Золото</span></button>
+                <button type="button" class="dz-opt" data-adesign="arcade" role="radio"><div class="dz dz-arcade"><i>А</i><div><b>АННА К.</b><em>♥ подписался</em></div></div><span>Аркада</span></button>
+                <button type="button" class="dz-opt" data-adesign="glass" role="radio"><div class="dz dz-glass"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Стекло</span></button>
+                <button type="button" class="dz-opt" data-adesign="candy" role="radio"><div class="dz dz-candy"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Конфетка</span></button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

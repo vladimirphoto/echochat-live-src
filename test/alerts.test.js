@@ -52,7 +52,7 @@ test('свои файлы: расширение и размер проверяю
 
 test('настройки виджета: версия картинки — время файла, без картинки 0', () => {
   const s = A.cleanSettings({ duration: 9, scale: 120, showAvatar: false });
-  assert.deepEqual(A.widgetSettings(s, null), { duration: 9, scale: 120, align: 'center', vpos: 'middle', showAvatar: false, imageV: 0 });
+  assert.deepEqual(A.widgetSettings(s, null), { duration: 9, scale: 120, align: 'center', vpos: 'middle', showAvatar: false, design: 'classic', imageV: 0 });
   assert.equal(A.widgetSettings(s, { mtime: 1700000000123 }).imageV, 1700000000123);
   assert.equal(A.widgetSettings(s, { mtime: 0 }).imageV, 1, 'картинка есть, даже если время файла 0');
 });

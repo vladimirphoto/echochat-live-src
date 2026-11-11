@@ -10,11 +10,12 @@ const SOUND_EXT = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 
 const IMAGE_BASE = 'alert-image';
 const SOUND_BASE = 'alert-sound';
 
-const DEFAULTS = { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' };
+const DEFAULTS = { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '', design: 'classic' };
 
 const clampN = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
 
 // настройки из окна приложения приводим к допустимым значениям
+const DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 function cleanSettings(s) {
   s = s && typeof s === 'object' ? s : {};
   return {
@@ -25,6 +26,7 @@ function cleanSettings(s) {
     scale: clampN(s.scale, 50, 200, DEFAULTS.scale),
     imageName: String(s.imageName || '').slice(0, 120),
     soundName: String(s.soundName || '').slice(0, 120),
+    design: DESIGNS.includes(s.design) ? s.design : 'classic',
   };
 }
 
@@ -72,11 +74,12 @@ function widgetSettings(s, imageInfo) {
   return {
     duration: s.duration, scale: s.scale, align: 'center', vpos: 'middle',
     showAvatar: s.showAvatar !== false,
+    design: DESIGNS.includes(s.design) ? s.design : 'classic',
     imageV: imageInfo ? Math.max(1, imageInfo.mtime) : 0,
   };
 }
 
 module.exports = {
-  MAX_BYTES, IMAGE_EXT, SOUND_EXT, IMAGE_BASE, SOUND_BASE, DEFAULTS,
+  MAX_BYTES, DESIGNS, IMAGE_EXT, SOUND_EXT, IMAGE_BASE, SOUND_BASE, DEFAULTS,
   cleanSettings, findFile, clearFiles, saveFile, findImage, findSound, widgetSettings,
 };

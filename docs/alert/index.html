@@ -34,12 +34,69 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 @keyframes bob{50%{transform:translateY(-7px) rotate(-1.5deg)}}
 @keyframes shine{0%{left:-60%}55%,100%{left:130%}}
 @keyframes rise{0%{opacity:0;transform:translate(0,0) scale(.5)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-230px) scale(1.15) rotate(var(--rot))}}
+/* ---- оформления плашки (S.design): classic — стандарт выше; neon, minimal, party, gold, arcade, glass, candy ---- */
+.a-neon{animation:flick .8s both}
+.a-neon .plate{background:rgba(6,8,22,.9);border:2px solid #22d3ee;border-radius:14px;font-family:Consolas,"Courier New",monospace;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 0 26px rgba(34,211,238,.7),inset 0 0 24px rgba(34,211,238,.22)}
+.a-neon .plate:after{display:none}
+.a-neon .av{border-radius:12px;box-shadow:0 0 0 2px #22d3ee,0 0 14px #22d3ee}
+.a-neon .cap{color:#22d3ee;letter-spacing:3px}
+.a-neon .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff;filter:none;text-transform:uppercase;font-size:32px;letter-spacing:1px;text-shadow:0 0 8px #22d3ee,0 0 22px #22d3ee}
+.a-neon .hp{color:#22d3ee;text-shadow:0 0 12px #22d3ee}.a-neon .hp.v{color:#e879f9;text-shadow:0 0 12px #e879f9}
+.a-min{animation:slide .5s cubic-bezier(.2,.9,.3,1) both}
+.a-min .plate{background:#fff;color:#14161f;border:none;border-radius:46px;padding:10px 32px 10px 10px;min-width:260px;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.a-min .plate:after{display:none}
+.a-min .av{width:64px;height:64px;box-shadow:none}
+.a-min .cap{font-size:12px;color:#7a7f90}
+.a-min .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#14161f;filter:none;font-size:30px}
+.a-party{animation:boing .85s both}
+.a-party .plate{background:linear-gradient(135deg,#ff5c93,#7c3aed);border:3px solid rgba(255,255,255,.92);border-radius:30px;box-shadow:0 12px 34px rgba(0,0,0,.45)}
+.a-party .plate:after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent)}
+.a-party .av{box-shadow:0 0 0 3px #fff}
+.a-party .cap{color:rgba(255,255,255,.9)}
+.a-party .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff;filter:none}
+.hp.cf{width:8px;height:14px;border-radius:2px;background:var(--c);text-shadow:none;font-size:0}
+.a-gold .plate{background:linear-gradient(135deg,#241804,#4a3208 55%,#241804);border:2px solid #f5c542;border-radius:18px;box-shadow:0 0 30px rgba(245,197,66,.5),0 10px 30px rgba(0,0,0,.5)}
+.a-gold .plate:after{background:linear-gradient(90deg,transparent,rgba(255,244,190,.35),transparent)}
+.a-gold .av{box-shadow:0 0 0 3px #f5c542,0 0 18px rgba(245,197,66,.7)}
+.a-gold .cap{color:#f5c542;letter-spacing:2px}
+.a-gold .nm{background:linear-gradient(180deg,#fff6c4,#f5b301);-webkit-background-clip:text;background-clip:text;color:transparent;filter:none}
+.a-gold .hp{color:#f5c542;text-shadow:0 0 10px rgba(245,197,66,.9)}.a-gold .hp.v{color:#fff1a8}
+.a-arc{animation:arc .6s steps(6) both}
+.a-arc .plate{background:#0b0b2b;border:4px solid #ff3df2;border-radius:0;font-family:"Courier New",Consolas,monospace;box-shadow:6px 6px 0 #00e5ff}
+.a-arc .plate:after{display:none}
+.a-arc .av{border-radius:0;box-shadow:0 0 0 3px #00e5ff}
+.a-arc .cap{color:#00e5ff;letter-spacing:2px;font-weight:700}
+.a-arc .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffe600;filter:none;text-transform:uppercase;font-size:32px;text-shadow:3px 3px 0 #ff3df2}
+.a-arc .hp{color:#00e5ff;text-shadow:none}.a-arc .hp.v{color:#ff3df2}
+.a-glass{animation:fadeb .7s ease-out both}
+.a-glass .plate{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05)),rgba(18,20,40,.45);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.5);border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.55);text-shadow:0 1px 8px rgba(0,0,0,.55)}
+.a-glass .av{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.a-glass .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff;filter:none}
+.a-glass .hp{color:#fff;text-shadow:0 0 12px rgba(255,255,255,.8)}.a-glass .hp.v{color:#cfe3ff}
+.a-candy{animation:wob .8s both}
+.a-candy .plate{background:linear-gradient(135deg,#ffd6ea,#ffc0d8 55%,#ffe6f2);color:#6b1f4a;border:3px solid #fff;border-radius:36px;box-shadow:0 10px 28px rgba(255,105,180,.55)}
+.a-candy .plate:after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
+.a-candy .av{box-shadow:0 0 0 3px #fff,0 0 14px rgba(255,105,180,.6)}
+.a-candy .cap{color:#b24a82}
+.a-candy .nm{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#e0357e;filter:none}
+.a-candy .hp{color:#ff6fa8;text-shadow:0 0 10px rgba(255,105,180,.7)}.a-candy .hp.v{color:#ff9ec7}
+@keyframes flick{0%{opacity:0}8%{opacity:1}12%{opacity:.3}18%{opacity:1}24%{opacity:.55}32%,100%{opacity:1}}
+@keyframes slide{from{opacity:0;transform:translateX(-46px)}to{opacity:1;transform:none}}
+@keyframes boing{0%{opacity:0;transform:scale(.3) rotate(-6deg)}50%{opacity:1;transform:scale(1.08) rotate(2deg)}70%{transform:scale(.96)}100%{opacity:1;transform:none}}
+@keyframes arc{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:none}}
+@keyframes fadeb{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes wob{0%{opacity:0;transform:scale(.5) rotate(8deg)}40%{opacity:1;transform:scale(1.06) rotate(-4deg)}60%{transform:rotate(3deg)}80%{transform:rotate(-1.5deg)}100%{opacity:1;transform:none}}
 </style></head><body>
 <div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div>
 <div id="stage" class="c m"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
-var S={duration:6,scale:100,align:'center',vpos:'middle',showAvatar:true,imageV:0};
+var S={duration:6,scale:100,align:'center',vpos:'middle',showAvatar:true,imageV:0,design:'classic'};
+var DESIGNS=['classic','neon','minimal','party','gold','arcade','glass','candy'];
+var DCLS={neon:'a-neon',minimal:'a-min',party:'a-party',gold:'a-gold',arcade:'a-arc',glass:'a-glass',candy:'a-candy'};
+var HGLYPH={gold:'\u2605',arcade:'\u25a0',glass:'\u2726'};
+var CONF=['#ff5c93','#7c3aed','#22d3ee','#facc15','#34d399','#fb923c'];
+function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
 var stage=document.getElementById('stage');
 var BASE='',imgUrl='',imgFor=0;
 var COLORS=['#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#a855f7','#f97316','#22c55e'];
@@ -80,7 +137,8 @@ function visual(){
 function hearts(box,total){
   var n=22,i;
   for(i=0;i<n;i++){
-    var h=document.createElement('i');h.className='hp'+(i%3===0?' v':'');h.textContent='\u2665';
+    var h=document.createElement('i'),ds=designOf();h.className='hp'+(i%3===0?' v':'');
+    if(ds==='party'){h.className='hp cf';h.style.setProperty('--c',CONF[i%CONF.length]);}else h.textContent=HGLYPH[ds]||'\u2665';
     h.style.left=(8+Math.random()*84)+'%';h.style.fontSize=(14+Math.random()*20)+'px';
     h.style.setProperty('--dx',(Math.random()*90-45)+'px');h.style.setProperty('--rot',(Math.random()*50-25)+'deg');
     h.style.animationDelay=(.15+Math.random()*Math.max(1,total*.55))+'s';h.style.animationDuration=(2.1+Math.random()*1.4)+'s';
@@ -88,7 +146,7 @@ function hearts(box,total){
   }
 }
 function build(d,still){
-  var c=document.createElement('div');c.className='al'+(still?' still':'');
+  var c=document.createElement('div'),ds=designOf();c.className='al'+(DCLS[ds]?' '+DCLS[ds]:'')+(still?' still':'');
   c.appendChild(visual());
   var p=document.createElement('div');
   var nm=String(d.name||'Гость');

@@ -30,7 +30,7 @@ const DEFAULTS = {
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
   gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
-  alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '' },
+  alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '', design: 'classic' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic' },
 };
 let S = { ...DEFAULTS };
@@ -1385,6 +1385,8 @@ async function initGiftsPreview() {
 const A = S.alerts;
 A.duration = Math.max(3, Math.min(20, Math.round(+A.duration) || 6));
 A.scale = Math.max(50, Math.min(200, Math.round(+A.scale) || 100));
+const ALERT_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
+if (!ALERT_DESIGNS.includes(A.design)) A.design = 'classic';
 function refreshAlertNamesUi() {
   $('#aImgName').textContent = A.imageName ? 'Сейчас: ' + A.imageName : 'Сейчас: стандартное сердечко';
   $('#aImgReset').hidden = !A.imageName;
@@ -1397,6 +1399,10 @@ async function pushAlerts() {
   const r = await window.echo.alertsSet({ ...A }).catch(() => null);
   if (r && r.ok && r.hasImage === false && A.imageName) { A.imageName = ''; save(); refreshAlertNamesUi(); }
 }
+// выбор дизайна плашки подписчика: сохраняем, предпросмотр перерисует образец сам
+function refreshAlertDesignUi() { $$('.dz-opt[data-adesign]').forEach((b) => { const on = b.dataset.adesign === A.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.dz-opt[data-adesign]').forEach((b) => b.addEventListener('click', () => { A.design = b.dataset.adesign; refreshAlertDesignUi(); pushAlerts(); }));
+refreshAlertDesignUi();
 $$('input[data-ak]').forEach((el) => {
   el.checked = !!A[el.dataset.ak];
   el.addEventListener('change', () => {
@@ -1474,7 +1480,7 @@ let alInit = false;
 function fitAlert() {
   const box = $('#alBox'), fr = $('#alFrame'), w = box.clientWidth, h = box.clientHeight;
   if (!w || !h) return;
-  const k = Math.min(1, w / 520, h / 420);
+  const k = Math.min(1, w / 460, h / 330);
   fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
   fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
 }
@@ -1497,6 +1503,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '2.10.0': ['Оповещения о подписках: выбор дизайна плашки («Стандарт», «Неон», «Минимал», «Праздник», «Золото», «Аркада», «Стекло», «Конфетка»), те же, что у донатов Каспи. Предпросмотр стал короче, колонки выровнены'],
   '2.9.1': ['Донаты Каспи: к дизайнам виджета доната добавились «Золото» (с бликом), «Аркада» (пиксельный стиль), «Стекло» (матовое стекло) и «Конфетка» (с сердечками). Теперь их 8, карточка выбора занимает всю высоту колонки'],
   '2.9.0': ['Донаты Каспи: под «Подключением» появился выбор дизайна виджета доната. Кроме стандартного есть «Неон», «Минимал» и «Праздник» (с конфетти). Выбранный дизайн сразу виден в предпросмотре и применяется в OBS и TikTok LIVE Studio'],
   '2.8.1': ['Топ подарков стал вертикальным: список строк сверху вниз, у каждой слева аватарка с номером места, справа ник и число монет. Ликование лидера осталось'],

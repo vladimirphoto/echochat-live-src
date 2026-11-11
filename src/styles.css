@@ -478,7 +478,8 @@ label+.csel{margin-top:0}
 #tab-widgets>*{flex:none}
 #tab-widgets .wtop,#tab-widgets .wsettings,#tab-widgets .likes-row,#tab-widgets .alert-row{margin-bottom:16px}
 /* оповещения о подписках: предпросмотр высокий, потому что плашка стоит под картинкой */
-#tab-widgets .alert-row .preview-card{min-height:420px}
+#tab-widgets .alert-row .preview-card{flex:1;min-height:280px}
+#tab-widgets .alert-row .alert-dz{flex:none}
 .alert-card .snd-row.one{grid-template-columns:1fr}
 .alert-card .snd-row{margin-top:14px}
 .alert-card>label{display:block;margin-top:16px}
@@ -731,3 +732,11 @@ main{position:relative}
 .dz-glass{background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.5);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
 .dz-glass i{background:rgba(255,255,255,.2)}
 .dz-candy{background:linear-gradient(135deg,#ffd6ea,#ffc0d8);color:#6b1f4a;border:2px solid #fff;border-radius:24px}.dz-candy i{background:rgba(255,255,255,.65)}.dz-candy em{color:#e0357e}
+.alert-dz .dz-grid{flex:none;grid-auto-rows:auto;gap:8px;margin-top:10px}
+.alert-dz .dz-opt{gap:4px;padding:4px 6px;font-size:12px}
+.alert-dz .dz{height:48px;padding:5px 10px}
+.alert-dz .dz i{width:30px;height:30px;font-size:15px;font-weight:800}
+.alert-dz .dz b{font-size:11px}
+.alert-dz .dz em{font-size:11px;font-weight:700;letter-spacing:0}
+.alert-dz .dz-party em{padding:0 7px;font-size:10px}
+.alert-dz .dz-arcade em{text-shadow:none}
