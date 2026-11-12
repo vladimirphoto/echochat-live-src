@@ -741,3 +741,8 @@ main{position:relative}
 .alert-dz .dz-party em{padding:0 7px;font-size:10px}
 .alert-dz .dz-arcade em{text-shadow:none}
 
+
+/* вкладка «Аватар» */
+#tab-avatar .prev-box{position:relative;min-height:340px;background:repeating-conic-gradient(#14141f 0 25%,#191927 0 50%) 0 0/20px 20px}
+#avFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent}
+.avbar{height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}.avbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--a1),#f472b6);transition:width .2s}

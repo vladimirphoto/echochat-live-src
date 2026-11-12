@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, net, Menu, Tray, nativeImage, Notification, screen, globalShortcut, session, systemPreferences } = require('electron');
 const path = require('path');
 const ev = require('./events');
 const twitch = require('./twitch');
@@ -387,7 +387,7 @@ function createWindow() {
   // «Свернуть» — обычное сворачивание на панель задач (иконка остаётся); в трей прячется только при закрытии, по выбору пользователя
   // окно можно растягивать за края и разворачивать; при запуске всегда 1105×748, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
   win.on('close', onWindowClose);
-  win.on('closed', closeOverlay); // главное окно закрыто (выход) — оверлей закрывается вместе с ним, иначе приложение не завершилось бы
+  win.on('closed', () => { closeOverlay(); closeAvatar(); }); // главное окно закрыто (выход) — оверлей закрывается вместе с ним, иначе приложение не завершилось бы
   win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
   // меню по правой кнопке: в полях ввода (ники, ссылки) — вставка, вырезание, копирование; на выделенном тексте — «Копировать»
   win.webContents.on('context-menu', (_e, p) => {
@@ -741,6 +741,122 @@ ipcMain.handle('likes:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.
 ipcMain.handle('likes:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.LIKES_PAGES_URL } : { ok: false, url: '' }));
 ipcMain.handle('widget:clear', () => { wsrv && wsrv.broadcast('clear', {}); return { ok: true }; });
 
+// ---------- Аватар: Live2D-персонаж повторяет лицо с камеры (идея VTubeLeaf, MIT) ----------
+// Камеру и MediaPipe ведёт скрытое окно трекера (avatar-tracker.js), в виджет уходят только числа параметров. Компоненты скачиваются по кнопке (avatar.js).
+const av = require('./avatar');
+const AV_FILE = () => path.join(app.getPath('userData'), 'avatar.json');
+let avSet = av.cleanSettings({});
+try { avSet = av.cleanSettings(JSON.parse(require('fs').readFileSync(AV_FILE(), 'utf8'))); } catch (_) {}
+const avSave = () => { try { require('fs').writeFileSync(AV_FILE(), JSON.stringify(avSet)); } catch (_) {} };
+let avWin = null, avReady = false, avInstalling = false, avRun = { state: 'off', error: '', fps: 0, calibrating: false };
+let avPending = [], avCalls = new Map(), avCallId = 0;
+const avUD = () => app.getPath('userData');
+function avWidgetSettings() {
+  const st = av.status(avUD()), m = av.activeModel(avUD(), avSet.model);
+  return { ready: st.ready, model: m ? m.id : '', entry: m ? m.entry : '', scale: avSet.scale, offsetX: avSet.offsetX, offsetY: avSet.offsetY, bg: avSet.bg };
+}
+const avPush = () => wsrv && wsrv.broadcast('avsettings', avWidgetSettings());
+function avNotify() { send('avatar:state', { run: avRun }); }
+function avOpen() { return !!(avWin && !avWin.isDestroyed()); }
+function avCmd(c) { if (!avOpen()) return; if (avReady) avWin.webContents.send('av:cmd', c); else avPending.push(c); }
+function avEnsureWin() {
+  if (avOpen()) return true;
+  if (!wsrv || !wsrv.port) return false;
+  avReady = false; avPending = [];
+  const ses = session.fromPartition('avatar-tracker');
+  const okOrigin = (u) => /^http:\/\/127\.0\.0\.1:\d+\//.test(String(u || ''));
+  ses.setPermissionRequestHandler((wc, perm, cb, d) => cb(perm === 'media' && okOrigin(d && d.requestingUrl)));
+  ses.setPermissionCheckHandler((wc, perm, origin) => perm === 'media' && okOrigin(origin + '/'));
+  const w = new BrowserWindow({
+    show: false, width: 320, height: 240, skipTaskbar: true, focusable: false,
+    webPreferences: { preload: path.join(__dirname, 'avatar-preload.js'), contextIsolation: true, nodeIntegration: false, partition: 'avatar-tracker', backgroundThrottling: false },
+  });
+  avWin = w;
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  w.on('closed', () => { if (avWin === w) { avWin = null; avReady = false; avRun = { state: 'off', error: '', fps: 0, calibrating: false }; wsrv && wsrv.broadcast('aframe', { lost: true }); avNotify(); } });
+  w.loadURL(`http://127.0.0.1:${wsrv.port}/avatar-tracker`);
+  return true;
+}
+function avCall(cmd, extra) { // команда трекеру с ответом
+  return new Promise((resolve) => {
+    if (!avEnsureWin()) return resolve([]);
+    const id = ++avCallId, t = setTimeout(() => { avCalls.delete(id); resolve([]); }, 8000);
+    avCalls.set(id, (d) => { clearTimeout(t); resolve(d); });
+    avCmd({ cmd, id, ...extra });
+  });
+}
+const fromAv = (e) => avOpen() && e.sender === avWin.webContents;
+ipcMain.on('av:ready', (e) => { if (!fromAv(e)) return; avReady = true; avPending.splice(0).forEach((c) => avWin.webContents.send('av:cmd', c)); });
+ipcMain.on('av:reply', (e, id, data) => { if (!fromAv(e)) return; const f = avCalls.get(id); if (f) { avCalls.delete(id); f(Array.isArray(data) ? data.slice(0, 20).map((d) => ({ id: String((d && d.id) || '').slice(0, 300), label: String((d && d.label) || '').slice(0, 120) })) : []); } });
+ipcMain.on('av:state', (e, s) => {
+  if (!fromAv(e) || !s) return;
+  const st = ['off', 'starting', 'on', 'error'].includes(s.state) ? s.state : 'off';
+  avRun = { state: st, error: st === 'error' ? String(s.error || '').slice(0, 300) : '', fps: Number.isFinite(s.fps) ? Math.round(s.fps) : avRun.fps, calibrating: !!s.calibrating };
+  if (st !== 'on') wsrv && wsrv.broadcast('aframe', { lost: true });
+  avNotify();
+});
+ipcMain.on('av:frame', (e, f) => { // только известные параметры и конечные числа
+  if (!fromAv(e) || !wsrv || locked('widgets')) return;
+  if (f && f.lost) return wsrv.broadcast('aframe', { lost: true });
+  if (!f || !f.p || typeof f.p !== 'object') return;
+  const p = {};
+  for (const id of Object.keys(require('./src/avatar-map.js').REST)) { const v = f.p[id]; if (Number.isFinite(v)) p[id] = Math.max(-60, Math.min(60, v)); }
+  wsrv.broadcast('aframe', { p });
+});
+function avStop() { if (avOpen()) avCmd({ cmd: 'stop' }); }
+function closeAvatar() { if (avOpen()) { try { avWin.close(); } catch (_) {} } }
+async function avStart() {
+  if (locked('widgets')) return { ok: false, locked: true };
+  if (!av.status(avUD()).ready) return { ok: false, error: 'Сначала скачайте компоненты аватара.' };
+  if (process.platform === 'darwin') { try { if (!(await systemPreferences.askForMediaAccess('camera'))) return { ok: false, error: 'Нет доступа к камере: разрешите в настройках macOS.' }; } catch (_) {} }
+  if (!avEnsureWin()) return { ok: false, error: 'Не запущен сервер виджетов.' };
+  avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
+  return { ok: true };
+}
+const avFull = () => ({ settings: avSet, status: av.status(avUD()), models: av.listModels(avUD()), run: avRun, installing: avInstalling, locked: locked('widgets') });
+ipcMain.handle('avatar:state', () => avFull());
+ipcMain.handle('avatar:cameras', (_e, ask) => avCall('cameras', { ask: !!ask }));
+ipcMain.handle('avatar:start', () => avStart());
+ipcMain.handle('avatar:stop', () => { avStop(); return { ok: true }; });
+ipcMain.handle('avatar:calibrate', () => { avCmd({ cmd: 'calibrate' }); return { ok: true }; });
+ipcMain.handle('avatar:set', (_e, patch) => {
+  const was = avSet;
+  avSet = av.cleanSettings(patch, avSet); avSave();
+  if (avSet.mirror !== was.mirror) avCmd({ cmd: 'opts', opts: { mirror: avSet.mirror } });
+  if (avSet.camera !== was.camera && avRun.state !== 'off') avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
+  avPush();
+  return avFull();
+});
+ipcMain.handle('avatar:install', async () => {
+  if (avInstalling) return { ok: false, error: 'Скачивание уже идёт.' };
+  avInstalling = true;
+  try {
+    await av.install(avUD(), { onProgress: (p) => send('avatar:progress', p) });
+    avPush();
+    return { ok: true, ...avFull(), installing: false };
+  } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
+  finally { avInstalling = false; }
+});
+async function avPick(kind) {
+  const r = await dialog.showOpenDialog(win, kind === 'dir'
+    ? { title: 'Папка модели Live2D', properties: ['openDirectory'] }
+    : { title: 'Модель Live2D (.zip или .model3.json)', properties: ['openFile'], filters: [{ name: 'Модель Live2D', extensions: ['zip', 'json'] }] });
+  if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  const m = av.importModel(avUD(), r.filePaths[0]);
+  if (!m.ok) return m;
+  avSet = av.cleanSettings({ model: m.id }, avSet); avSave(); avPush();
+  return { ok: true, ...avFull() };
+}
+ipcMain.handle('avatar:add', (_e, kind) => avPick(kind === 'dir' ? 'dir' : 'file'));
+ipcMain.handle('avatar:remove', (_e, id) => {
+  const r = av.removeModel(avUD(), id);
+  if (r.ok) { if (avSet.model === id) { avSet = av.cleanSettings({ model: 'builtin-Haru' }, avSet); avSave(); } avPush(); }
+  return r.ok ? { ok: true, ...avFull() } : r;
+});
+ipcMain.handle('avatar:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/avatar` : ''));
+ipcMain.handle('avatar:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.AVATAR_PAGES_URL } : { ok: false, url: '' }));
+
 // ---------- Оповещения о подписках: плашка на экране стрима (страница /alert), звук играет окно приложения ----------
 // Картинка и звук, которые загрузил человек, лежат в папке данных приложения (alerts.js); до 5 МБ каждый
 const alertsMod = require('./alerts');
@@ -1025,6 +1141,9 @@ app.whenReady().then(async () => {
       getLikes: () => ({ settings: lset, top: likesBoard.top(LIKES_MAX) }),
       getGifts: () => ({ settings: gset, top: giftsBoard.top(LIKES_MAX) }),
       getAlerts: () => alertWidgetSettings(),
+      getAvatar: () => avWidgetSettings(),
+      getTrackerPage: () => av.TRACKER_PAGE,
+      getAvatarAsset: (u) => av.resolveAsset(avUD(), u),
       getAlertImage: () => { const i = alertImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
     }); } catch (_) { wsrv = null; }
   initLicense();
@@ -1039,6 +1158,7 @@ app.whenReady().then(async () => {
 });
 app.on('window-all-closed', async () => {
   closeOverlay();
+  closeAvatar();
   await disconnect();
   stopTwitch();
   try { wsrv && wsrv.close(); } catch (_) {}
