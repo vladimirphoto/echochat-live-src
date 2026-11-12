@@ -71,6 +71,7 @@
     if (!r || !r.ok) { err($('#avModelTxt'), (r && r.error) || 'Не удалось добавить модель'); return; }
     err($('#avModelTxt'), ''); show(r);
   };
+  $('#avGetModels').onclick = () => api.avatarOpenModels();
   $('#avAddDir').onclick = () => addModel('dir');
   $('#avAddFile').onclick = () => addModel('file');
   $('#avRemove').onclick = async () => {

@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('echo', {
   avatarInstall: () => ipcRenderer.invoke('avatar:install'),
   avatarAdd: (kind) => ipcRenderer.invoke('avatar:add', kind),
   avatarRemove: (id) => ipcRenderer.invoke('avatar:remove', id),
+  avatarOpenModels: () => ipcRenderer.invoke('avatar:open-models'),
   avatarUrl: () => ipcRenderer.invoke('avatar:url'),
   avatarLink: () => ipcRenderer.invoke('avatar:link'),
   onAvatarState: on('avatar:state'),
