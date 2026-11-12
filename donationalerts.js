@@ -28,6 +28,12 @@ const IMAGE_PRESETS = [
   { id: 'star', label: 'Звезда', art: '\u2b50' },
   { id: 'party', label: 'Праздник', art: '\ud83c\udf89' },
   { id: 'coin', label: 'Монета', art: '\ud83e\ude99' },
+  { id: 'money', label: 'Деньги', art: '\ud83d\udcb0' },
+  { id: 'trophy', label: 'Кубок', art: '\ud83c\udfc6' },
+  { id: 'bolt', label: 'Молния', art: '\u26a1' },
+  { id: 'cat', label: 'Котик', art: '\ud83d\udc31' },
+  { id: 'champagne', label: 'Шампанское', art: '\ud83c\udf7e' },
+  { id: 'clover', label: 'Клевер', art: '\ud83c\udf40' },
 ];
 // Готовые звуки: ноты собирает окно приложения (renderer.js), файлов нет. 'custom' — загруженный файл.
 const SOUND_PRESETS = [
@@ -36,6 +42,12 @@ const SOUND_PRESETS = [
   { id: 'fanfare', label: 'Фанфары' },
   { id: 'arcade', label: 'Аркада' },
   { id: 'pop', label: 'Поп' },
+  { id: 'chime', label: 'Перезвон' },
+  { id: 'levelup', label: 'Новый уровень' },
+  { id: 'cash', label: 'Касса' },
+  { id: 'magic', label: 'Магия' },
+  { id: 'tada', label: 'Ура' },
+  { id: 'drop', label: 'Капля' },
 ];
 const DESIGNS = alerts.DESIGNS;
 
@@ -45,7 +57,7 @@ const SYMBOLS = { KZT: '\u20b8', RUB: '\u20bd', UAH: '\u20b4', USD: '$', EUR: '\
 
 const DEFAULTS = {
   enabled: true, voice: true, sound: true, showMessage: true,
-  duration: 8, scale: 100, minAmount: 0, design: 'classic',
+  duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top',
   imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '',
 };
 const clampN = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
@@ -63,6 +75,7 @@ function cleanSettings(s) {
     scale: clampN(s.scale, 50, 200, DEFAULTS.scale),
     minAmount: clampN(s.minAmount, 0, 1000000, 0),
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
+    layout: s.layout === 'side' ? 'side' : 'top',
     imageKind: imgIds.includes(s.imageKind) ? s.imageKind : 'auto',
     soundKind: sndIds.includes(s.soundKind) ? s.soundKind : 'bell',
     imageName: String(s.imageName || '').slice(0, 120),
@@ -77,6 +90,7 @@ function widgetSettings(s, imageInfo) {
   return {
     duration: s.duration, scale: s.scale, showMessage: s.showMessage,
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
+    layout: s.layout === 'side' ? 'side' : 'top',
     art: custom ? '' : (preset ? preset.art : ''),
     imageV: custom ? Math.max(1, imageInfo.mtime) : 0,
   };

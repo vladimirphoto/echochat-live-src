@@ -31,8 +31,8 @@ const DEFAULTS = {
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
   gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '', design: 'classic' },
-  da: { enabled: true, voice: true, sound: true, showMessage: true, duration: 8, scale: 100, minAmount: 0, design: 'classic', imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '' },
-  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic' },
+  da: { enabled: true, voice: true, sound: true, showMessage: true, duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top', imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '' },
+  kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic', layout: 'top' },
 };
 let S = { ...DEFAULTS };
 try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('echochat2') || '{}') }; } catch (_) {}
@@ -500,6 +500,12 @@ const DA_TONES = {
   fanfare: [[[523.25, 0, 0.18, 0.34], [523.25, 0.2, 0.18, 0.34], [523.25, 0.4, 0.18, 0.34], [659.25, 0.6, 0.36, 0.4], [523.25, 1.0, 0.2, 0.34], [659.25, 1.2, 0.2, 0.38], [783.99, 1.4, 1.0, 0.46]], 2300],
   arcade: [[[659.25, 0, 0.08, 0.3], [783.99, 0.08, 0.08, 0.3], [1318.5, 0.16, 0.08, 0.3], [1046.5, 0.24, 0.08, 0.3], [1174.66, 0.32, 0.08, 0.3], [1567.98, 0.4, 0.3, 0.36]], 950],
   pop: [[[880, 0, 0.12, 0.4], [1760, 0.05, 0.2, 0.3]], 400],
+  chime: [[[1318.5, 0, 0.9, 0.34], [1760, 0.15, 0.9, 0.3], [2093, 0.3, 1.2, 0.34]], 1600],
+  levelup: [[[392, 0, 0.1, 0.32], [523.25, 0.1, 0.1, 0.32], [659.25, 0.2, 0.1, 0.32], [783.99, 0.3, 0.1, 0.32], [1046.5, 0.4, 0.7, 0.4]], 1200],
+  cash: [[[2349.3, 0, 0.05, 0.3], [3135.96, 0.07, 0.6, 0.34], [2349.3, 0.22, 0.05, 0.2], [3135.96, 0.29, 0.5, 0.26]], 900],
+  magic: [[[1046.5, 0, 0.5, 0.28], [1318.5, 0.08, 0.5, 0.28], [1568, 0.16, 0.5, 0.28], [2093, 0.24, 0.5, 0.3], [2637, 0.32, 0.6, 0.3], [3136, 0.4, 0.9, 0.28]], 1400],
+  tada: [[[523.25, 0, 0.12, 0.36], [659.25, 0.12, 0.12, 0.36], [783.99, 0.24, 0.9, 0.46], [1046.5, 0.24, 0.9, 0.34]], 1300],
+  drop: [[[1500, 0, 0.12, 0.4], [900, 0.1, 0.3, 0.3]], 600],
 };
 // свой звук доната (файл, который человек загрузил): играет вместо колокольчика, не дольше 20 с; не заиграл — звучит колокольчик
 let customSound = null; // { url } — адрес загруженного звука
@@ -1122,6 +1128,7 @@ window.echo.overlayState().then(ovShow).catch(() => {});
 const K = S.kaspi;
 const DONATE_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 if (!DONATE_DESIGNS.includes(K.design)) K.design = 'classic';
+if (K.layout !== 'side') K.layout = 'top';
 const newToken = () => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('');
 if (!K.token) { K.token = newToken(); save(); }
 const kmoney = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₸';
@@ -1135,6 +1142,9 @@ async function pushDonate() {
 function refreshDesignUi() { $$('.dz-opt[data-design]').forEach((b) => { const on = b.dataset.design === K.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
 $$('.dz-opt[data-design]').forEach((b) => b.addEventListener('click', async () => { K.design = b.dataset.design; refreshDesignUi(); await pushDonate(); window.echo.donatePreview(); }));
 refreshDesignUi();
+function refreshLayoutUi() { $$('.da-chip[data-klayout]').forEach((b) => { const on = b.dataset.klayout === K.layout; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.da-chip[data-klayout]').forEach((b) => b.addEventListener('click', async () => { K.layout = b.dataset.klayout === 'side' ? 'side' : 'top'; refreshLayoutUi(); await pushDonate(); window.echo.donatePreview(); }));
+refreshLayoutUi();
 $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
   el.addEventListener('change', () => {
@@ -1521,6 +1531,7 @@ loadAlertSound();
 const D = S.da;
 const DA_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 if (!DA_DESIGNS.includes(D.design)) D.design = 'classic';
+if (D.layout !== 'side') D.layout = 'top';
 D.duration = Math.max(3, Math.min(30, Math.round(+D.duration) || 8));
 D.scale = Math.max(50, Math.min(200, Math.round(+D.scale) || 100));
 D.minAmount = Math.max(0, Math.min(1000000, Math.round(+D.minAmount) || 0));
@@ -1565,6 +1576,9 @@ function refreshDaChoicesUi() {
 // шаблон (оформление)
 function refreshDaDesignUi() { $$('.dz-opt[data-dadesign]').forEach((b) => { const on = b.dataset.dadesign === D.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
 $$('.dz-opt[data-dadesign]').forEach((b) => b.addEventListener('click', async () => { D.design = b.dataset.dadesign; refreshDaDesignUi(); await pushDa(); window.echo.daPreview(); }));
+function refreshDaLayoutUi() { $$('.da-chip[data-dalayout]').forEach((b) => { const on = b.dataset.dalayout === D.layout; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.da-chip[data-dalayout]').forEach((b) => b.addEventListener('click', async () => { D.layout = b.dataset.dalayout === 'side' ? 'side' : 'top'; refreshDaLayoutUi(); await pushDa(); window.echo.daPreview(); }));
+refreshDaLayoutUi();
 $$('input[data-dk]').forEach((el) => {
   el.checked = !!D[el.dataset.dk];
   el.addEventListener('change', () => {

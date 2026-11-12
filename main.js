@@ -932,10 +932,10 @@ ipcMain.handle('net:state', () => netOnline);
 
 // ---------- Донаты Каспи ----------
 const kaspi = require('./kaspi');
-let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, design: 'classic' };
+let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, design: 'classic', layout: 'top' };
 const DONATE_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 let krx = null, krxP = null;
-const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage, design: DONATE_DESIGNS.includes(dset.design) ? dset.design : 'classic' });
+const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage, design: DONATE_DESIGNS.includes(dset.design) ? dset.design : 'classic', layout: dset.layout === 'side' ? 'side' : 'top' });
 let lastDon = { key: '', t: 0 };
 function handleDonation(d, test = false) {
   if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };

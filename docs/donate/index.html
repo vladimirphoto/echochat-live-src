@@ -74,6 +74,22 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 .d-candy .ms{color:#7d3a62}
 .d-candy .sp{display:none}
 .sp.ht{width:auto;height:auto;border-radius:0;background:none;color:var(--c);font-size:var(--s);line-height:1;animation:rise 1.9s ease-out both}
+/* ---- раскладка «картинка сверху, имя и сумма снизу» (S.layout = top), как у DonationAlerts ---- */
+.card.v-top{flex-direction:column;align-items:center;text-align:center;gap:12px;min-width:300px;max-width:520px;padding:22px 34px 22px}
+.card.v-top .art{width:150px;height:150px;font-size:88px}
+.card.v-top .tx{width:100%}
+.card.v-top .nm{font-size:32px}
+.card.v-top .am{font-size:44px}
+.card.v-top.d-neon .art{width:130px;height:130px;font-size:76px}
+.card.v-top.d-neon .nm{font-size:28px}
+.card.v-top.d-min{border-radius:32px;padding:20px 38px 22px;gap:10px}
+.card.v-top.d-min .art{width:112px;height:112px;font-size:62px}
+.card.v-top.d-min .nm{font-size:24px}
+.card.v-top.d-min .am{font-size:32px}
+.card.v-top.d-party .art{width:160px;height:160px;font-size:96px}
+.card.v-top.d-arc .art{width:130px;height:130px;font-size:76px}
+.card.v-top.d-arc .nm{font-size:27px}
+.card.v-top.d-candy,.card.v-top.d-glass{border-radius:34px}
 @keyframes shine{0%{left:-60%}55%,100%{left:130%}}
 @keyframes arc{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:none}}
 @keyframes fadeb{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
@@ -84,7 +100,7 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 <div id="stage" class="c b"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
-var S={duration:8,scale:100,align:'center',vpos:'bottom',showMessage:true,design:'classic'};
+var S={duration:8,scale:100,align:'center',vpos:'bottom',showMessage:true,design:'classic',layout:'top'};
 var DESIGNS=['classic','neon','minimal','party','gold','arcade','glass','candy'];
 var DCLS={neon:'d-neon',minimal:'d-min',party:'d-party',gold:'d-gold',arcade:'d-arc',glass:'d-glass',candy:'d-candy'};
 function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
@@ -121,7 +137,7 @@ function hearts(card){ // «Конфетка»: сердечки поднима�
 }
 function show(d){
   var t=tierOf(+d.amount||0);
-  var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'');c.style.setProperty('--ac',t.ac);
+  var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'')+(S.layout==='side'?'':' v-top');c.style.setProperty('--ac',t.ac);
   var a=document.createElement('div');a.className='art';a.textContent=t.art;
   var x=document.createElement('div');x.className='tx';
   var cap=document.createElement('div');cap.className='cap';cap.textContent='Донат · '+t.cap;

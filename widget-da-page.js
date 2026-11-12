@@ -13,12 +13,14 @@ module.exports = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><ti
 /* картинка вместо эмодзи: своя или готовая из файла */
 .art.pic{width:auto!important;height:auto!important;min-width:92px;min-height:92px;max-width:170px;max-height:130px;border-radius:14px!important;background:none!important;box-shadow:none!important;animation:bob 2.4s ease-in-out infinite}
 .art.pic img{display:block;max-width:170px;max-height:130px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.card.v-top .art.pic{min-width:150px;min-height:150px;max-width:300px;max-height:220px}
+.card.v-top .art.pic img{max-width:300px;max-height:220px}
 </style></head><body>
 <div id="nc" style="display:none;position:fixed;left:10px;top:10px;z-index:9999;background:rgba(0,0,0,.65);color:#fff;font:600 13px/1.3 'Segoe UI',Arial,sans-serif;padding:7px 12px;border-radius:999px">Нет связи с приложением ЭхоЧат — запустите его на этом компьютере</div>
 <div id="stage" class="c b"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
-var S={duration:8,scale:100,showMessage:true,design:'classic',art:'',imageV:0};
+var S={duration:8,scale:100,showMessage:true,design:'classic',layout:'top',art:'',imageV:0};
 var DESIGNS=['classic','neon','minimal','party','gold','arcade','glass','candy'];
 var DCLS={neon:'d-neon',minimal:'d-min',party:'d-party',gold:'d-gold',arcade:'d-arc',glass:'d-glass',candy:'d-candy'};
 function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
@@ -64,7 +66,7 @@ function hearts(card){
 }
 function build(d){
   var t=tierOf(+d.kzt||0);
-  var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'');c.style.setProperty('--ac',t.ac);
+  var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'')+(S.layout==='side'?'':' v-top');c.style.setProperty('--ac',t.ac);
   var a=document.createElement('div');a.className='art';
   var cap='Донат';
   if(imgUrl){a.className='art pic';var im=document.createElement('img');im.alt='';im.src=imgUrl;a.appendChild(im);}
