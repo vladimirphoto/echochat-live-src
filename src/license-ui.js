@@ -4,8 +4,8 @@
 // здесь только показ состояния. Использует $ и askConfirm из renderer.js.
 (() => {
   const echo = window.echo;
-  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', overlay: 'Оверлей чата', avatar: '2D Аватар' };
-  const LOCK_KEY = { overlay: 'widgets', avatar: 'widgets' }; // оверлей закрывается вместе с виджетами: один тариф Pro
+  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', da: 'DonationAlerts', overlay: 'Оверлей чата', avatar: '2D Аватар' };
+  const LOCK_KEY = { overlay: 'widgets', avatar: 'widgets', da: 'kaspi' }; // оверлей и аватар закрываются вместе с виджетами, DonationAlerts — вместе с донатами Каспи: один тариф Pro
   const DAY = 86400000;
   const qa = (s) => [...document.querySelectorAll(s)];
   const plural = (n, [a, b, c]) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d >= 2 && d <= 4 ? b : c; };

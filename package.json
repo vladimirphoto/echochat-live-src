@@ -1,6 +1,6 @@
 {
   "name": "echochat-live",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "description": "ЭхоЧат LIVE — озвучка чата TikTok LIVE живыми нейро-голосами",
   "main": "main.js",
   "author": "EchoChat",
@@ -15,9 +15,11 @@
     "dist:mac": "electron-builder --mac dmg --arm64 --publish never"
   },
   "dependencies": {
+    "centrifuge": "^2.8.5",
     "msedge-tts": "^2.0.0",
     "qrcode-generator": "^1.4.4",
-    "tiktok-live-connector": "^2.0.0"
+    "tiktok-live-connector": "^2.0.0",
+    "ws": "^8.22.2"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -46,6 +48,9 @@
       "widget-avatar-page.js",
       "avatar.js",
       "avatar-preload.js",
+      "widget-da-page.js",
+      "da-auth-page.js",
+      "donationalerts.js",
       "alerts.js",
       "overlay.js",
       "overlay-preload.js",

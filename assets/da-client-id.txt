@@ -1,0 +1,5 @@
+Сюда впишите числовой client_id вашего приложения DonationAlerts одной строкой (только цифры).
+Как получить: https://www.donationalerts.com/application/clients → «Создать приложение».
+Адрес перенаправления (Redirect URI) в настройках приложения должен быть ровно таким:
+https://vladimirphoto.github.io/jonny-chat-tiktok/da-auth/
+Строки без одних только цифр приложение игнорирует.

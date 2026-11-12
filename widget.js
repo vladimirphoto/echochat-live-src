@@ -10,6 +10,7 @@ const GIFTS_PAGE = require('./widget-gifts-page');
 const ALERT_PAGE = require('./widget-alert-page');
 const AVATAR_PAGE = require('./widget-avatar-page');
 const fs = require('fs');
+const DA_PAGE = require('./widget-da-page');
 
 const PAGES_ORIGIN = 'https://vladimirphoto.github.io';
 const PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/chat/';
@@ -18,6 +19,7 @@ const LIKES_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/likes/';
 const GIFTS_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/gifts/';
 const ALERT_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/alert/';
 const AVATAR_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/avatar/';
+const DA_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/da/';
 
 // страница-обёртка с плеером YouTube (идентификатор ролика проверяется в маршруте: 11 символов a-z, A-Z, 0-9, _ и -)
 const guidePage = (id) => `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Видеоинструкция</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1" title="Видеоинструкция" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></body></html>`;
@@ -54,10 +56,18 @@ function start(getSettings, port = 7878, opts = {}) {
       st.on('error', () => res.destroy());
       return st.pipe(res);
     }
+    if (u === '/da') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(DA_PAGE); }
     if (u === '/alert') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(ALERT_PAGE); }
     // своя картинка оповещения о подписке: страница на GitHub Pages забирает её отсюда (CORS как у /events), версия в адресе — чтобы не показывалась старая
     if (u === '/alert-image') {
       const im = opts.getAlertImage && opts.getAlertImage();
+      if (!im) { res.writeHead(404, cors); return res.end(); }
+      res.writeHead(200, { 'Content-Type': im.mime, 'Content-Length': im.data.length, 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'cross-origin', ...cors });
+      return res.end(im.data);
+    }
+    // своя картинка доната DonationAlerts: так же, как картинка оповещения (CORS как у /events, версия в адресе)
+    if (u === '/da-image') {
+      const im = opts.getDaImage && opts.getDaImage();
       if (!im) { res.writeHead(404, cors); return res.end(); }
       res.writeHead(200, { 'Content-Type': im.mime, 'Content-Length': im.data.length, 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'cross-origin', ...cors });
       return res.end(im.data);
@@ -78,6 +88,7 @@ function start(getSettings, port = 7878, opts = {}) {
       res.write('event: pin\ndata: ' + JSON.stringify(lastPin && (!lastPin.until || lastPin.until > Date.now()) ? lastPin : null) + '\n\n');
       if (opts.getDonate) res.write('event: dsettings\ndata: ' + JSON.stringify(opts.getDonate()) + '\n\n');
       if (opts.getAvatar) res.write('event: avsettings\ndata: ' + JSON.stringify(opts.getAvatar()) + '\n\n');
+      if (opts.getDa) res.write('event: dasettings\ndata: ' + JSON.stringify(opts.getDa()) + '\n\n');
       if (opts.getAlerts) res.write('event: asettings\ndata: ' + JSON.stringify(opts.getAlerts()) + '\n\n');
       if (opts.getLikes) { const l = opts.getLikes(); res.write('event: lsettings\ndata: ' + JSON.stringify(l.settings) + '\n\n'); res.write('event: likes\ndata: ' + JSON.stringify(l.top) + '\n\n'); }
       if (opts.getGifts) { const g = opts.getGifts(); res.write('event: gsettings\ndata: ' + JSON.stringify(g.settings) + '\n\n'); res.write('event: gifts\ndata: ' + JSON.stringify(g.top) + '\n\n'); }
@@ -108,4 +119,4 @@ function start(getSettings, port = 7878, opts = {}) {
     server.listen(p, host);
   });
 }
-module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, GIFTS_PAGES_URL, ALERT_PAGES_URL, AVATAR_PAGES_URL, PAGES_ORIGIN };
+module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, GIFTS_PAGES_URL, ALERT_PAGES_URL, AVATAR_PAGES_URL, DA_PAGES_URL, PAGES_ORIGIN };

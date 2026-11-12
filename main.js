@@ -366,7 +366,7 @@ function createWindow() {
   const wa = require('electron').screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
     width: Math.min(1105, wa.width),
-    height: Math.min(748, wa.height),
+    height: Math.min(800, wa.height), // выше прежних 748: с вкладкой DonationAlerts все пункты меню слева помещаются без прокрутки
     useContentSize: true,
     minWidth: 1060,
     minHeight: 720,
@@ -385,7 +385,7 @@ function createWindow() {
   });
   win.setMenu(null);
   // «Свернуть» — обычное сворачивание на панель задач (иконка остаётся); в трей прячется только при закрытии, по выбору пользователя
-  // окно можно растягивать за края и разворачивать; при запуске всегда 1105×748, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
+  // окно можно растягивать за края и разворачивать; при запуске всегда 1105×800, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
   win.on('close', onWindowClose);
   win.on('closed', () => { closeOverlay(); closeAvatar(); }); // главное окно закрыто (выход) — оверлей закрывается вместе с ним, иначе приложение не завершилось бы
   win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
@@ -1094,6 +1094,145 @@ ipcMain.handle('kaspi:probe', () => new Promise((resolve) => {
   rq.end(body);
 }));
 
+// ---------- DonationAlerts: вход через OAuth, донаты в реальном времени, свой виджет /da (donationalerts.js) ----------
+// Нужен client_id приложения DonationAlerts: он лежит в assets/da-client-id.txt (публичное значение, секрет не нужен — вход по implicit-схеме).
+// Токен доступа хранится в папке данных приложения в зашифрованном виде (safeStorage: DPAPI на Windows, Keychain на macOS).
+const daMod = require('./donationalerts');
+let daSet = daMod.cleanSettings({});
+let daHandle = null, daAuthWin = null, daSt = { state: 'off', user: null, error: '' };
+const daDir = () => app.getPath('userData');
+const daAuthFile = () => path.join(daDir(), 'da-auth.json');
+const daClientId = () => { const b = readAsset('da-client-id.txt'); const m = b && /^\s*(\d{1,10})\s*$/m.exec(String(b)); return m ? m[1] : ''; };
+function daSaveToken(t) {
+  try {
+    const { safeStorage } = require('electron');
+    const enc = safeStorage.isEncryptionAvailable();
+    const body = enc ? safeStorage.encryptString(t).toString('base64') : Buffer.from(t, 'utf8').toString('base64');
+    require('fs').writeFileSync(daAuthFile(), JSON.stringify({ enc, v: body }), { mode: 0o600 });
+  } catch (_) {}
+}
+function daLoadToken() {
+  try {
+    const { safeStorage } = require('electron');
+    const j = JSON.parse(require('fs').readFileSync(daAuthFile(), 'utf8'));
+    const raw = Buffer.from(String(j.v || ''), 'base64');
+    return j.enc ? safeStorage.decryptString(raw) : raw.toString('utf8');
+  } catch (_) { return ''; }
+}
+const daClearToken = () => { try { require('fs').unlinkSync(daAuthFile()); } catch (_) {} };
+const daImage = () => alertsMod.findFile(daDir(), daMod.IMAGE_BASE, alertsMod.IMAGE_EXT);
+const daSound = () => alertsMod.findFile(daDir(), daMod.SOUND_BASE, alertsMod.SOUND_EXT);
+const daWidgetSettings = () => daMod.widgetSettings(daSet, daImage());
+const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
+const daNotify = () => send('da:status', daPublic());
+function stopDa() { if (daHandle) { try { daHandle.stop(); } catch (_) {} daHandle = null; } }
+function startDa(token) {
+  stopDa();
+  daSt = { state: 'connecting', user: daSt.user, error: '' }; daNotify();
+  daHandle = daMod.start({
+    token,
+    onDonation: (d) => handleDaDonation(d),
+    onState: (s) => {
+      daSt = { state: s.state, user: s.user || daSt.user, error: s.error || '' };
+      if (s.state === 'auth') { stopDa(); daClearToken(); daSt = { state: 'off', user: null, error: s.error || 'Нужно войти заново' }; } // токен не принят: старый удаляем, чтобы не гонять запросы впустую
+      daNotify();
+    },
+  });
+}
+function handleDaDonation(d, test = false) {
+  if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };
+  if (!test && !daSet.enabled) return { accepted: false, reason: 'приём выключен' };
+  const kzt = daMod.kztEquivalent(d.amount, d.currency);
+  if (!test && daSet.minAmount > 0 && kzt < daSet.minAmount) return { accepted: false, reason: 'сумма меньше минимальной' };
+  const don = {
+    id: 'da' + (d.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5)), name: d.name, message: d.message,
+    money: daMod.formatMoney(d.amount, d.currency), say: daMod.speakAmount(d.amount, d.currency), kzt: Math.round(kzt), test,
+  };
+  wsrv && wsrv.broadcast('dadonate', { id: don.id, name: don.name, money: don.money, message: don.message, kzt: don.kzt, test });
+  send('da:donate', don); // окно приложения играет звук и озвучивает
+  return { accepted: true, donation: don };
+}
+async function daAcceptToken(token) {
+  try {
+    const u = await daMod.fetchUser(token);
+    daSaveToken(token);
+    daSt = { state: 'connecting', user: { id: u.id, name: u.name, avatar: u.avatar }, error: '' };
+    startDa(token);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e && e.code === 'auth' ? 'DonationAlerts не принял вход, попробуйте ещё раз' : 'Не удалось связаться с DonationAlerts: ' + String((e && e.message) || e) }; }
+}
+function daLogin() {
+  const cid = daClientId();
+  if (!cid) return Promise.resolve({ ok: false, error: 'В приложении не указан client_id DonationAlerts (assets/da-client-id.txt)' });
+  if (daAuthWin && !daAuthWin.isDestroyed()) { daAuthWin.focus(); return Promise.resolve({ ok: false, busy: true }); }
+  const state = require('crypto').randomBytes(12).toString('hex');
+  return new Promise((resolve) => {
+    let done = false;
+    const w = new BrowserWindow({
+      width: 520, height: 780, parent: win && !win.isDestroyed() ? win : undefined, autoHideMenuBar: true, title: 'Вход в DonationAlerts', backgroundColor: '#ffffff',
+      webPreferences: { partition: 'persist:da-auth', contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    daAuthWin = w;
+    const finish = (r) => { if (done) return; done = true; daAuthWin = null; try { if (!w.isDestroyed()) w.destroy(); } catch (_) {} resolve(r); };
+    // DonationAlerts возвращает человека на адрес из настроек приложения, токен лежит после «#»: перехватываем адрес до загрузки страницы
+    const check = (e, url) => {
+      const p = daMod.parseRedirect(url, state);
+      if (p.notRedirect) return;
+      if (e && e.preventDefault) e.preventDefault();
+      if (p.ok) daAcceptToken(p.token).then(finish); else finish({ ok: false, error: p.error });
+    };
+    const wc = w.webContents;
+    wc.on('will-redirect', (e, url) => check(e, url || (e && e.url)));
+    wc.on('will-navigate', (e, url) => check(e, url || (e && e.url)));
+    wc.on('did-navigate', (_e, url) => check(null, url));
+    wc.on('did-fail-load', (_e, _c, _d, url) => check(null, url));
+    wc.setWindowOpenHandler(({ url }) => { try { wc.loadURL(url); } catch (_) {} return { action: 'deny' }; }); // вход через Twitch/Google и т.п. открывается в этом же окне
+    w.on('closed', () => finish({ ok: false, canceled: true }));
+    w.loadURL(daMod.authorizeUrl({ clientId: cid, state })).catch(() => {});
+  });
+}
+ipcMain.handle('da:state', () => daPublic());
+ipcMain.handle('da:login', async () => { if (locked('kaspi')) return { ok: false, locked: true, error: 'Раздел доступен в Pro' }; const r = await daLogin(); return { ...r, ...daPublic(), ok: !!r.ok }; });
+ipcMain.handle('da:logout', async () => {
+  stopDa(); daClearToken(); daSt = { state: 'off', user: null, error: '' };
+  try { await require('electron').session.fromPartition('persist:da-auth').clearStorageData(); } catch (_) {} // чтобы вошёл другой человек, а не прежний сеанс
+  daNotify(); return { ok: true, ...daPublic() };
+});
+ipcMain.handle('da:set', (_e, s) => { daSet = daMod.cleanSettings(s); wsrv && wsrv.broadcast('dasettings', daWidgetSettings()); return { ok: true, hasImage: !!daImage(), hasSound: !!daSound() }; });
+const DA_SAMPLES = [
+  { name: 'Айдос А.', amount: 500, currency: 'KZT', message: 'Привет из Алматы!' }, { name: 'Анна К.', amount: 150, currency: 'RUB' },
+  { name: 'Mark', amount: 5, currency: 'USD', message: 'Thanks for the stream!' }, { name: 'Дина Н.', amount: 7500, currency: 'KZT' },
+  { name: 'Тимур Б.', amount: 100, currency: 'EUR', message: 'Ракета для тебя!' },
+];
+let daSampleI = 0;
+// «Тест»: показывает донат на экране и играет звук/голос, как настоящий
+ipcMain.handle('da:test', () => { handleDaDonation(DA_SAMPLES[daSampleI++ % DA_SAMPLES.length], true); return { ok: true }; });
+// «Предпросмотр»: только в виджете, без звука и голоса — так видно выбранное оформление
+ipcMain.handle('da:preview', () => {
+  const d = DA_SAMPLES[daSampleI++ % DA_SAMPLES.length];
+  wsrv && wsrv.broadcast('dadonate', { id: 'pv' + Date.now().toString(36), name: d.name, money: daMod.formatMoney(d.amount, d.currency), message: d.message || '', kzt: Math.round(daMod.kztEquivalent(d.amount, d.currency)), test: true, preview: true });
+  return { ok: true };
+});
+async function pickDaFile(title, name, exts, base, kind) {
+  const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title, properties: ['openFile'], filters: [{ name, extensions: Object.keys(exts) }] }).catch(() => null);
+  if (!r || r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  return alertsMod.saveFile(daDir(), base, exts, r.filePaths[0], kind);
+}
+ipcMain.handle('da:imgpick', async () => { const r = await pickDaFile('Своя картинка доната', 'Картинка', alertsMod.IMAGE_EXT, daMod.IMAGE_BASE, 'image'); if (r.ok) wsrv && wsrv.broadcast('dasettings', daWidgetSettings()); return r; });
+ipcMain.handle('da:imgclear', () => { alertsMod.clearFiles(daDir(), daMod.IMAGE_BASE); wsrv && wsrv.broadcast('dasettings', daWidgetSettings()); return { ok: true }; });
+ipcMain.handle('da:sndpick', () => pickDaFile('Свой звук доната', 'Звук', alertsMod.SOUND_EXT, daMod.SOUND_BASE, 'sound'));
+ipcMain.handle('da:sndget', () => {
+  const f = daSound();
+  if (!f) return { ok: false };
+  try { return { ok: true, mime: f.mime, data: require('fs').readFileSync(f.file) }; } catch (_) { return { ok: false }; }
+});
+ipcMain.handle('da:sndclear', () => { alertsMod.clearFiles(daDir(), daMod.SOUND_BASE); return { ok: true }; });
+ipcMain.handle('da:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/da` : ''));
+ipcMain.handle('da:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.DA_PAGES_URL } : { ok: false, url: '' }));
+ipcMain.handle('da:presets', () => ({ images: daMod.IMAGE_PRESETS, sounds: daMod.SOUND_PRESETS }));
+// при запуске: если человек уже входил, приём включается сам
+function daBoot() { const t = daLoadToken(); if (t) { daSt = { state: 'connecting', user: null, error: '' }; startDa(t); } }
+
 // ---------- Лицензия: тарифы, пробный период, ключи (license.js; сервер — relay-worker) ----------
 const licMod = require('./license');
 const readAsset = (name) => { try { return require('fs').readFileSync(path.join(__dirname, 'assets', name)); } catch (_) { return null; } };
@@ -1147,9 +1286,12 @@ app.whenReady().then(async () => {
       getAvatar: () => avWidgetSettings(),
       getTrackerPage: () => av.TRACKER_PAGE,
       getAvatarAsset: (u) => av.resolveAsset(avUD(), u),
+      getDa: () => daWidgetSettings(),
+      getDaImage: () => { const i = daImage(); if (!i || daSet.imageKind !== 'custom') return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
       getAlertImage: () => { const i = alertImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
     }); } catch (_) { wsrv = null; }
   initLicense();
+  if (!SELFTEST) daBoot();
   createWindow();
   if (useTray) { try { createTray(); } catch (_) { tray = null; } }
   if (startHidden && !tray) showWindow(); // трея нет — окно всё равно должно быть видно
@@ -1166,6 +1308,7 @@ app.on('window-all-closed', async () => {
   stopTwitch();
   try { wsrv && wsrv.close(); } catch (_) {}
   try { krx && krx.close(); } catch (_) {}
+  stopDa();
   try { license && license.stop(); } catch (_) {}
   app.quit();
 });

@@ -48,3 +48,18 @@ test('страница чата показывает закреп: слушае�
   assert.match(PAGE, /textContent=e\.text/); // текст вставляется только как текст, без разметки
   assert.doesNotMatch(PAGE, /innerHTML=e\.text|innerHTML\+=e\.text/);
 });
+
+const DA = require('../widget-da-page');
+test('страница DonationAlerts для GitHub Pages совпадает с виджетом приложения (npm run pages)', () => {
+  assert.equal(fs.readFileSync(path.join(__dirname, '..', 'docs', 'da', 'index.html'), 'utf8'), DA);
+});
+test('страница DonationAlerts слушает свои события и берёт оформления у виджета донатов', () => {
+  assert.match(DA, /127\.0\.0\.1:'\+port\+'\/events/);
+  assert.match(DA, /addEventListener\('dadonate'/);
+  assert.match(DA, /addEventListener\('dasettings'/);
+  assert.match(DA, /da-image\?v=/);
+  for (const c of ['d-neon', 'd-min', 'd-party', 'd-gold', 'd-arc', 'd-glass', 'd-candy']) assert.ok(DA.includes('.' + c), c);
+});
+test('страница входа DonationAlerts для GitHub Pages совпадает с модулем', () => {
+  assert.equal(fs.readFileSync(path.join(__dirname, '..', 'docs', 'da-auth', 'index.html'), 'utf8'), require('../da-auth-page'));
+});

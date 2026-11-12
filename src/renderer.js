@@ -31,6 +31,7 @@ const DEFAULTS = {
   likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
   gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '', design: 'classic' },
+  da: { enabled: true, voice: true, sound: true, showMessage: true, duration: 8, scale: 100, minAmount: 0, design: 'classic', imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic' },
 };
 let S = { ...DEFAULTS };
@@ -39,6 +40,7 @@ S.likes = { ...DEFAULTS.likes, ...(S.likes && typeof S.likes === 'object' ? S.li
 S.gifts = { ...DEFAULTS.gifts, ...(S.gifts && typeof S.gifts === 'object' ? S.gifts : {}) };
 S.kaspi = { ...DEFAULTS.kaspi, ...(S.kaspi && typeof S.kaspi === 'object' ? S.kaspi : {}) };
 S.alerts = { ...DEFAULTS.alerts, ...(S.alerts && typeof S.alerts === 'object' ? S.alerts : {}) };
+S.da = { ...DEFAULTS.da, ...(S.da && typeof S.da === 'object' ? S.da : {}) };
 S.kaspi.enabled = true; // приём всегда включён: переключателя больше нет
 // виджеты: у каждого своё выравнивание TikTok и Twitch и своя ссылка. Первый — для OBS, второй — для TikTok LIVE Studio.
 // Прежнее выравнивание (одно на всё приложение) переносится на первый виджет.
@@ -141,6 +143,7 @@ const TITLES = {
   widgets: ['Виджеты', 'Чат, топ лайков и оповещения для OBS и TikTok LIVE Studio'],
   kaspi: ['Донаты Каспи', 'Донаты на экран стрима: имя, сумма и картинка'],
   avatar: ['2D Аватар', 'Live2D-персонаж повторяет ваше лицо с веб-камеры'],
+  da: ['DonationAlerts', 'Донаты DonationAlerts на экран стрима: шаблон, картинка и звук'],
   overlay: ['Оверлей чата', 'Окно чата TikTok и Twitch поверх всех окон на время стрима'],
   license: ['Лицензия', 'Тариф, ключ и пробный период'],
   settings: ['Настройки', 'Окно, запуск и обновления'],
@@ -151,6 +154,7 @@ $$('.nav').forEach((b) => b.addEventListener('click', () => {
   document.body.classList.toggle('t-widgets', b.dataset.tab === 'widgets');
   if (b.dataset.tab === 'widgets') requestAnimationFrame(() => { initPreview(); initLikesPreview(); initGiftsPreview(); initAlertPreview(); });
   if (b.dataset.tab === 'kaspi') requestAnimationFrame(() => { initGuideVideo(); initDonatePreview(); });
+  if (b.dataset.tab === 'da') requestAnimationFrame(() => initDaPreview());
   $('#title').textContent = TITLES[b.dataset.tab][0];
   $('#subtitle').textContent = TITLES[b.dataset.tab][1];
 }));
@@ -405,7 +409,7 @@ function prefetch() { queue.slice(0, 3).forEach(ensureSynth); } // звук го
 
 let voiceCalls = 0; // сколько раз пытались озвучить (для автотеста)
 // подарки, подписки и донаты озвучиваются вне очереди чата (сразу после текущей фразы), а при переполнении отбрасывается самое старое сообщение чата
-const PRIO_SRC = new Set(['gifts', 'follows', 'donateSound', 'donateVoice', 'alertSound']);
+const PRIO_SRC = new Set(['gifts', 'follows', 'donateSound', 'donateVoice', 'alertSound', 'daSound', 'daVoice']);
 function enqueue(item, force = false) {
   voiceCalls++; // пауза относится только к ленте чата: озвучка идёт по настройкам на странице «Озвучка»
   if (queue.length >= QUEUE_MAX) { const i = queue.findIndex((q) => !PRIO_SRC.has(q.src)); queue.splice(i < 0 ? 0 : i, 1); }
@@ -489,6 +493,14 @@ const playBell = () => playTones([[1046.5, 0, 0.8, 0.34], [1318.5, 0.12, 0.8, 0.
 // подписка: быстрый «блеск» вверх по пентатонике (соль-си-ре-соль-си) и высокая искорка в конце — отличается от доната на слух
 const playAlertBell = () => playTones([[783.99, 0, 0.7, 0.3], [987.77, 0.09, 0.7, 0.3], [1174.66, 0.18, 0.75, 0.32], [1567.98, 0.27, 0.9, 0.36], [1975.53, 0.36, 1.3, 0.4], [3135.96, 0.52, 0.8, 0.14]], 1500);
 
+// готовые звуки донатов DonationAlerts (шаблоны): те же ноты из браузера, без файлов
+const DA_TONES = {
+  bell: null, // стандартный колокольчик
+  coin: [[[987.77, 0, 0.09, 0.4], [1318.5, 0.09, 0.6, 0.46]], 800],
+  fanfare: [[[523.25, 0, 0.18, 0.34], [523.25, 0.2, 0.18, 0.34], [523.25, 0.4, 0.18, 0.34], [659.25, 0.6, 0.36, 0.4], [523.25, 1.0, 0.2, 0.34], [659.25, 1.2, 0.2, 0.38], [783.99, 1.4, 1.0, 0.46]], 2300],
+  arcade: [[[659.25, 0, 0.08, 0.3], [783.99, 0.08, 0.08, 0.3], [1318.5, 0.16, 0.08, 0.3], [1046.5, 0.24, 0.08, 0.3], [1174.66, 0.32, 0.08, 0.3], [1567.98, 0.4, 0.3, 0.36]], 950],
+  pop: [[[880, 0, 0.12, 0.4], [1760, 0.05, 0.2, 0.3]], 400],
+};
 // свой звук доната (файл, который человек загрузил): играет вместо колокольчика, не дольше 20 с; не заиграл — звучит колокольчик
 let customSound = null; // { url } — адрес загруженного звука
 function playCustom(snd = customSound) {
@@ -517,12 +529,20 @@ async function playAlertChime() {
   return playAlertBell();
 }
 
+// звук доната DonationAlerts: свой файл или выбранный готовый
+async function playDaChime() {
+  const kind = S.da.soundKind;
+  if (kind === 'custom' && daSoundFile && daSoundFile.url) { if (await playCustom(daSoundFile)) return; }
+  const t = DA_TONES[kind];
+  return t ? playTones(t[0], t[1]) : playBell();
+}
 // Ждём синтез не дольше SYNTH_DEADLINE_MS: иначе одна зависшая фраза останавливает всю очередь на десятки секунд.
 // Фраза, которая не успела, пропускается; запрос в фоне доработает и будет забыт.
 const SYNTH_DEADLINE_MS = 8000;
 const withDeadline = (p) => Promise.race([p, new Promise((res) => setTimeout(() => res({ ok: false, error: 'deadline' }), SYNTH_DEADLINE_MS))]);
 
 async function speakItem(item) {
+  if (item.daChime) { await playDaChime(); return; }
   if (item.alertChime) { await playAlertChime(); return; }
   if (item.chime) { await playChime(); return; }
   let r = await withDeadline(ensureSynth(item));
@@ -1112,8 +1132,8 @@ async function pushDonate() {
   if (r && r.ok) { kState = r; refreshKaspiUi(); }
 }
 // выбор дизайна виджета доната: сохраняем и сразу показываем пробный донат в предпросмотре (без озвучки и звука)
-function refreshDesignUi() { $$('.dz-opt').forEach((b) => { const on = b.dataset.design === K.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
-$$('.dz-opt').forEach((b) => b.addEventListener('click', async () => { K.design = b.dataset.design; refreshDesignUi(); await pushDonate(); window.echo.donatePreview(); }));
+function refreshDesignUi() { $$('.dz-opt[data-design]').forEach((b) => { const on = b.dataset.design === K.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.dz-opt[data-design]').forEach((b) => b.addEventListener('click', async () => { K.design = b.dataset.design; refreshDesignUi(); await pushDonate(); window.echo.donatePreview(); }));
 refreshDesignUi();
 $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
@@ -1497,6 +1517,194 @@ async function initAlertPreview() {
 }
 loadAlertSound();
 
+/* ---------- DonationAlerts ---------- */
+const D = S.da;
+const DA_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
+if (!DA_DESIGNS.includes(D.design)) D.design = 'classic';
+D.duration = Math.max(3, Math.min(30, Math.round(+D.duration) || 8));
+D.scale = Math.max(50, Math.min(200, Math.round(+D.scale) || 100));
+D.minAmount = Math.max(0, Math.min(1000000, Math.round(+D.minAmount) || 0));
+let daPresets = { images: [], sounds: [] };
+let daState = { state: 'off', user: null, error: '', hasClientId: true };
+let daSoundFile = null;   // { url } — загруженный звук
+let daHasImage = false;   // есть ли файл своей картинки
+let daTestItem = null;    // пункт очереди, который звучит как проба
+async function pushDa() {
+  save();
+  const r = await window.echo.daSet({ ...D }).catch(() => null);
+  if (!r || !r.ok) return;
+  daHasImage = !!r.hasImage;
+  if (!daHasImage && (D.imageKind === 'custom' || D.imageName)) { D.imageKind = D.imageKind === 'custom' ? 'auto' : D.imageKind; D.imageName = ''; save(); window.echo.daSet({ ...D }).catch(() => {}); } // файл удалили — не показываем несуществующую картинку
+  refreshDaChoicesUi();
+}
+// чипы выбора: готовые шаблоны + «Своя», если файл загружен
+function renderDaChips(box, items, current, onPick) {
+  box.textContent = '';
+  items.forEach((p) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'da-chip' + (p.id === current ? ' on' : ''); b.dataset.id = p.id;
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', p.id === current ? 'true' : 'false');
+    if (p.art) { const i = document.createElement('i'); i.textContent = p.art; b.appendChild(i); }
+    const sp = document.createElement('span'); sp.textContent = p.label; b.appendChild(sp);
+    b.addEventListener('click', () => onPick(p.id));
+    box.appendChild(b);
+  });
+}
+function refreshDaChoicesUi() {
+  const imgs = daPresets.images.concat(daHasImage ? [{ id: 'custom', label: 'Своя', art: '🖼️' }] : []);
+  renderDaChips($('#daImgChips'), imgs, D.imageKind, (id) => { D.imageKind = id; pushDa(); window.echo.daPreview(); });
+  const snds = daPresets.sounds.concat(daSoundFile ? [{ id: 'custom', label: 'Свой', art: '🎵' }] : []);
+  renderDaChips($('#daSndChips'), snds, D.soundKind, (id) => { D.soundKind = id; pushDa(); playDaSample(); });
+  const ip = daPresets.images.find((p) => p.id === D.imageKind);
+  $('#daImgName').textContent = D.imageKind === 'custom' && daHasImage ? 'Сейчас: ' + (D.imageName || 'своя картинка') : 'Сейчас: ' + (ip && ip.id !== 'auto' ? ip.label.toLowerCase() : 'по сумме доната');
+  $('#daImgReset').hidden = !daHasImage;
+  const sp = daPresets.sounds.find((p) => p.id === D.soundKind);
+  $('#daSoundName').textContent = D.soundKind === 'custom' && daSoundFile ? 'Сейчас: ' + (D.soundName || 'свой звук') : 'Сейчас: ' + (sp ? sp.label.toLowerCase() : 'колокольчик');
+  $('#daSoundReset').hidden = !daSoundFile;
+}
+// шаблон (оформление)
+function refreshDaDesignUi() { $$('.dz-opt[data-dadesign]').forEach((b) => { const on = b.dataset.dadesign === D.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
+$$('.dz-opt[data-dadesign]').forEach((b) => b.addEventListener('click', async () => { D.design = b.dataset.dadesign; refreshDaDesignUi(); await pushDa(); window.echo.daPreview(); }));
+$$('input[data-dk]').forEach((el) => {
+  el.checked = !!D[el.dataset.dk];
+  el.addEventListener('change', () => {
+    D[el.dataset.dk] = el.checked; pushDa();
+    if (!el.checked && el.dataset.dk === 'sound') { dropSrc('daSound'); stopDaSample(); } // выключили — звук обрывается сразу
+    if (!el.checked && el.dataset.dk === 'voice') dropSrc('daVoice');
+  });
+});
+bindRange('daDur', 'daDurVal', (v) => v + ' с', () => D.duration, (v) => { D.duration = v; pushDa(); })();
+bindRange('daScale', 'daScaleVal', (v) => v + '%', () => D.scale, (v) => { D.scale = v; pushDa(); })();
+bindRange('daMin', 'daMinVal', (v) => kmoney(v), () => D.minAmount, (v) => { D.minAmount = v; pushDa(); })();
+// звук: проба («Прослушать» и выбор готового звука)
+function refreshDaSampleUi() {
+  const on = !!daTestItem;
+  $('#daSoundIcon').innerHTML = on ? SND_PAUSE : SND_PLAY;
+  $('#daSoundLbl').textContent = on ? 'Остановить' : 'Прослушать звук';
+  $('#daSoundTest').classList.toggle('active', on);
+}
+function stopDaSample() {
+  const it = daTestItem; if (!it) return;
+  daTestItem = null; it.cancelled = true;
+  const i = queue.indexOf(it); if (i >= 0) queue.splice(i, 1);
+  else if (curItem === it) skipPhrase();
+  refreshDaSampleUi();
+}
+function playDaSample() {
+  stopDaSample();
+  const item = { el: null, chime: true, daChime: true, src: 'daSound', onEnd: () => { if (daTestItem === item) { daTestItem = null; refreshDaSampleUi(); } } };
+  daTestItem = item; refreshDaSampleUi();
+  enqueue(item, true);
+}
+$('#daSoundTest').addEventListener('click', () => { if (daTestItem) stopDaSample(); else playDaSample(); });
+async function loadDaSound() {
+  const r = await window.echo.daSoundGet().catch(() => null);
+  if (daSoundFile) { URL.revokeObjectURL(daSoundFile.url); daSoundFile = null; }
+  if (r && r.ok && r.data) daSoundFile = { url: URL.createObjectURL(new Blob([r.data], { type: r.mime || 'audio/mpeg' })) };
+  else if (D.soundKind === 'custom' || D.soundName) { if (D.soundKind === 'custom') D.soundKind = 'bell'; D.soundName = ''; save(); }
+  refreshDaChoicesUi();
+}
+$('#daSoundPick').addEventListener('click', async () => {
+  const r = await window.echo.daSoundPick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#daSoundName').textContent = r.error || 'Не удалось загрузить звук'; return; }
+  stopDaSample();
+  D.soundName = r.name || ''; D.soundKind = 'custom';
+  await loadDaSound(); await pushDa(); playDaSample();
+});
+$('#daSoundReset').addEventListener('click', async () => {
+  stopDaSample();
+  await window.echo.daSoundClear().catch(() => {});
+  if (D.soundKind === 'custom') D.soundKind = 'bell'; D.soundName = '';
+  await loadDaSound(); pushDa();
+});
+// своя картинка: сразу выбирается, предпросмотр и OBS получают её без перезапуска
+$('#daImgPick').addEventListener('click', async () => {
+  const r = await window.echo.daImagePick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#daImgName').textContent = r.error || 'Не удалось загрузить картинку'; return; }
+  D.imageName = r.name || 'своя картинка'; D.imageKind = 'custom'; daHasImage = true;
+  await pushDa(); refreshDaChoicesUi(); window.echo.daPreview();
+});
+$('#daImgReset').addEventListener('click', async () => {
+  await window.echo.daImageClear().catch(() => {});
+  if (D.imageKind === 'custom') D.imageKind = 'auto'; D.imageName = ''; daHasImage = false;
+  await pushDa(); refreshDaChoicesUi(); window.echo.daPreview();
+});
+// подключение
+const daSetStat = (t, cls) => { const el = $('#daStat'); el.textContent = t; el.className = 'kstat ' + (cls || ''); };
+function refreshDaStatus(s) {
+  if (s) daState = { ...daState, ...s };
+  const st = daState.state, on = st === 'live' || st === 'connecting' || st === 'retry';
+  $('#daLogin').hidden = on; $('#daLogout').hidden = !on;
+  $('#daLogin').disabled = !daState.hasClientId;
+  $('#daSetup').hidden = !!daState.hasClientId;
+  $('#daUser').hidden = !(on && daState.user && daState.user.name);
+  if (daState.user) {
+    $('#daName').textContent = daState.user.name || '';
+    const av = String(daState.user.avatar || '');
+    $('#daAva').style.backgroundImage = /^https:\/\/[^\s"')]+$/.test(av) ? 'url("' + av + '")' : '';
+  }
+  $('#daSub').textContent = st === 'live' ? 'Принимаем донаты' : st === 'retry' ? 'Связь пропала, пробую снова…' : 'Подключаюсь…';
+  const m = $('#daMsg'); m.hidden = !daState.error || on; m.textContent = daState.error || '';
+  if (daState.locked) daSetStat('DonationAlerts входит в Pro', 'bad');
+  else if (st === 'live') daSetStat('Подключено', 'ok');
+  else if (st === 'connecting') daSetStat('Подключаюсь…', '');
+  else if (st === 'retry') daSetStat('Нет связи, пробую снова', 'bad');
+  else daSetStat('Не подключено', '');
+}
+$('#daLogin').addEventListener('click', async () => {
+  const b = $('#daLogin'); b.disabled = true; b.textContent = 'Ждём вход в окне DonationAlerts…';
+  const r = await window.echo.daLogin().catch((e) => ({ ok: false, error: String(e && e.message || e) }));
+  b.textContent = 'Войти через DonationAlerts';
+  if (r && !r.ok && !r.canceled && !r.busy) refreshDaStatus({ ...(r.state ? r : {}), error: r.error || 'Не удалось войти' });
+  else refreshDaStatus(r && r.state ? r : null);
+  b.disabled = !daState.hasClientId;
+});
+$('#daLogout').addEventListener('click', async () => { const r = await window.echo.daLogout().catch(() => null); refreshDaStatus(r && r.state ? { ...r, error: '' } : { state: 'off', user: null, error: '' }); });
+if (window.echo.onDaStatus) window.echo.onDaStatus((s) => refreshDaStatus(s));
+window.addEventListener('lic-change', () => window.echo.daState().then((s) => s && refreshDaStatus(s)).catch(() => {}));
+// ссылка, тест, донат пришёл
+async function refreshDaLink() {
+  const r = await window.echo.daLink().catch(() => null);
+  $('#daUrl').value = r && r.ok ? r.url : 'Не удалось запустить сервер виджета';
+}
+$('#daUrl').onfocus = (e) => e.target.select();
+$('#daCopy').onclick = () => copyFrom('#daUrl', $('#daCopy'), 'Копировать');
+$('#daTest').onclick = () => window.echo.daTest();
+window.echo.onDaDonate((d) => {
+  const el = addMsg({ name: d.name, text: `💸 донат ${d.money}${d.message ? ' · ' + d.message : ''}`, kind: 'gift', color: '#fb8c2b' });
+  if (D.sound) enqueue({ el: null, chime: true, daChime: true, src: 'daSound' }, true);
+  if (D.voice) enqueue({ el, src: 'daVoice', say: `${speakName(d.name)}, спасибо за донат ${d.say}`, preset: eventPreset() });
+});
+// предпросмотр: страница виджета в рамке, масштаб подгоняем под окошко
+let daInit = false;
+function fitDa() {
+  const box = $('#daBox'), fr = $('#daFrame'), w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  const k = Math.min(1, w / 560, h / 200);
+  fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
+  fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
+}
+async function initDaPreview() {
+  if (daInit) { fitDa(); return; }
+  daInit = true;
+  const base = await window.echo.daUrl();
+  if (!base) return;
+  $('#daFrame').addEventListener('load', () => { pushDa(); fitDa(); });
+  if (window.ResizeObserver) new ResizeObserver(fitDa).observe($('#daBox'));
+  window.addEventListener('resize', fitDa);
+  $('#daFrame').src = base + '?preview=1';
+}
+(async () => {
+  daPresets = await window.echo.daPresets().catch(() => daPresets);
+  refreshDaDesignUi(); refreshDaChoicesUi(); refreshDaSampleUi(); refreshDaLink();
+  await loadDaSound();
+  await pushDa(); // заодно узнаём, есть ли файл своей картинки
+  const s = await window.echo.daState().catch(() => null);
+  refreshDaStatus(s);
+})();
+
 /* ---------- старт ---------- */
 renderWTabs(); renderPills(); renderVoices(); refreshVol(); refreshRate(); refreshPitch(); refreshLen(); refreshWScale(); refreshWHeight(); refreshWFade(); syncControls(); pushWidget(); initPreview(); refreshDonateLink(); pushDonate(); refreshLikesLink(); window.echo.likesSet({ ...L }); refreshGiftsLink(); window.echo.giftsSet({ ...G }); refreshAlertLink(); pushAlerts();
 window.echo.voices().then((r) => applyCatalog(r && r.all)).catch(() => {});
@@ -1504,6 +1712,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '3.1.6': ['Новая вкладка «DonationAlerts» под «Донатами Каспи»: вход в аккаунт DonationAlerts в один клик, донаты приходят на экран стрима в реальном времени. 8 шаблонов виджета, готовые и свои картинки (png, jpg, gif, webp), готовые и свои звуки, озвучка голосом, минимальная сумма, предпросмотр и тест. Сумма показывается в валюте перевода', 'Окно приложения при запуске стало чуть выше: все пункты меню слева помещаются без прокрутки', 'Исправлено: выбор оформления в «Оповещениях» больше не сбрасывал оформление в «Донатах Каспи»'],
   '3.1.5': ['2D Аватар: кнопка «Скачать бесплатные модели» открывает официальную страницу Live2D с бесплатными моделями; скачанный .zip добавляется кнопкой «Архив .zip»'],
   '3.1.4': ['Вкладка переименована в «2D Аватар». В предпросмотре аватара колесо мыши меняет размер, а левая кнопка мыши двигает персонажа; двойной щелчок сбрасывает. Размер и положение сохраняются и действуют в OBS и TikTok LIVE Studio'],
   '3.1.3': ['Вкладка «Аватар»: ровная вёрстка (карточки одной высоты, кнопки с переносом текста, отступы), ход скачивания компонентов пишется в одну строку и больше не сдвигает текст'],

@@ -1,0 +1,7 @@
+'use strict';
+// Страница, на которую DonationAlerts возвращает человека после входа. Окно входа в приложении перехватывает этот адрес и закрывается само;
+// страница нужна только на случай, если вход открылся в обычном браузере.
+// Токен лежит в адресе после «#», сюда он не отправляется и нигде не сохраняется: страница ничего не делает с адресом.
+module.exports = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Вход выполнен</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b12;color:#ecebf5;font:16px/1.5 "Segoe UI",system-ui,sans-serif}main{max-width:460px;padding:24px;text-align:center}h1{margin:0 0 8px;font-size:22px}p{color:#a7a5b8}</style></head>
+<body><main><h1>Можно закрыть это окно</h1><p>Если вход выполнялся из приложения ЭхоЧат, вернитесь в него: оно подключится к DonationAlerts само.</p></main></body></html>`;
