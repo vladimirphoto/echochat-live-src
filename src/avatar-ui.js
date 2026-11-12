@@ -28,7 +28,7 @@
     $('#avMain').hidden = !ready;
     if (!ready) {
       const miss = ST.status.items.filter((i) => !i.ok);
-      $('#avSetupTxt').textContent = 'Нужно один раз скачать компоненты (около ' + ST.status.totalMb + ' МБ): ' + miss.map((i) => i.title).join(', ') + '. Ядро Live2D и образцы моделей приходят из официального пакета Live2D, остальное — из npm и Google. Проверка целостности включена.';
+      $('#avSetupTxt').textContent = 'Нужно один раз скачать компоненты (около ' + ST.status.totalMb + ' МБ): ' + miss.map((i) => i.title).join(', ') + '. Ядро Live2D и образцы моделей приходят из официального пакета Live2D, остальное — из npm и Google. Проверка целостности включена.'; // текст не меняется во время скачивания: ход загрузки пишется в отдельную строку #avProg
       $('#avInstall').disabled = !!ST.installing; $('#avInstall').textContent = ST.installing ? 'Скачиваю…' : 'Скачать компоненты';
     }
     $('#avMirror').checked = !!ST.settings.mirror;
@@ -38,20 +38,21 @@
     $('#avRemove').disabled = !(ST.models || []).some((m) => m.id === ST.settings.model && !m.builtin);
     camSel(); modelSel(); run();
   }
+  const setErr = (t) => { const e = $('#avSetupErr'); e.hidden = !t; e.textContent = t || ''; };
   const err = (el, t) => { el.className = 'wstat' + (t ? ' bad' : ''); el.textContent = t || ''; };
 
   $('#avInstall').onclick = async () => {
-    if (busy) return; busy = true; $('#avInstall').disabled = true; $('#avBar').hidden = false; err($('#avSetupTxt'), '');
+    if (busy) return; busy = true; $('#avInstall').disabled = true; $('#avBar').classList.add('on'); $('#avBarFill').style.width = '0'; setErr('');
     const r = await api.avatarInstall().catch((e) => ({ ok: false, error: String(e) }));
-    busy = false; $('#avBar').hidden = true;
-    if (!r.ok) { $('#avInstall').disabled = false; err($('#avSetupTxt'), r.error || 'Не удалось скачать компоненты. Проверьте интернет и попробуйте ещё раз.'); return; }
+    busy = false; $('#avBar').classList.remove('on'); $('#avProg').textContent = '';
+    if (!r.ok) { $('#avInstall').disabled = false; setErr(r.error || 'Не удалось скачать компоненты. Проверьте интернет и попробуйте ещё раз.'); return; }
     show(await api.avatarState()); loadPreview(true);
   };
   api.onAvatarProgress((p) => {
     if (!p) return;
     const f = p.total ? p.done / p.total : 0;
     $('#avBarFill').style.width = Math.round(((p.index - 1) + f) / Math.max(1, p.count) * 100) + '%';
-    $('#avSetupTxt').textContent = (p.phase === 'unpack' ? 'Распаковываю: ' : 'Скачиваю: ') + p.title + ' (' + p.index + ' из ' + p.count + ')' + (p.total ? ' · ' + mb(p.done) + ' из ' + mb(p.total) + ' МБ' : '');
+    $('#avProg').textContent = (p.phase === 'unpack' ? 'Распаковываю' : 'Скачиваю') + ' ' + p.index + ' из ' + p.count + ': ' + String(p.title).split(' (')[0].split(' и ')[0] + (p.total ? ' · ' + mb(p.done) + ' из ' + mb(p.total) + ' МБ' : '');
   });
   api.onAvatarState((d) => { if (d && d.run && ST) { const was = ST.run && ST.run.state; ST.run = d.run; run(); if (was !== 'on' && d.run.state === 'on') refreshCams(true); } });
 
