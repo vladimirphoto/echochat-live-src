@@ -820,9 +820,13 @@ ipcMain.handle('avatar:cameras', (_e, ask) => avCall('cameras', { ask: !!ask }))
 ipcMain.handle('avatar:start', () => avStart());
 ipcMain.handle('avatar:stop', () => { avStop(); return { ok: true }; });
 ipcMain.handle('avatar:calibrate', () => { avCmd({ cmd: 'calibrate' }); return { ok: true }; });
+const avViewReset = { scale: 100, offsetX: 0, offsetY: 0 };
 ipcMain.handle('avatar:set', (_e, patch) => {
   const was = avSet;
-  avSet = av.cleanSettings(patch, avSet); avSave();
+  const next = { ...patch };
+  // при смене модели вид в предпросмотре возвращается к стандартному: по центру и в масштабе 100%
+  if (next.model && next.model !== was.model) Object.assign(next, avViewReset);
+  avSet = av.cleanSettings(next, avSet); avSave();
   if (avSet.mirror !== was.mirror) avCmd({ cmd: 'opts', opts: { mirror: avSet.mirror } });
   if (avSet.camera !== was.camera && avRun.state !== 'off') avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
   avPush();
@@ -845,13 +849,13 @@ async function avPick(kind) {
   if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
   const m = av.importModel(avUD(), r.filePaths[0]);
   if (!m.ok) return m;
-  avSet = av.cleanSettings({ model: m.id }, avSet); avSave(); avPush();
+  avSet = av.cleanSettings({ model: m.id, ...avViewReset }, avSet); avSave(); avPush();
   return { ok: true, ...avFull() };
 }
 ipcMain.handle('avatar:add', (_e, kind) => avPick(kind === 'dir' ? 'dir' : 'file'));
 ipcMain.handle('avatar:remove', (_e, id) => {
   const r = av.removeModel(avUD(), id);
-  if (r.ok) { if (avSet.model === id) { avSet = av.cleanSettings({ model: 'builtin-Haru' }, avSet); avSave(); } avPush(); }
+  if (r.ok) { if (avSet.model === id) { avSet = av.cleanSettings({ model: 'builtin-Haru', ...avViewReset }, avSet); avSave(); } avPush(); }
   return r.ok ? { ok: true, ...avFull() } : r;
 });
 // Где взять бесплатные модели: официальная страница примеров Live2D (адрес зашит, из окна его подменить нельзя)

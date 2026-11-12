@@ -76,7 +76,8 @@
   $('#avAddFile').onclick = () => addModel('file');
   $('#avRemove').onclick = async () => {
     const m = ST.models.find((x) => x.id === ST.settings.model);
-    if (!m || m.builtin || !confirm('Удалить модель «' + m.name + '» из приложения? Исходные файлы на диске останутся.')) return;
+    if (!m || m.builtin) return;
+    if (!await askConfirm({ title: 'Удалить модель?', text: 'Модель «' + m.name + '» будет удалена из приложения. Исходные файлы на диске останутся.', ok: 'Удалить', cancel: 'Отмена', danger: true })) return;
     const r = await api.avatarRemove(m.id).catch(() => null); if (r && r.ok) show(r);
   };
   $('#avMirror').onchange = (e) => api.avatarSet({ mirror: e.target.checked }).then(show);
