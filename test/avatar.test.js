@@ -175,3 +175,9 @@ test('страница аватара слушает настройки и ка�
   assert.match(PAGE, /\/avatar-lib\/pixi\.min\.js/); assert.match(PAGE, /127\.0\.0\.1:'\+port\+'\/events/);
   assert.doesNotMatch(PAGE, /innerHTML/);
 });
+
+test('предпросмотр аватара: колесо, перетаскивание и сброс сообщают приложению размер и сдвиг', () => {
+  assert.match(PAGE, /addEventListener\('wheel'/); assert.match(PAGE, /addEventListener\('pointerdown'/); assert.match(PAGE, /addEventListener\('dblclick'/);
+  assert.match(PAGE, /echochat:'avatar-view'/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'src', 'avatar-ui.js'), 'utf8'), /avatar-view/);
+});

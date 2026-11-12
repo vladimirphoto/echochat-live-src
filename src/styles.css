@@ -755,5 +755,5 @@ main{position:relative}
 .avprog{margin-top:12px;height:18px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .avbar{visibility:hidden}.avbar.on{visibility:visible}
 #tab-avatar .prev-box{position:relative;background:repeating-conic-gradient(#14141f 0 25%,#191927 0 50%) 0 0/20px 20px}
-#avFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent}
+#avFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;pointer-events:auto}
 .avbar{height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}.avbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--a1),#f472b6);transition:width .2s}

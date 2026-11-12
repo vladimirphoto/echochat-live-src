@@ -83,8 +83,23 @@ function apply(){
   loadModel();
 }
 window.addEventListener('resize',layout);
+// Предпросмотр в приложении: колесо мыши — размер, перетаскивание левой кнопкой — сдвиг, двойной щелчок — сброс. Изменения уходят приложению и действуют и в OBS
+var PREVIEW=window.parent!==window,drag=null,sendT=0,hold=0;
+function cl(v,a,b){return Math.max(a,Math.min(b,v));}
+function viewSend(force){var n=Date.now();hold=n+500;if(!force&&n-sendT<60)return;sendT=n;try{window.parent.postMessage({echochat:'avatar-view',scale:Math.round(+S.scale||100),offsetX:Math.round(+S.offsetX||0),offsetY:Math.round(+S.offsetY||0)},'*');}catch(_){}}
+if(PREVIEW){
+  document.body.style.cursor='grab';
+  window.addEventListener('wheel',function(e){if(!model)return;e.preventDefault();S.scale=cl((+S.scale||100)*Math.exp(-e.deltaY*0.0015),40,250);layout();viewSend();},{passive:false});
+  window.addEventListener('pointerdown',function(e){if(!model||e.button!==0)return;drag={x:e.clientX,y:e.clientY,ox:+S.offsetX||0,oy:+S.offsetY||0};try{document.body.setPointerCapture(e.pointerId);}catch(_){}document.body.style.cursor='grabbing';});
+  window.addEventListener('pointermove',function(e){if(!drag)return;S.offsetX=cl(drag.ox+(e.clientX-drag.x)/(window.innerWidth/2)*100,-100,100);S.offsetY=cl(drag.oy+(e.clientY-drag.y)/(window.innerHeight/2)*100,-100,100);layout();viewSend();});
+  function drop(){if(!drag)return;drag=null;document.body.style.cursor='grab';viewSend(true);}
+  window.addEventListener('pointerup',drop);window.addEventListener('pointercancel',drop);
+  window.addEventListener('dblclick',function(){if(!model)return;S.scale=100;S.offsetX=0;S.offsetY=0;layout();viewSend(true);});
+}
 function bind(es){
-  es.addEventListener('avsettings',function(e){try{S=JSON.parse(e.data)||{};}catch(_){return;}apply();});
+  es.addEventListener('avsettings',function(e){var d;try{d=JSON.parse(e.data)||{};}catch(_){return;}
+    if(drag||Date.now()<hold){d.scale=S.scale;d.offsetX=S.offsetX;d.offsetY=S.offsetY;} // пока человек двигает или масштабирует, чужой «старый» ответ не перебивает
+    S=d;apply();});
   es.addEventListener('aframe',function(e){
     var d;try{d=JSON.parse(e.data);}catch(_){return;}
     if(d&&d.p){V=d.p;tracking=true;lastFrame=Date.now();}

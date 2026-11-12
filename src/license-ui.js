@@ -4,7 +4,7 @@
 // здесь только показ состояния. Использует $ и askConfirm из renderer.js.
 (() => {
   const echo = window.echo;
-  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', overlay: 'Оверлей чата', avatar: 'Аватар' };
+  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', overlay: 'Оверлей чата', avatar: '2D Аватар' };
   const LOCK_KEY = { overlay: 'widgets', avatar: 'widgets' }; // оверлей закрывается вместе с виджетами: один тариф Pro
   const DAY = 86400000;
   const qa = (s) => [...document.querySelectorAll(s)];

@@ -90,6 +90,12 @@
     b.textContent = '✓'; setTimeout(() => { b.textContent = 'Копировать'; }, 1500);
   };
 
+  // предпросмотр сообщает новый размер и сдвиг (колесо мыши и перетаскивание): сохраняем, ползунки обновятся сами
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (e.source !== $('#avFrame').contentWindow || !d || d.echochat !== 'avatar-view') return;
+    api.avatarSet({ scale: +d.scale, offsetX: +d.offsetX, offsetY: +d.offsetY }).then(show).catch(() => {});
+  });
   let previewSet = false;
   async function loadPreview(force) {
     const fr = $('#avFrame');
