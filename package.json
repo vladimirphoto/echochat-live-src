@@ -1,6 +1,6 @@
 {
   "name": "echochat-live",
-  "version": "3.0.5",
+  "version": "3.1.0",
   "description": "ЭхоЧат LIVE — озвучка чата TikTok LIVE живыми нейро-голосами",
   "main": "main.js",
   "author": "EchoChat",
@@ -43,6 +43,9 @@
       "widget-likes-page.js",
       "widget-gifts-page.js",
       "widget-alert-page.js",
+      "widget-avatar-page.js",
+      "avatar.js",
+      "avatar-preload.js",
       "alerts.js",
       "overlay.js",
       "overlay-preload.js",
@@ -100,6 +103,7 @@
       "category": "public.app-category.utilities",
       "icon": "src/icon.png",
       "identity": null,
+      "extendInfo": { "NSCameraUsageDescription": "Камера нужна, чтобы аватар повторял ваше лицо." },
       "artifactName": "EchoChat-LIVE-${version}-mac-arm64.${ext}"
     }
   }

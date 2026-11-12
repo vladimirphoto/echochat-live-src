@@ -42,7 +42,7 @@ const PAGE_TEST = `(async () => {
   try {
     // --- интерфейс (критично) ---
     add('ui', 'preload API', window.echo && ['connect','disconnect','synth','voices','checkUpdate'].every((k) => typeof window.echo[k] === 'function'));
-    for (const t of ['voice', 'filters', 'widgets', 'kaspi', 'overlay', 'live']) {
+    for (const t of ['voice', 'filters', 'widgets', 'kaspi', 'avatar', 'overlay', 'live']) {
       $('.nav[data-tab=' + t + ']').click();
       add('ui', 'вкладка ' + t, $('#tab-' + t).classList.contains('show') && $('#title').textContent.length > 0);
     }
