@@ -46,11 +46,12 @@
   }
   function put(i, cls, x, y, flip, w) {
     const o = el(i);
-    const key = cls + '|' + Math.round(x * 2) + '|' + Math.round(y * 2) + '|' + flip;
+    const key = cls + '|' + Math.round(x * 2) + '|' + Math.round(y * 2) + '|' + flip + '|' + w;
     if (o.key === key) return;
     o.key = key;
     o.n.className = cls;
     o.n.style.display = '';
+    o.n.style.width = w + 'px';
     o.n.style.transform = flip ? 'translate(' + (x + w) + 'px,' + y + 'px) scaleX(-1)' : 'translate(' + x + 'px,' + y + 'px)';
   }
   function hideFrom(i) { for (let k = i; k < pool.length; k++) { if (pool[k].key !== 'off') { pool[k].key = 'off'; pool[k].n.style.display = 'none'; } } }
@@ -77,11 +78,17 @@
       if (clip && (r.top < clip.top - 1 || r.top > clip.bottom - 10)) continue; // карточка уехала за край прокрутки
       if (r.top > innerHeight - 10) continue;
       const sib = c.parentElement ? Array.prototype.filter.call(c.parentElement.children, s => s.tagName === c.tagName) : [c];
-      const even = sib.indexOf(c) % 2 === 1;                  // как раньше: чётные карточки справа, зеркально
-      const x = even ? r.right - 18 - CARD_W : r.left + 18;
+      const even = sib.indexOf(c) % 2 === 1;                  // чётные карточки справа, зеркально
+      const w = Math.max(60, Math.min(CARD_W, r.width - 36)); // в узкой карточке шапка сужается
+      const x = even ? r.right - 18 - w : r.left + 18;
       const y = r.top - CARD_BASE + 1;                        // подошва сугроба перекрывает верхнюю рамку на 1px
-      if (ddr && hit(ddr, { left: x, right: x + CARD_W, top: y, bottom: y + 32 })) continue; // не рисуем поверх открытого списка
-      put(n++, 'cc', x, y, even, CARD_W);
+      if (ddr && hit(ddr, { left: x, right: x + w, top: y, bottom: y + 32 })) continue; // не рисуем поверх открытого списка
+      // снег показываем, только если оба края шапки реально лежат на видимой верхней кромке этой карточки
+      // (не закрыта другим блоком, не обрезана прокруткой/границей контейнера, не уехала в сторону)
+      const py = r.top + 3;
+      const a = document.elementFromPoint(x + 3, py), b = document.elementFromPoint(x + w - 3, py);
+      if (!a || !b || !c.contains(a) || !c.contains(b)) continue;
+      put(n++, 'cc', x, y, even, w);
     }
     hideFrom(n);
   }
