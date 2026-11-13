@@ -48,7 +48,8 @@ test('настройки приводятся к допустимым значе
 });
 
 test('виджет: готовая картинка, своя картинка и «по сумме»', () => {
-  assert.equal(da.widgetSettings(da.cleanSettings({ imageKind: 'rocket' }), null).art, '\ud83d\ude80');
+  assert.equal(da.cleanSettings({ imageKind: 'rocket' }).imageKind, 'auto'); // старые готовые картинки заменены картинками шаблонов
+  assert.equal(da.widgetSettings(da.cleanSettings({ imageKind: 'rocket' }), null).art, '');
   assert.equal(da.widgetSettings(da.cleanSettings({ imageKind: 'auto' }), null).art, '');
   const w = da.widgetSettings(da.cleanSettings({ imageKind: 'custom' }), { mtime: 123 });
   assert.equal(w.art, ''); assert.equal(w.imageV, 123);

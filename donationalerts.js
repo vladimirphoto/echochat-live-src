@@ -16,25 +16,8 @@ const REDIRECT_URI = 'https://vladimirphoto.github.io/jonny-chat-tiktok/da-auth/
 const IMAGE_BASE = 'da-image';
 const SOUND_BASE = 'da-sound';
 
-// Готовые картинки (шаблоны): «auto» выбирает картинку по сумме, остальные — одна и та же всегда.
-const IMAGE_PRESETS = [
-  { id: 'auto', label: 'По сумме', art: '' },
-  { id: 'gift', label: 'Подарок', art: '\ud83c\udf81' },
-  { id: 'diamond', label: 'Бриллиант', art: '\ud83d\udc8e' },
-  { id: 'rocket', label: 'Ракета', art: '\ud83d\ude80' },
-  { id: 'fire', label: 'Огонь', art: '\ud83d\udd25' },
-  { id: 'heart', label: 'Сердце', art: '\u2764\ufe0f' },
-  { id: 'crown', label: 'Корона', art: '\ud83d\udc51' },
-  { id: 'star', label: 'Звезда', art: '\u2b50' },
-  { id: 'party', label: 'Праздник', art: '\ud83c\udf89' },
-  { id: 'coin', label: 'Монета', art: '\ud83e\ude99' },
-  { id: 'money', label: 'Деньги', art: '\ud83d\udcb0' },
-  { id: 'trophy', label: 'Кубок', art: '\ud83c\udfc6' },
-  { id: 'bolt', label: 'Молния', art: '\u26a1' },
-  { id: 'cat', label: 'Котик', art: '\ud83d\udc31' },
-  { id: 'champagne', label: 'Шампанское', art: '\ud83c\udf7e' },
-  { id: 'clover', label: 'Клевер', art: '\ud83c\udf40' },
-];
+// Картинка доната: «auto» — картинка выбранного шаблона (assets/da), «custom» — загруженная человеком.
+const IMAGE_PRESETS = [{ id: 'auto', label: 'Картинка шаблона', art: '' }];
 // Готовые звуки: ноты собирает окно приложения (renderer.js), файлов нет. 'custom' — загруженный файл.
 const SOUND_PRESETS = [
   { id: 'bell', label: 'Колокольчик' },
@@ -57,7 +40,7 @@ const SYMBOLS = { KZT: '\u20b8', RUB: '\u20bd', UAH: '\u20b4', USD: '$', EUR: '\
 
 const DEFAULTS = {
   enabled: true, voice: true, sound: true, showMessage: true,
-  duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top',
+  duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top', textPos: 'below',
   imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '',
 };
 const clampN = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
@@ -76,6 +59,7 @@ function cleanSettings(s) {
     minAmount: clampN(s.minAmount, 0, 1000000, 0),
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
     layout: s.layout === 'side' ? 'side' : 'top',
+    textPos: s.textPos === 'above' ? 'above' : 'below',
     imageKind: imgIds.includes(s.imageKind) ? s.imageKind : 'auto',
     soundKind: sndIds.includes(s.soundKind) ? s.soundKind : 'bell',
     imageName: String(s.imageName || '').slice(0, 120),
@@ -85,13 +69,13 @@ function cleanSettings(s) {
 
 // что получает страница виджета: art — готовая картинка-эмодзи (пусто = по сумме), imageV — версия своей картинки (0 = нет)
 function widgetSettings(s, imageInfo) {
-  const preset = IMAGE_PRESETS.find((p) => p.id === s.imageKind);
   const custom = s.imageKind === 'custom' && imageInfo;
   return {
     duration: s.duration, scale: s.scale, showMessage: s.showMessage,
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
     layout: s.layout === 'side' ? 'side' : 'top',
-    art: custom ? '' : (preset ? preset.art : ''),
+    textPos: s.textPos === 'above' ? 'above' : 'below',
+    art: '',
     imageV: custom ? Math.max(1, imageInfo.mtime) : 0,
   };
 }
@@ -122,7 +106,7 @@ function parseDonation(raw) {
   if (!d || typeof d !== 'object') return null;
   const amount = Number(d.amount);
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  if (d.name && d.name !== 'donation') return null; // другие виды оповещений (например, продажа товара) пока не показываем
+  if (d.name && /merch/i.test(String(d.name))) return null; // продажа товара пока не показываем; донаты и тестовые оповещения с сайта пропускаем дальше
   const currency = String(d.currency || '').toUpperCase().slice(0, 4);
   return {
     id: d.id !== undefined ? String(d.id) : '',
@@ -168,7 +152,7 @@ function start(opts) {
   const o = { wsUrl: WS_URL, fetchImpl: fetch, ...opts };
   const Centrifuge = o.Centrifuge || require('centrifuge');
   const WebSocketImpl = o.WebSocket || require('ws');
-  const seen = new Set();
+  const seen = new Map(); // id → время: повтор одного и того же доната отсекаем только ненадолго, чтобы повторные тесты с сайта (у них id может совпадать) не пропадали
   let stopped = false, client = null, timer = null, watchdog = null, backoff = 3000;
   const state = (s, extra) => { try { o.onState && o.onState({ state: s, ...(extra || {}) }); } catch (_) {} };
 
@@ -207,9 +191,10 @@ function start(opts) {
     c.setToken(user.socketToken);
     const sub = c.subscribe(channel);
     sub.on('publish', (ctx) => {
+      try { o.onRaw && o.onRaw(ctx && ctx.data); } catch (_) {}
       const d = parseDonation(ctx && ctx.data);
       if (!d) return;
-      if (d.id) { if (seen.has(d.id)) return; seen.add(d.id); if (seen.size > 200) seen.delete(seen.values().next().value); }
+      if (d.id) { const now = Date.now(), t = seen.get(d.id); if (t && now - t < 15000) return; seen.set(d.id, now); if (seen.size > 200) seen.delete(seen.keys().next().value); }
       try { o.onDonation && o.onDonation(d); } catch (_) {}
     });
     sub.on('subscribe', () => { backoff = 3000; clearTimeout(watchdog); watchdog = null; state('live', { user: { id: user.id, name: user.name, avatar: user.avatar } }); });

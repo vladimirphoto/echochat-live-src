@@ -880,7 +880,7 @@ ipcMain.handle('avatar:remove', (_e, id) => {
 });
 // Где взять бесплатные модели: официальная страница примеров Live2D (адрес зашит, из окна его подменить нельзя)
 // Для 3D (VRM) — VRoid Hub: там модели, которые авторы разрешили скачивать (нужен аккаунт pixiv)
-const AV_MODELS_URL = 'https://www.live2d.com/en/learn/sample/', AV_MODELS3_URL = 'https://hub.vroid.com/en';
+const AV_MODELS_URL = 'https://booth.pm/en/search/free%20live%202d%20model?tags%5B%5D=live2d', AV_MODELS3_URL = 'https://hub.vroid.com/en';
 ipcMain.handle('avatar:open-models', (_e, engine) => { shell.openExternal(engine === '3d' ? AV_MODELS3_URL : AV_MODELS_URL).catch(() => {}); return { ok: true }; });
 ipcMain.handle('avatar:url', (_e, engine) => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/${engine === '3d' ? 'avatar3d' : 'avatar'}` : ''));
 ipcMain.handle('avatar:link', (_e, engine) => (wsrv && wsrv.port ? { ok: true, url: engine === '3d' ? widget.AVATAR3D_PAGES_URL : widget.AVATAR_PAGES_URL } : { ok: false, url: '' }));
@@ -1148,7 +1148,7 @@ const daClearToken = () => { try { require('fs').unlinkSync(daAuthFile()); } cat
 const daImage = () => alertsMod.findFile(daDir(), daMod.IMAGE_BASE, alertsMod.IMAGE_EXT);
 const daSound = () => alertsMod.findFile(daDir(), daMod.SOUND_BASE, alertsMod.SOUND_EXT);
 const daWidgetSettings = () => daMod.widgetSettings(daSet, daImage());
-const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
+const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', last: daSt.last || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
 const daNotify = () => send('da:status', daPublic());
 function stopDa() { if (daHandle) { try { daHandle.stop(); } catch (_) {} daHandle = null; } }
 function startDa(token) {
@@ -1157,8 +1157,10 @@ function startDa(token) {
   daHandle = daMod.start({
     token,
     onDonation: (d) => handleDaDonation(d),
+    // что именно пришло с сайта (для подсказки в окне: видно, доходят ли события вообще)
+    onRaw: (r) => { try { const x = r && r.data && r.amount === undefined ? r.data : (r || {}); daSt.last = 'Последнее событие: ' + String(x.name || 'без названия').slice(0, 24) + ', ' + (x.amount !== undefined ? x.amount + ' ' + String(x.currency || '') : 'без суммы') + ' · ' + new Date().toLocaleTimeString('ru-RU'); daNotify(); } catch (_) {} },
     onState: (s) => {
-      daSt = { state: s.state, user: s.user || daSt.user, error: s.error || '' };
+      daSt = { state: s.state, user: s.user || daSt.user, error: s.error || '', last: daSt.last };
       if (s.state === 'auth') { stopDa(); daClearToken(); daSt = { state: 'off', user: null, error: s.error || 'Нужно войти заново' }; } // токен не принят: старый удаляем, чтобы не гонять запросы впустую
       daNotify();
     },

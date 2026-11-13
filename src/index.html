@@ -383,80 +383,77 @@
         </div>
       </section>
       <section class="tab" id="tab-da">
-        <div class="cols">
-          <div class="col-left">
-            <div class="card kc">
-              <div class="kc-head"><h2>Подключение DonationAlerts</h2><div class="kstat" id="daStat"></div></div>
-              <p class="muted">Войдите в свой аккаунт DonationAlerts. Донаты оттуда будут появляться на экране стрима в вашем оформлении, со звуком и голосом. Пароль приложению не передаётся: вход проходит на сайте DonationAlerts</p>
-              <div class="da-user" id="daUser" hidden><div class="da-ava" id="daAva"></div><div><b id="daName"></b><small class="muted" id="daSub">Принимаем донаты</small></div></div>
-              <button class="btn primary" id="daLogin" type="button">Войти через DonationAlerts</button><button class="btn ghost wide" id="daLogout" type="button" hidden style="margin-top:12px">Выйти</button>
-              <small class="kwarn" id="daMsg" hidden></small>
-              <small class="muted" id="daSetup" hidden>Администратору приложения: впишите client_id в assets/da-client-id.txt (создать приложение: donationalerts.com/application/clients), адрес перенаправления укажите как в этом файле</small>
-            </div>
-            <div class="card dz-card">
-              <h2>Шаблон виджета</h2>
-              <p class="muted">Выберите оформление. Предпросмотр справа сразу покажет выбранный вариант</p>
-              <div class="dz-grid" id="daGrid" role="radiogroup" aria-label="Шаблон виджета DonationAlerts">
-                <button type="button" class="dz-opt" data-dadesign="classic" role="radio"><div class="dz dz-classic"><i>🎁</i><div><b>Айдос А.</b><em>3 000 ₸</em></div></div><span>Стандарт</span></button>
-                <button type="button" class="dz-opt" data-dadesign="neon" role="radio"><div class="dz dz-neon"><i>💎</i><div><b>АЙДОС А.</b><em>150 ₽</em></div></div><span>Неон</span></button>
-                <button type="button" class="dz-opt" data-dadesign="minimal" role="radio"><div class="dz dz-minimal"><i>🍕</i><div><b>Айдос А.</b><em>5 $</em></div></div><span>Минимал</span></button>
-                <button type="button" class="dz-opt" data-dadesign="party" role="radio"><div class="dz dz-party"><i>🚀</i><div><b>Айдос А.</b><em>100 €</em></div></div><span>Праздник</span></button>
-                <button type="button" class="dz-opt" data-dadesign="gold" role="radio"><div class="dz dz-gold"><i>👑</i><div><b>Айдос А.</b><em>10 000 ₸</em></div></div><span>Золото</span></button>
-                <button type="button" class="dz-opt" data-dadesign="arcade" role="radio"><div class="dz dz-arcade"><i>🎮</i><div><b>АЙДОС А.</b><em>500 ₽</em></div></div><span>Аркада</span></button>
-                <button type="button" class="dz-opt" data-dadesign="glass" role="radio"><div class="dz dz-glass"><i>✨</i><div><b>Айдос А.</b><em>20 $</em></div></div><span>Стекло</span></button>
-                <button type="button" class="dz-opt" data-dadesign="candy" role="radio"><div class="dz dz-candy"><i>🍬</i><div><b>Айдос А.</b><em>800 ₸</em></div></div><span>Конфетка</span></button>
-              </div>
-              <label style="margin-top:14px">Раскладка</label>
-              <div class="da-chips" role="radiogroup" aria-label="Раскладка виджета DonationAlerts" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-                <button type="button" class="da-chip" data-dalayout="top" role="radio"><i>🖼️</i><span>Картинка сверху</span></button>
-                <button type="button" class="da-chip" data-dalayout="side" role="radio"><i>◧</i><span>Картинка слева</span></button>
-              </div>
+        <div class="da-grid">
+<div class="da-col">
+          <div class="card kc">
+            <div class="kc-head"><h2>Подключение DonationAlerts</h2><div class="kstat" id="daStat"></div></div>
+            <p class="muted">Войдите в свой аккаунт DonationAlerts. Донаты оттуда будут появляться на экране стрима в вашем оформлении, со звуком и голосом. Пароль приложению не передаётся: вход проходит на сайте DonationAlerts</p>
+            <div class="da-user" id="daUser" hidden><div class="da-ava" id="daAva"></div><div><b id="daName"></b><small class="muted" id="daSub">Принимаем донаты</small></div></div>
+            <div class="da-push"><button class="btn primary" id="daLogin" type="button">Войти через DonationAlerts</button><button class="btn ghost wide" id="daLogout" type="button" hidden style="margin-top:12px">Выйти</button></div>
+            <small class="kwarn" id="daMsg" hidden></small>
+            <small class="muted" id="daSetup" hidden>Администратору приложения: впишите client_id в assets/da-client-id.txt (создать приложение: donationalerts.com/application/clients), адрес перенаправления укажите как в этом файле</small>
+          </div>
+          <div class="card dz-card">
+            <h2>Шаблон виджета</h2>
+            <p class="muted">Только картинка и текст, без рамок. Предпросмотр справа сразу покажет выбранный вариант</p>
+            <div class="dz-grid tp-grid" id="daGrid" role="radiogroup" aria-label="Шаблон виджета DonationAlerts">
+                <button type="button" class="dz-opt tp-opt" data-dadesign="classic" role="radio"><div class="tp t-classic"><img src="../assets/da/1.png" alt="" /><div class="tp-tx"><b>Айдос А.</b><em>3 000 ₸</em></div></div><span>Подарок</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="neon" role="radio"><div class="tp t-neon"><img src="../assets/da/2.png" alt="" /><div class="tp-tx"><b>Анна К.</b><em>150 ₽</em></div></div><span>Монеты</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="minimal" role="radio"><div class="tp t-minimal"><img src="../assets/da/3.png" alt="" /><div class="tp-tx"><b>Mark</b><em>5 $</em></div></div><span>Сердце</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="party" role="radio"><div class="tp t-party"><img src="../assets/da/4.png" alt="" /><div class="tp-tx"><b>Дина Н.</b><em>10 000 ₸</em></div></div><span>Мешок</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="gold" role="radio"><div class="tp t-gold"><img src="../assets/da/5.gif" alt="" /><div class="tp-tx"><b>Тимур Б.</b><em>100 €</em></div></div><span>Серый кот</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="arcade" role="radio"><div class="tp t-arcade"><img src="../assets/da/6.gif" alt="" /><div class="tp-tx"><b>Айдос А.</b><em>500 ₽</em></div></div><span>Панда</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="glass" role="radio"><div class="tp t-glass"><img src="../assets/da/7.gif" alt="" /><div class="tp-tx"><b>Анна К.</b><em>20 $</em></div></div><span>Акула</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="candy" role="radio"><div class="tp t-candy"><img src="../assets/da/8.gif" alt="" /><div class="tp-tx"><b>Mark</b><em>800 ₸</em></div></div><span>Белый котик</span></button>
             </div>
           </div>
-          <div class="col-right">
-            <div class="card">
-              <h2>Виджет донатов DonationAlerts</h2>
-              <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает имя, сумму в валюте перевода, картинку и сообщение</p>
+          <div class="card">
+            <h2>Звук</h2>
+            <p class="muted">Выберите готовый звук — он сразу прозвучит — или загрузите свой (mp3, wav, ogg и др. до 5 МБ)</p>
+            <div class="voices da-sounds" id="daSndList" role="radiogroup" aria-label="Звук доната"></div>
+            <div class="snd-row">
+              <button class="btn ghost" id="daSoundTest" type="button"><span id="daSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="daSoundLbl">Прослушать звук</span></button>
+              <button class="btn ghost" id="daSoundPick" type="button">Загрузить свой звук</button>
+            </div>
+            <div class="snd-name"><small class="muted" id="daSoundName">Сейчас: колокольчик</small><button class="snd-reset" id="daSoundReset" type="button" hidden>Удалить свой</button></div>
+          </div>
+</div>
+<div class="da-col">
+          <div class="card">
+            <h2>Виджет донатов DonationAlerts</h2>
+            <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
+            <div class="da-push">
               <label>Ссылка на виджет</label>
               <div class="nick-field"><input id="daUrl" readonly spellcheck="false" /></div>
               <div class="wbtn-row"><button class="btn wbtn primary" id="daCopy" type="button">Копировать</button><button class="btn wbtn ghost" id="daTest" type="button">Тест доната</button></div>
             </div>
-            <div class="card preview-card">
-              <div class="prev-head"><div><h2>Предпросмотр</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук</small></div></div>
-              <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
-            </div>
-            <div class="card">
-              <h2>Картинка</h2>
-              <p class="muted">Готовая картинка или своя (png, jpg, gif, webp до 5 МБ). «По сумме» подбирает картинку под размер доната</p>
-              <div class="da-chips" id="daImgChips" role="radiogroup" aria-label="Картинка доната"></div>
-              <div class="snd-row one"><button class="btn ghost" id="daImgPick" type="button">Загрузить свою картинку</button></div>
-              <div class="snd-name"><small class="muted" id="daImgName">Сейчас: по сумме доната</small><button class="snd-reset" id="daImgReset" type="button" hidden>Удалить свою</button></div>
-            </div>
           </div>
-        </div>
-        <div class="da-pair">
-            <div class="card">
-              <h2>Звук</h2>
-              <p class="muted">Готовый звук или свой (mp3, wav, ogg и др. до 5 МБ)</p>
-              <div class="da-chips" id="daSndChips" role="radiogroup" aria-label="Звук доната"></div>
-              <div class="snd-row">
-                <button class="btn ghost" id="daSoundTest" type="button"><span id="daSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="daSoundLbl">Прослушать звук</span></button>
-                <button class="btn ghost" id="daSoundPick" type="button">Загрузить свой звук</button>
-              </div>
-              <div class="snd-name"><small class="muted" id="daSoundName">Сейчас: колокольчик</small><button class="snd-reset" id="daSoundReset" type="button" hidden>Удалить свой</button></div>
+          <div class="card preview-card da-prev">
+            <div class="prev-head"><div><h2>Предпросмотр и картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
+            <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
+            <label style="margin-top:14px">Текст</label>
+            <div class="da-chips" role="radiogroup" aria-label="Положение текста" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">
+              <button type="button" class="da-chip" data-datext="below" role="radio"><i>⬆️</i><span>Текст снизу</span></button>
+              <button type="button" class="da-chip" data-datext="above" role="radio"><i>⬇️</i><span>Текст сверху</span></button>
             </div>
-            <div class="card">
-              <h2>Настройки виджета</h2>
-              <div class="toggles" style="margin-top:8px">
-                <label class="sw"><input type="checkbox" data-dk="enabled" checked /><i></i><span>Показывать донаты DonationAlerts</span></label>
-                <label class="sw"><input type="checkbox" data-dk="showMessage" checked /><i></i><span>Показывать сообщение к донату</span></label>
-                <label class="sw"><input type="checkbox" data-dk="voice" checked /><i></i><span>Озвучивать донаты голосом</span></label>
-                <label class="sw"><input type="checkbox" data-dk="sound" checked /><i></i><span>Звук при донате</span></label>
-              </div>
-              <div class="ctl"><div class="row"><label>Показывать каждый донат</label><b id="daDurVal">8 с</b></div><input type="range" id="daDur" min="3" max="30" value="8" /></div>
-              <div class="ctl"><div class="row"><label>Масштаб</label><b id="daScaleVal">100%</b></div><input type="range" id="daScale" min="50" max="200" value="100" /></div>
-              <div class="ctl"><div class="row"><label>Минимальная сумма (в пересчёте на ₸, примерно)</label><b id="daMinVal">0 ₸</b></div><input type="range" id="daMin" min="0" max="10000" step="100" value="0" /></div>
+            <div class="snd-row one"><button class="btn ghost" id="daImgPick" type="button">Загрузить свою картинку</button></div>
+            <div class="snd-name"><small class="muted" id="daImgName">Сейчас: картинка шаблона</small><button class="snd-reset" id="daImgReset" type="button" hidden>Удалить свою</button></div>
+            <small class="muted da-hint">png, jpg, gif, webp до 5 МБ</small>
+          </div>
+          <div class="card">
+            <h2>Настройки виджета</h2>
+            <div class="toggles" style="margin-top:8px">
+              <label class="sw"><input type="checkbox" data-dk="enabled" checked /><i></i><span>Показывать донаты DonationAlerts</span></label>
+              <label class="sw"><input type="checkbox" data-dk="showMessage" checked /><i></i><span>Показывать сообщение к донату</span></label>
+              <label class="sw"><input type="checkbox" data-dk="voice" checked /><i></i><span>Озвучивать донаты голосом</span></label>
+              <label class="sw"><input type="checkbox" data-dk="sound" checked /><i></i><span>Звук при донате</span></label>
             </div>
+            <div class="ctl"><div class="row"><label>Показывать каждый донат</label><b id="daDurVal">8 с</b></div><input type="range" id="daDur" min="3" max="30" value="8" /></div>
+            <div class="ctl"><div class="row"><label>Масштаб</label><b id="daScaleVal">100%</b></div><input type="range" id="daScale" min="50" max="200" value="100" /></div>
+            <div class="ctl"><div class="row"><label>Минимальная сумма (в пересчёте на ₸, примерно)</label><b id="daMinVal">0 ₸</b></div><input type="range" id="daMin" min="0" max="10000" step="100" value="0" /></div>
+          </div>
+        
+</div>
         </div>
       </section>
       <!-- НАСТРОЙКИ -->
@@ -487,14 +484,14 @@
               <label>Модель</label>
               <div class="csel" id="avModelSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div>
               <div class="wbtn-row wbtn-row3" style="margin-top:10px">
-                <button class="btn wbtn ghost" id="avGetModels" type="button" style="grid-column:1/-1">Скачать бесплатные модели (сайт Live2D)</button>
+                <button class="btn wbtn ghost" id="avGetModels" type="button" style="grid-column:1/-1">Скачать бесплатные модели (BOOTH — сотни моделей)</button>
                 <button class="btn wbtn ghost" id="avAddDir" type="button">Папка модели</button>
                 <button class="btn wbtn ghost" id="avAddFile" type="button">Архив .zip</button>
                 <button class="btn wbtn ghost" id="avRemove" type="button">Удалить модель</button>
               </div>
               <div class="wstat" id="avModelTxt"></div>
               <p class="muted" id="avCredit" hidden></p>
-              <p class="muted">Бесплатные модели: нажмите «Скачать бесплатные модели», выберите модель на сайте Live2D и скачайте её, затем добавьте скачанный .zip кнопкой «Архив .zip» (или папку кнопкой «Папка модели»). Подходят модели Live2D Cubism 3 и 4. Читайте условия использования модели: у каждой они свои.</p>
+              <p class="muted">Бесплатные модели: нажмите «Скачать бесплатные модели», выберите модель на BOOTH (японский каталог, больше 400 Live2D-моделей, большинство за 0 ¥; платные отличаются ценой) и скачайте её, затем добавьте скачанный .zip кнопкой «Архив .zip» (или папку кнопкой «Папка модели»). Подходят модели Live2D Cubism 3 и 4. Читайте условия использования модели: у каждой они свои.</p>
             </div>
           </div>
           <div class="card preview-card">
