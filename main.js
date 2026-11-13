@@ -366,7 +366,7 @@ function createWindow() {
   const wa = require('electron').screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
     width: Math.min(1105, wa.width),
-    height: Math.min(800, wa.height), // выше прежних 748: с вкладкой DonationAlerts все пункты меню слева помещаются без прокрутки
+    height: Math.min(920, wa.height), // выше прежних 800: внизу меню целиком видна строка с версией и жуком (баг-репорт)
     useContentSize: true,
     minWidth: 1060,
     minHeight: 720,
@@ -385,7 +385,7 @@ function createWindow() {
   });
   win.setMenu(null);
   // «Свернуть» — обычное сворачивание на панель задач (иконка остаётся); в трей прячется только при закрытии, по выбору пользователя
-  // окно можно растягивать за края и разворачивать; при запуске всегда 1105×800, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
+  // окно можно растягивать за края и разворачивать; при запуске всегда 1105×920, меньше 1060×720 уменьшить нельзя (minWidth/minHeight выше)
   win.on('close', onWindowClose);
   win.on('closed', () => { closeOverlay(); closeAvatar(); }); // главное окно закрыто (выход) — оверлей закрывается вместе с ним, иначе приложение не завершилось бы
   win.on('session-end', () => { quitting = true; }); // выключение Windows не блокируем
@@ -1294,6 +1294,43 @@ ipcMain.handle('lic:purchase', () => purchaseInfo());
 
 const updater = require('./updater');
 ipcMain.handle('app:version', () => app.getVersion());
+// Баг-репорт и «Написать автору»: письмо уходит на вшитую почту автора без почтовой программы у пользователя.
+// Пароль от почты в приложение не кладём (его можно достать из exe), поэтому отправка идёт через форму-пересылку FormSubmit.
+// Если сеть недоступна, остаётся запасной путь: открыть обычное письмо (mailto) в почтовой программе.
+const AUTHOR_MAIL = 'vladimir.palatovsky@yandex.ru';
+let lastBugAt = 0;
+const bugBody = (d) => {
+  const text = String((d && d.text) || '').trim().slice(0, 3000);
+  const contact = String((d && d.contact) || '').trim().slice(0, 120);
+  const kind = d && d.kind === 'message' ? 'message' : 'bug';
+  const sys = `ЭхоЧат LIVE ${app.getVersion()} · ${process.platform} ${require('os').release()} · ${process.arch}`;
+  return { text, contact, kind, sys, subject: (kind === 'bug' ? 'Баг-репорт' : 'Сообщение автору') + ' · ЭхоЧат LIVE ' + app.getVersion() };
+};
+ipcMain.handle('bug:send', async (_e, d) => {
+  const b = bugBody(d);
+  if (b.text.length < 5) return { ok: false, error: 'Опишите проблему хотя бы парой слов' };
+  if (Date.now() - lastBugAt < 30000) return { ok: false, error: 'Подождите полминуты перед следующим письмом' };
+  try {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch('https://formsubmit.co/ajax/' + AUTHOR_MAIL, {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ _subject: b.subject, _captcha: 'false', _template: 'table', Сообщение: b.text, Связь: b.contact || 'не указано', Система: b.sys }),
+    });
+    clearTimeout(tm);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || String(j.success) === 'false') return { ok: false, error: 'Не удалось отправить письмо', fallback: true };
+    lastBugAt = Date.now();
+    return { ok: true };
+  } catch (_) { return { ok: false, error: 'Нет связи с сервером', fallback: true }; }
+});
+ipcMain.handle('bug:mailto', (_e, d) => {
+  const b = bugBody(d);
+  const body = `${b.text}\n\n—\n${b.contact ? 'Связь: ' + b.contact + '\n' : ''}${b.sys}`;
+  shell.openExternal(`mailto:${AUTHOR_MAIL}?subject=${encodeURIComponent(b.subject)}&body=${encodeURIComponent(body)}`).catch(() => {});
+  return { ok: true };
+});
+
 ipcMain.handle('upd:check', async () => {
   try { const r = await updater.check(); if (r && r.ok && !trayUpd.busy) { trayUpd.version = r.available ? r.version : ''; rebuildTrayMenu(); } return r; } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
 });

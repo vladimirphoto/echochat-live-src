@@ -37,7 +37,7 @@
           <span class="lc-cta" id="licChipCta">Открыть Pro</span>
         </button>
         <button class="btn ghost upd" id="btnUpdate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></svg><span>Проверить обновления</span></button>
-        <small id="verLine">Версия —</small>
+        <div class="ver-row"><small id="verLine">Версия —</small><button class="bug-btn" id="btnBug" type="button" title="Сообщить об ошибке" aria-label="Сообщить об ошибке"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7.5V7a4 4 0 0 1 8 0v.5"/><rect x="6.5" y="7.5" width="11" height="12" rx="5.5"/><path d="M12 11v8.5M3 12h3.5M17.5 12H21M4 6.5l3 2M20 6.5l-3 2M4 19l3-2M20 19l-3-2"/></svg></button></div>
       </div>
     </aside>
 
@@ -660,7 +660,7 @@
         <div class="lic-plans">
           <div class="card lic-plan">
             <div class="lp-name">Lite</div><div class="lp-price">Бесплатно</div>
-            <ul><li>Эфир и озвучка чата</li><li>Фильтры</li><li>Бесплатные обновления Lite</li><li class="off">Виджеты и оповещения</li><li class="off">Оверлей чата</li><li class="off">Аватар 2D и 3D</li><li>DonationAlerts: оповещения о донатах</li><li class="off">Донаты Каспи</li></ul>
+            <ul><li>Эфир и озвучка чата</li><li>Фильтры</li><li>Бесплатные обновления Lite</li><li>DonationAlerts: оповещения о донатах</li><li class="off">Виджеты и оповещения</li><li class="off">Оверлей чата</li><li class="off">Аватар 2D и 3D</li><li class="off">Донаты Каспи</li></ul>
           </div>
           <div class="card lic-plan hot">
             <div class="lp-tag">Рекомендуем</div>
@@ -703,6 +703,24 @@
             </div>
           </div>
         </div>
+        <div class="card author" id="authorCard">
+          <div class="au-glow" aria-hidden="true"></div>
+          <div class="au-ava"><div class="au-ring"></div><img src="author.png" alt="Владимир, автор ЭхоЧат LIVE" width="132" height="132" draggable="false" /></div>
+          <div class="au-body">
+            <div class="au-kicker">Связаться с автором</div>
+            <h2>Привет! Меня зовут Владимир <span class="au-wave">👋</span></h2>
+            <div class="au-chips"><span>31 год</span><span>Казахстан</span><span>Стример</span><span>Фотограф</span></div>
+            <p>Мне 31 год, я из Казахстана. Я стример, фотограф и человек, который любит создавать что-то новое.</p>
+            <p>ЭхоЧат LIVE — это проект, который я создал с душой и большой любовью к стримингу. Я сам стримлю и прекрасно понимаю, как хочется сделать свои эфиры интереснее, уютнее и ближе к зрителям.</p>
+            <p>Мне хотелось создать инструмент, который поможет другим стримерам, сделает общение со зрителями живее и подарит больше возможностей для развития своего канала.</p>
+            <p>Спасибо, что выбрали ЭхоЧат LIVE и стали частью этой истории! ❤️</p>
+            <div class="au-sign">С теплом, Владимир — автор ЭхоЧат LIVE</div>
+            <div class="au-btns">
+              <button class="btn primary" id="auWrite" type="button">Написать автору</button>
+              <button class="btn ghost" id="auBug" type="button">Сообщить об ошибке</button>
+            </div>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -710,6 +728,17 @@
   <div class="wn-back" id="wnBack" hidden><div class="wn-box"><div class="wn-badge" id="wnVer"></div><h2>Что нового</h2><ul id="wnList"></ul><button class="btn primary" id="wnClose">Закрыть</button></div></div>
   <div class="wn-back cf-back" id="cfBack" hidden><div class="wn-box cf-box" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText"><h2 id="cfTitle"></h2><p id="cfText"></p><div class="cf-row"><button class="btn ghost" id="cfNo" type="button">Отмена</button><button class="btn primary" id="cfYes" type="button">Да</button></div></div></div>
   <div class="wn-back" id="closeBack" hidden><div class="wn-box"><h2>Закрыть ЭхоЧат LIVE?</h2><p class="muted">Если свернуть в трей, озвучка и подключение к чату продолжат работать. Вернуть окно можно кликом по значку у часов</p><label class="sw cl-rem"><input type="checkbox" id="closeRemember" /><i></i><span>Больше не спрашивать<small>Выбор можно поменять во вкладке «Настройки»</small></span></label><div class="cl-btns"><button class="btn primary" id="closeTray">Свернуть в трей</button><button class="btn ghost" id="closeQuit">Закрыть программу</button><button class="btn ghost" id="closeCancel">Отмена</button></div></div></div>
+  </div>
+  <div class="wn-back" id="bugBack" hidden>
+    <div class="wn-box bug-box" role="dialog" aria-modal="true" aria-labelledby="bugTitle">
+      <div class="lb-head"><span class="wn-badge" id="bugBadge">Баг-репорт</span><button class="lb-x" id="bugX" type="button" aria-label="Закрыть">×</button></div>
+      <h2 id="bugTitle">Нашли ошибку?</h2>
+      <p class="bug-hint" id="bugHint">Опишите, что пошло не так: что нажимали и что ожидали увидеть. Версия программы и система добавятся к письму сами</p>
+      <textarea id="bugText" maxlength="3000" rows="6" placeholder="Опишите проблему…" spellcheck="true"></textarea>
+      <div class="nick-field bug-contact"><input id="bugContact" maxlength="120" placeholder="Как с вами связаться (необязательно)" spellcheck="false" autocomplete="off" /></div>
+      <div class="lic-msg" id="bugMsg" aria-live="polite"></div>
+      <div class="cf-row"><button class="btn ghost" id="bugMail" type="button" hidden>Открыть почту</button><button class="btn primary" id="bugSend" type="button">Отправить</button></div>
+    </div>
   </div>
   <div class="wn-back" id="licBuyBack" hidden>
     <div class="wn-box lic-buy" role="dialog" aria-modal="true" aria-labelledby="licBuyTitle">

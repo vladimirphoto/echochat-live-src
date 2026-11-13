@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('echo', {
   warm: (voices) => ipcRenderer.invoke('tts:warm', voices),
   voices: () => ipcRenderer.invoke('tts:voices'),
   version: () => ipcRenderer.invoke('app:version'),
+  bugSend: (d) => ipcRenderer.invoke('bug:send', d),
+  bugMailto: (d) => ipcRenderer.invoke('bug:mailto', d),
   checkUpdate: () => ipcRenderer.invoke('upd:check'),
   installUpdate: () => ipcRenderer.invoke('upd:install'),
   onUpdateProgress: on('upd:progress'),

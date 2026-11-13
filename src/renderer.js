@@ -1724,6 +1724,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '3.3.5': ['Графики в карточках эфира стали компактнее: расположены под строкой названия, между центром и правым краем, а по бокам плавно растворяются.','Во вкладке «Лицензия» у Lite сначала список того, что есть, ниже то, чего нет; у Lifetime такие же ровные отступы между пунктами.','Окно при запуске чуть выше, строка с версией видна сразу. Рядом с версией значок жука: нажмите, чтобы сообщить автору об ошибке.','В «Настройках» новый раздел «Связаться с автором».'],
   '3.3.4': ['Логотип DonationAlerts в меню стал одноцветным, в стиле остальных значков: серый, а у выбранного пункта белый.'],
   '3.3.3': ['Логотип DonationAlerts в меню заменён на векторный: теперь он чёткий на любом экране.'],
   '3.3.2': ['В меню у «Донатов Каспи» теперь значок тенге ₸, а у DonationAlerts его фирменный логотип в чётком векторном виде.'],
@@ -1866,3 +1867,41 @@ $('#kLogClear').onclick = () => { klog.innerHTML = '<div class="empty">Пока 
 })();
 
 refreshKaspiUi();
+
+/* ---------- баг-репорт и письмо автору ---------- */
+(() => {
+  const back = $('#bugBack'); if (!back) return;
+  const txt = $('#bugText'), con = $('#bugContact'), msg = $('#bugMsg'), send = $('#bugSend'), mail = $('#bugMail');
+  let kind = 'bug';
+  const say = (t, bad) => { msg.textContent = t || ''; msg.classList.toggle('bad', !!bad); msg.classList.toggle('ok', !bad && !!t); };
+  const open = (k) => {
+    kind = k;
+    $('#bugBadge').textContent = k === 'bug' ? 'Баг-репорт' : 'Автору';
+    $('#bugTitle').textContent = k === 'bug' ? 'Нашли ошибку?' : 'Написать автору';
+    $('#bugHint').textContent = k === 'bug'
+      ? 'Опишите, что пошло не так: что нажимали и что ожидали увидеть. Версия программы и система добавятся к письму сами'
+      : 'Вопрос, идея или пожелание: всё долетит до Владимира. Версия программы добавится к письму сама';
+    txt.placeholder = k === 'bug' ? 'Опишите проблему…' : 'Ваше сообщение…';
+    send.disabled = false; send.textContent = 'Отправить'; mail.hidden = true; say('');
+    back.hidden = false; setTimeout(() => txt.focus(), 50);
+  };
+  const close = () => { back.hidden = true; };
+  const payload = () => ({ kind, text: txt.value, contact: con.value });
+  $('#btnBug').addEventListener('click', () => open('bug'));
+  const w = $('#auWrite'), b = $('#auBug');
+  if (w) w.addEventListener('click', () => open('message'));
+  if (b) b.addEventListener('click', () => open('bug'));
+  $('#bugX').addEventListener('click', close);
+  back.addEventListener('mousedown', (e) => { if (e.target === back) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !back.hidden) close(); });
+  mail.addEventListener('click', () => window.echo.bugMailto(payload()));
+  send.addEventListener('click', async () => {
+    if (txt.value.trim().length < 5) { say('Опишите проблему хотя бы парой слов', true); txt.focus(); return; }
+    send.disabled = true; send.textContent = 'Отправляем…'; say('');
+    let r; try { r = await window.echo.bugSend(payload()); } catch (_) { r = { ok: false, error: 'Не удалось отправить письмо', fallback: true }; }
+    if (r && r.ok) { say('Спасибо! Письмо отправлено автору'); txt.value = ''; send.textContent = 'Отправлено'; setTimeout(close, 1600); return; }
+    say((r && r.error) || 'Не удалось отправить', true);
+    send.disabled = false; send.textContent = 'Повторить';
+    if (r && r.fallback) mail.hidden = false;
+  });
+})();
