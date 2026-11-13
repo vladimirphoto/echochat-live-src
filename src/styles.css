@@ -535,7 +535,7 @@ label+.csel{margin-top:0}
 
 /* ---------- Лицензия: статус, тарифы, покупка Pro, блокировка разделов ---------- */
 .btn[hidden]{display:none}
-.lic-chip{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;font-weight:600;transition:.2s}
+.lic-chip{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;font-weight:600;transition:.2s}/* дальше блок тарифа переопределён в конце файла */
 .lic-chip:hover{background:rgba(255,255,255,.09)}
 .lic-chip:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
 .lic-chip .lc-t{white-space:nowrap}
@@ -744,10 +744,6 @@ main{position:relative}
 
 /* вкладка «Аватар» */
 #tab-avatar .avpane[hidden]{display:none}
-.avseg{display:inline-flex;gap:4px;padding:4px;margin-bottom:16px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
-.avseg button{border:0;background:transparent;color:var(--muted);padding:8px 18px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
-.avseg button:hover{color:var(--text)}
-.avseg button.on{background:linear-gradient(135deg,var(--a1),#f472b6);color:#fff}
 #tab-avatar .cols{grid-template-columns:minmax(380px,440px) minmax(0,1fr);align-items:stretch}
 #tab-avatar .preview-card{min-height:0}
 #tab-avatar .prev-box{min-height:300px}
@@ -811,3 +807,82 @@ main{position:relative}
 .tp.t-candy .tp-tx b{color:#fff;-webkit-text-stroke:3px #e0357e;paint-order:stroke fill}.tp.t-candy .tp-tx em{color:#fff;-webkit-text-stroke:4px #ff5d9e;paint-order:stroke fill}
 
 .tp.at-top{flex-direction:column-reverse}
+
+
+/* ===== сайдбар: компактнее на невысоком окне, пожелание, блок тарифа ===== */
+.side{overflow-y:auto;scrollbar-width:none}.side::-webkit-scrollbar{display:none}
+@media (max-height:820px){.nav{padding:9px 14px}.brand{margin-bottom:20px}nav{gap:4px}}
+
+.wish{display:flex;align-items:center;justify-content:center;gap:7px;padding:6px 10px;border-radius:99px;font-size:12px;font-weight:600;letter-spacing:.2px;color:#f9d4e6;background:linear-gradient(135deg,rgba(139,92,246,.14),rgba(236,72,153,.18));border:1px solid rgba(236,72,153,.28)}
+.wish-heart{width:15px;height:15px;color:#ff4d8d;filter:drop-shadow(0 0 6px rgba(255,77,141,.8));animation:heartbeat 1.6s ease-in-out infinite;transform-origin:center}
+@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.28)}28%{transform:scale(1)}42%{transform:scale(1.18)}70%{transform:scale(1)}}
+
+.lic-chip{position:relative;overflow:hidden;flex-direction:column;align-items:stretch;gap:8px;padding:12px 13px;border-radius:14px;isolation:isolate}
+.lic-chip .lc-glow{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .3s}
+.lic-chip .lc-top{display:flex;align-items:center;gap:10px;min-width:0}
+.lic-chip .lc-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;background:rgba(255,255,255,.07);color:var(--muted)}
+.lic-chip .lc-ic svg{width:18px;height:18px}
+.lic-chip .lc-body{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.lic-chip .lc-t{font-size:13.5px;font-weight:700;white-space:nowrap}
+.side-foot .lic-chip small{margin:0;padding:0;font-size:11px;font-weight:500;color:var(--muted);white-space:normal;line-height:1.3}
+.lic-chip .lc-bar{display:block;height:4px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
+.lic-chip .lc-bar[hidden]{display:none}
+.lic-chip .lc-bar b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#fbbf24,#f472b6,#8b5cf6);transition:width .6s ease}
+.lic-chip .lc-cta{display:block;text-align:center;padding:8px 10px;border-radius:10px;font-size:12.5px;font-weight:700;color:#fff;background:var(--grad);box-shadow:0 6px 18px rgba(139,92,246,.45);position:relative;overflow:hidden}
+.lic-chip .lc-cta[hidden]{display:none}
+.lic-chip .lc-cta:after{content:"";position:absolute;inset:0;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-130%);animation:ctashine 2.8s ease-in-out infinite}
+@keyframes ctashine{0%,55%{transform:translateX(-130%)}100%{transform:translateX(330%)}}
+
+/* Lite и закончившийся тариф: яркая карточка, зовёт купить */
+.lic-chip.lite,.lic-chip.expired{border-color:rgba(236,72,153,.55);background:linear-gradient(145deg,rgba(139,92,246,.3),rgba(236,72,153,.24));box-shadow:0 0 0 0 rgba(236,72,153,.5),0 10px 28px rgba(139,92,246,.3);animation:litepulse 2.4s ease-in-out infinite}
+.lic-chip.lite .lc-glow,.lic-chip.expired .lc-glow{opacity:1;background:radial-gradient(120% 90% at 100% 0,rgba(251,191,36,.28),transparent 55%),radial-gradient(100% 80% at 0 100%,rgba(34,211,238,.18),transparent 60%)}
+.lic-chip.lite .lc-ic,.lic-chip.expired .lc-ic{background:linear-gradient(135deg,#fbbf24,#f472b6);color:#2a0f2e;box-shadow:0 4px 14px rgba(251,191,36,.45)}
+.lic-chip.lite .lc-t,.lic-chip.expired .lc-t{color:#fff}
+.lic-chip.lite small,.lic-chip.expired small{color:#f3d9ee!important}
+.lic-chip.expired{border-color:rgba(248,113,113,.6);background:linear-gradient(145deg,rgba(248,113,113,.26),rgba(236,72,153,.24))}
+.lic-chip.expired .lc-ic{background:linear-gradient(135deg,#f87171,#fbbf24)}
+.lic-chip.lite:hover,.lic-chip.expired:hover{transform:translateY(-1px);filter:brightness(1.1)}
+@keyframes litepulse{0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,.0),0 10px 28px rgba(139,92,246,.3)}50%{box-shadow:0 0 0 4px rgba(236,72,153,.16),0 10px 34px rgba(236,72,153,.4)}}
+
+/* пробный период: бирюзовый акцент */
+.lic-chip.trial{border-color:rgba(34,211,238,.4);background:linear-gradient(145deg,rgba(34,211,238,.14),rgba(139,92,246,.18))}
+.lic-chip.trial .lc-ic{background:rgba(34,211,238,.18);color:var(--a3)}
+
+/* Pro и Lifetime: премиальный золото-фиолетовый блок с бликом */
+.lic-chip.pro,.lic-chip.lifetime{border:1px solid transparent;background:linear-gradient(#150f22,#150f22) padding-box,linear-gradient(135deg,#fbbf24,#ec4899 50%,#8b5cf6) border-box;box-shadow:0 10px 30px rgba(139,92,246,.35),0 0 24px rgba(251,191,36,.12)}
+.lic-chip.pro .lc-glow,.lic-chip.lifetime .lc-glow{opacity:1;background:radial-gradient(110% 100% at 0 0,rgba(251,191,36,.22),transparent 55%),radial-gradient(110% 100% at 100% 100%,rgba(139,92,246,.3),transparent 60%)}
+.lic-chip.pro .lc-glow:after,.lic-chip.lifetime .lc-glow:after{content:"";position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);transform:translateX(-140%) skewX(-18deg);animation:crownshine 4.2s ease-in-out infinite}
+@keyframes crownshine{0%,60%{transform:translateX(-140%) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
+.lic-chip.pro .lc-ic,.lic-chip.lifetime .lc-ic{background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f472b6);color:#3b1650;box-shadow:0 4px 16px rgba(251,191,36,.55)}
+.lic-chip.pro .lc-t,.lic-chip.lifetime .lc-t{background:linear-gradient(90deg,#fde68a,#f9a8d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lic-chip.pro .lc-cta{background:rgba(255,255,255,.08);box-shadow:none;border:1px solid rgba(251,191,36,.4);color:#fde68a}
+@media (prefers-reduced-motion:reduce){.wish-heart,.lic-chip.lite,.lic-chip.expired,.lic-chip .lc-cta:after,.lic-chip .lc-glow:after{animation:none!important}}
+
+/* ===== «Эфир»: мини-графики в карточках ===== */
+.stat>*:not(.spark){position:relative;z-index:1}
+.spark{position:absolute;left:0;right:0;bottom:0;width:100%;height:62%;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .8s ease}
+.stat.live .spark{opacity:1}
+.spark path{vector-effect:non-scaling-stroke}
+.spark .sp-line{fill:none;stroke:var(--sc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--sc))}
+.spark .sp-area{stroke:none}
+.stat-viewers{--sc:#22d3ee}.stat:nth-child(2){--sc:#ec4899}.stat:nth-child(3){--sc:#fbbf24}.stat:nth-child(4){--sc:#34d399}
+
+/* ===== «Аватар»: две отдельные короткие кнопки 2D и 3D ===== */
+.avseg{align-self:flex-start;display:flex;gap:10px;margin-bottom:16px;padding:0;background:none;border:0;border-radius:0;width:max-content;max-width:100%}
+.avseg button{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:baseline;gap:7px;padding:10px 20px;border-radius:14px;color:var(--muted);background:var(--panel);border:1px solid var(--line);transition:transform .15s,background .2s,color .2s,box-shadow .2s,border-color .2s}
+.avseg button b{font-size:17px;font-weight:800;letter-spacing:.3px}
+.avseg button span{font-size:12.5px;font-weight:600;opacity:.85}
+.avseg button:hover{color:var(--text);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.5);transform:translateY(-1px)}
+.avseg button:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+.avseg button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--a1),#f472b6);box-shadow:0 8px 22px rgba(139,92,246,.45)}
+
+/* ===== лента чата: анимация справа у озвучиваемого сообщения (как в студии озвучки) ===== */
+.msg{position:relative}
+.msg .b{flex:1}
+.msg .spk{display:none;align-self:center;margin-left:auto;flex:none;align-items:center;gap:3px;height:26px;padding-left:10px}
+.msg.speaking .spk{display:flex}
+.msg .spk s{display:block;width:4px;height:6px;border-radius:3px;background:var(--grad);text-decoration:none;box-shadow:0 0 8px rgba(236,72,153,.5);animation:spkbar .9s ease-in-out infinite}
+.msg .spk s:nth-child(2){animation-delay:.15s}.msg .spk s:nth-child(3){animation-delay:.3s}.msg .spk s:nth-child(4){animation-delay:.45s}.msg .spk s:nth-child(5){animation-delay:.6s}
+@keyframes spkbar{0%,100%{height:6px}50%{height:24px}}
+.msg.sys .spk{display:none!important}
+@media (prefers-reduced-motion:reduce){.msg .spk s{animation:none;height:14px}}

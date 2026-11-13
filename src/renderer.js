@@ -343,7 +343,7 @@ function renderMsg({ name, text, kind = '', sub = false, color, avatar = '', pla
   el.className = 'msg ' + kind;
   const icon = platform === 'twitch' ? ICON_TW : platform === 'tiktok' ? ICON_TT : '';
   el.innerHTML = `<div class="av" style="background-color:${color || colorOf(name)}">${esc((name[0] || '?').toUpperCase())}</div>
-    <div class="b"><div class="n">${icon}${esc(name)}${sub ? '<em>SUB</em>' : ''}</div><div class="t">${esc(text)}${giftImg && /^https:/.test(giftImg) ? `<img class="gi" src="${esc(giftImg)}" alt="">` : ''}</div></div>`;
+    <div class="b"><div class="n">${icon}${esc(name)}${sub ? '<em>SUB</em>' : ''}</div><div class="t">${esc(text)}${giftImg && /^https:/.test(giftImg) ? `<img class="gi" src="${esc(giftImg)}" alt="">` : ''}</div></div><i class="spk" aria-hidden="true"><s></s><s></s><s></s><s></s><s></s></i>`;
   if (/^https?:\/\//.test(avatar)) { // аватарка с обеих площадок; если не загрузится — остаётся буква
     const av = $('.av', el), im = new Image();
     im.onload = () => { av.style.backgroundImage = `url("${esc(avatar)}")`; av.textContent = ''; };
@@ -1660,8 +1660,7 @@ function refreshDaStatus(s) {
   }
   $('#daSub').textContent = st === 'live' ? (daState.last || 'Принимаем донаты') : st === 'retry' ? 'Связь пропала, пробую снова…' : 'Подключаюсь…';
   const m = $('#daMsg'); m.hidden = !daState.error || on; m.textContent = daState.error || '';
-  if (daState.locked) daSetStat('DonationAlerts входит в Pro', 'bad');
-  else if (st === 'live') daSetStat('Подключено', 'ok');
+  if (st === 'live') daSetStat('Подключено', 'ok');
   else if (st === 'connecting') daSetStat('Подключаюсь…', '');
   else if (st === 'retry') daSetStat('Нет связи, пробую снова', 'bad');
   else daSetStat('Не подключено', '');

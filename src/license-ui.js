@@ -4,8 +4,8 @@
 // здесь только показ состояния. Использует $ и askConfirm из renderer.js.
 (() => {
   const echo = window.echo;
-  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', da: 'DonationAlerts', overlay: 'Оверлей чата', avatar: 'Аватар' };
-  const LOCK_KEY = { overlay: 'widgets', avatar: 'widgets', da: 'kaspi' }; // оверлей и аватар закрываются вместе с виджетами, DonationAlerts — вместе с донатами Каспи: один тариф Pro
+  const LOCKABLE = { widgets: 'Виджеты', kaspi: 'Донаты Каспи', overlay: 'Оверлей чата', avatar: 'Аватар' };
+  const LOCK_KEY = { overlay: 'widgets', avatar: 'widgets' }; // оверлей и аватар закрываются вместе с виджетами; DonationAlerts открыт на всех тарифах
   const DAY = 86400000;
   const qa = (s) => [...document.querySelectorAll(s)];
   const plural = (n, [a, b, c]) => { const m = n % 100, d = n % 10; return m > 10 && m < 20 ? c : d === 1 ? a : d >= 2 && d <= 4 ? b : c; };
@@ -77,9 +77,9 @@
     if (s.plan === 'pro') return { title: 'Pro активен', sub: s.until ? `Действует до ${fmtDate(s.until)} · осталось ${days(left)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (30 * DAY))) : 1 };
     if (s.plan === 'lifetime') return { title: 'Pro навсегда', sub: 'Бессрочная лицензия, продлевать не нужно', frac: 1 };
     if (s.plan === 'trial') return { title: 'Все функции открыты', sub: left != null ? `Пробный период: осталось ${days(left)}, до ${fmtDate(s.until)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (3 * DAY))) : 1 };
-    const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают, «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» и DonationAlerts откроются с Pro', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» и DonationAlerts', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
+    const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают, «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» откроются с Pro', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи»', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
     if (s.reason === 'trial-ended') return { title: 'Пробный период закончился', sub: 'Действует тариф Lite', frac: 0 };
-    return { title: 'Бесплатный тариф', sub: why || 'Эфир, озвучка и фильтры. «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» и DonationAlerts открываются с Pro', frac: 0 };
+    return { title: 'Бесплатный тариф', sub: why || 'Эфир, озвучка и фильтры. «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» открываются с Pro', frac: 0 };
   }
   function renderStatus(s) {
     const d = describe(s);
@@ -109,10 +109,19 @@
   }
   function renderChip(s) {
     const chip = $('#licChip');
-    chip.className = 'lic-chip ' + s.plan;
-    const t = { lite: 'Lite', trial: 'Пробный', pro: 'Pro', lifetime: 'Lifetime' }[s.plan] || s.title;
-    $('#licChipT').textContent = t;
-    $('#licChipS').textContent = s.plan === 'lite' ? 'Открыть Pro' : s.plan === 'lifetime' ? '' : s.daysLeft != null ? `${s.daysLeft} дн.` : '';
+    const expired = s.plan === 'lite' && ['trial-ended', 'sub-expired'].includes(s.reason);
+    chip.className = 'lic-chip ' + s.plan + (expired ? ' expired' : '');
+    const T = $('#licChipT'), S = $('#licChipS'), C = $('#licChipCta'), W = $('#licChipBarWrap');
+    let t, sub, cta = '', frac = null;
+    if (s.plan === 'lifetime') { t = 'Lifetime Pro'; sub = 'Все функции навсегда'; }
+    else if (s.plan === 'pro') { t = 'Pro активен'; sub = s.until ? `до ${fmtDate(s.until)} · ${days(s.daysLeft)}` : 'Все функции открыты'; frac = describe(s).frac; cta = s.daysLeft != null && s.daysLeft <= 5 ? 'Продлить' : ''; }
+    else if (s.plan === 'trial') { t = 'Пробный период'; sub = s.daysLeft != null ? `Осталось ${days(s.daysLeft)}, потом Lite` : 'Все функции открыты'; frac = describe(s).frac; cta = 'Купить Pro'; }
+    else if (expired) { t = s.reason === 'sub-expired' ? 'Подписка закончилась' : 'Пробный период закончился'; sub = 'Виджеты, аватар и Каспи закрыты'; cta = s.reason === 'sub-expired' ? 'Продлить Pro' : 'Открыть Pro'; }
+    else { t = 'Тариф Lite'; sub = 'Откройте виджеты, аватар и Каспи'; cta = 'Открыть Pro'; }
+    T.textContent = t; S.textContent = sub;
+    C.textContent = cta; C.hidden = !cta;
+    W.hidden = frac == null;
+    if (frac != null) $('#licChipBar').style.width = Math.round(frac * 100) + '%';
   }
 
   // ---------- окно покупки Pro ----------
@@ -202,8 +211,8 @@
     const sub = s.reason === 'sub-expired';
     $('#licEndTitle').textContent = sub ? 'Подписка Pro закончилась' : 'Пробный период закончился';
     $('#licEndText').textContent = sub
-      ? 'Вы перешли на тариф Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» и DonationAlerts вернутся после продления'
-      : 'Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» и DonationAlerts откроются с Pro';
+      ? 'Вы перешли на тариф Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» вернутся после продления'
+      : 'Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» откроются с Pro';
     $('#licEndBack').hidden = false;
   }
   const closeEnd = () => { $('#licEndBack').hidden = true; if (st) store.set('licEndSeen', st.reason); };

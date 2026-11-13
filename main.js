@@ -1148,7 +1148,7 @@ const daClearToken = () => { try { require('fs').unlinkSync(daAuthFile()); } cat
 const daImage = () => alertsMod.findFile(daDir(), daMod.IMAGE_BASE, alertsMod.IMAGE_EXT);
 const daSound = () => alertsMod.findFile(daDir(), daMod.SOUND_BASE, alertsMod.SOUND_EXT);
 const daWidgetSettings = () => daMod.widgetSettings(daSet, daImage());
-const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', last: daSt.last || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
+const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', last: daSt.last || '', hasClientId: !!daClientId(), locked: false });
 const daNotify = () => send('da:status', daPublic());
 function stopDa() { if (daHandle) { try { daHandle.stop(); } catch (_) {} daHandle = null; } }
 function startDa(token) {
@@ -1167,7 +1167,6 @@ function startDa(token) {
   });
 }
 function handleDaDonation(d, test = false) {
-  if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };
   if (!test && !daSet.enabled) return { accepted: false, reason: 'приём выключен' };
   const kzt = daMod.kztEquivalent(d.amount, d.currency);
   if (!test && daSet.minAmount > 0 && kzt < daSet.minAmount) return { accepted: false, reason: 'сумма меньше минимальной' };
@@ -1219,7 +1218,7 @@ function daLogin() {
   });
 }
 ipcMain.handle('da:state', () => daPublic());
-ipcMain.handle('da:login', async () => { if (locked('kaspi')) return { ok: false, locked: true, error: 'Раздел доступен в Pro' }; const r = await daLogin(); return { ...r, ...daPublic(), ok: !!r.ok }; });
+ipcMain.handle('da:login', async () => { const r = await daLogin(); return { ...r, ...daPublic(), ok: !!r.ok }; });
 ipcMain.handle('da:logout', async () => {
   stopDa(); daClearToken(); daSt = { state: 'off', user: null, error: '' };
   try { await require('electron').session.fromPartition('persist:da-auth').clearStorageData(); } catch (_) {} // чтобы вошёл другой человек, а не прежний сеанс
