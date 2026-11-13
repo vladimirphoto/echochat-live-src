@@ -1,29 +1,28 @@
-/* ❄ Зимний режим ЭхоЧат (включается кнопкой под «Настройки», класс body.winter) */
-.nav-winter{all:unset;cursor:pointer;display:flex;gap:12px;align-items:center;padding:10px 14px;margin-top:4px;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.3px;transition:.25s;box-shadow:inset 0 0 0 1px rgba(150,210,255,.22);background:rgba(150,210,255,.05);position:relative}
-.nav-winter:hover{background:rgba(150,210,255,.12);box-shadow:inset 0 0 0 1px rgba(170,225,255,.5),0 0 18px rgba(120,200,255,.25)}
-.nav-winter .ic{width:24px;height:24px;flex:none;color:#9fdcff;filter:drop-shadow(0 0 4px rgba(130,210,255,.7))}
-.nav-winter .wt{position:relative;background:linear-gradient(180deg,#fff 0%,#bfe8ff 55%,#6cb8f0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(120,200,255,.55))}
-/* сосульки под замёрзшей надписью */
-.nav-winter .wt::after{content:"";position:absolute;left:0;right:0;top:calc(100% - 1px);height:8px;background:conic-gradient(from 158deg at 50% 0,rgba(200,240,255,.9) 0 44deg,transparent 0) 0 0/7px 8px repeat-x,conic-gradient(from 166deg at 50% 0,rgba(160,220,255,.8) 0 28deg,transparent 0) 3px 0/13px 8px repeat-x;-webkit-text-fill-color:initial;mask:linear-gradient(90deg,#000 0,#000 100%)}
-.nav-winter.on .ic{color:#ffb86b;filter:drop-shadow(0 0 4px rgba(255,170,90,.7))}
-.nav-winter.on .wt{background:linear-gradient(180deg,#fff2d6,#ffb86b);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 5px rgba(255,170,90,.45))}
-.nav-winter.on .wt::after{display:none}
+/* ❄ Зимний режим ЭхоЧат (кнопка в шапке слева от «Не в эфире», класс body.winter) */
+/* кнопка зимы в шапке: слева от «Не в эфире TikTok» */
+.winter-toggle{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;flex:none;position:relative;color:#9fdcff;background:rgba(150,210,255,.07);border:1px solid rgba(150,210,255,.35);transition:.25s}
+.winter-toggle:hover{background:rgba(150,210,255,.16);border-color:rgba(190,235,255,.75);box-shadow:0 0 16px rgba(120,200,255,.4);transform:rotate(18deg)}
+.winter-toggle:active{transform:scale(.92)}
+.winter-toggle svg{width:19px;height:19px;filter:drop-shadow(0 0 4px rgba(130,210,255,.75))}
+.winter-toggle.on{color:#ffc56b;background:rgba(255,184,107,.08);border-color:rgba(255,184,107,.45)}
+.winter-toggle.on:hover{background:rgba(255,184,107,.18);border-color:rgba(255,200,130,.85);box-shadow:0 0 16px rgba(255,170,90,.45);transform:rotate(-18deg)}
+.winter-toggle.on svg{filter:drop-shadow(0 0 4px rgba(255,170,90,.8))}
+.pills{align-items:center}
 
-/* логотип под снежную шапку */
-body.winter .logo{position:relative}
-
-/* снег на карточках: шапка + сосульки (SVG) */
-body.winter .card{position:relative}
-body.winter .card::after{content:"";position:absolute;pointer-events:none;z-index:3;left:18px;top:-9px;width:160px;height:32px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='32' viewBox='0 0 160 32'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient><linearGradient id='i' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23e6f6ff' stop-opacity='.95'/><stop offset='1' stop-color='%238fcaf2' stop-opacity='.25'/></linearGradient></defs><path d='M20 10L26 10L23.0 24Z' fill='url(%23i)'/><path d='M44 10L49 10L46.5 19Z' fill='url(%23i)'/><path d='M62 10L70 10L66.0 31Z' fill='url(%23i)'/><path d='M84 10L89 10L86.5 18Z' fill='url(%23i)'/><path d='M104 10L110 10L107.0 26Z' fill='url(%23i)'/><path d='M128 10L133 10L130.5 21Z' fill='url(%23i)'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' transform='translate(0 1.5)' fill='%238fbfe8' opacity='.45'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' fill='url(%23g)'/></svg>") no-repeat 0 0/160px 32px;filter:drop-shadow(0 1px 2px rgba(120,190,255,.25))}
-body.winter .card:nth-of-type(even)::after{left:auto;right:18px;transform:scaleX(-1)}
-/* снег на логотипе */
-body.winter .logo{position:relative}
-body.winter .logo::after{content:"";position:absolute;left:0;top:-8px;width:46px;height:12px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='46' height='12' viewBox='0 0 46 12'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient><linearGradient id='i' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23e6f6ff' stop-opacity='.95'/><stop offset='1' stop-color='%238fcaf2' stop-opacity='.25'/></linearGradient></defs><path d='M1 11C4 11 5 6 11 6C16 6 16 2 23 2C30 2 31 5 36 5C41 5 43 9 45 11Z' fill='url(%23g)'/></svg>") no-repeat 0 0/46px 12px}
+/* ВЕСЬ снег на блоках живёт в одном слое поверх всего (позиции считает winter.js по реальным границам блоков) */
+#winterCaps{position:fixed;inset:0;pointer-events:none;z-index:60;display:none;overflow:hidden}
+body.winter #winterCaps{display:block}
+#winterCaps i{position:absolute;left:0;top:0;display:block;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;will-change:transform}
+/* шапка из снега на карточке: 160×32, подошва сугроба на y=12 */
+#winterCaps i.cc{width:160px;height:32px;filter:drop-shadow(0 1px 2px rgba(120,190,255,.25));background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='32' viewBox='0 0 160 32'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient><linearGradient id='i' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23e6f6ff' stop-opacity='.95'/><stop offset='1' stop-color='%238fcaf2' stop-opacity='.25'/></linearGradient></defs><path d='M20 10L26 10L23.0 24Z' fill='url(%23i)'/><path d='M44 10L49 10L46.5 19Z' fill='url(%23i)'/><path d='M62 10L70 10L66.0 31Z' fill='url(%23i)'/><path d='M84 10L89 10L86.5 18Z' fill='url(%23i)'/><path d='M104 10L110 10L107.0 26Z' fill='url(%23i)'/><path d='M128 10L133 10L130.5 21Z' fill='url(%23i)'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' transform='translate(0 1.5)' fill='%238fbfe8' opacity='.45'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' fill='url(%23g)'/></svg>")}
+#winterCaps i.cc.flip{transform-origin:0 0}
+/* снег на логотипе: 42×17, повторяет скруглённый верх (радиус 13), линия логотипа на y=12 */
+#winterCaps i.lc{width:42px;height:17px;filter:drop-shadow(0 1px 2px rgba(120,190,255,.3));background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='42' height='17' viewBox='0 0 42 17'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient></defs><path d='M4.6 15.4C6.6 13.8 9 12.6 13 12.4L29 12.4C33 12.6 35.4 13.8 37.4 15.4C36.4 11.4 34.4 9.6 31.4 8.9C28.2 8.2 27 5 23 4.2C19 3.5 17.5 6 14 6.8C10.2 7.6 6.6 10.4 4.6 15.4Z' fill='url(%23g)'/></svg>")}
 /* сугробы внизу окна */
-.w-drift{position:fixed;bottom:0;height:44px;pointer-events:none;z-index:40;display:none;background-repeat:no-repeat;background-position:0 100%}
+.w-drift{position:fixed;bottom:0;height:44px;pointer-events:none;z-index:60;display:none;background-repeat:no-repeat;background-position:0 100%}
 .w-drift.l{left:232px;width:240px;background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='44' viewBox='0 0 240 44'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient></defs><path d='M0 44C30 40 80 33 120 34C170 35 210 38 240 44Z' fill='%23b9d6f0' opacity='.55'/><path d='M0 44C14 43 24 36 44 30C64 24 84 22 110 25C136 28 156 20 184 24C206 27 222 36 240 44Z' fill='url(%23g)'/></svg>")}
 .w-drift.r{right:0;width:300px;background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='44' viewBox='0 0 300 44'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient></defs><path d='M10 44C50 38 100 36 150 37C200 38 250 38 290 44Z' fill='%23b9d6f0' opacity='.55'/><path d='M0 44C20 42 40 38 64 36C92 33 108 26 140 25C170 24 186 32 214 31C246 30 270 38 300 44Z' fill='url(%23g)'/></svg>")}
 body.winter .w-drift{display:block}
-#winterSnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:45;display:none}
+#winterSnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:59;display:none}
 body.winter #winterSnow{display:block}
 @media (prefers-reduced-motion:reduce){#winterSnow{display:none!important}}
