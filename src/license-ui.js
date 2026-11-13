@@ -111,17 +111,15 @@
     const chip = $('#licChip');
     const expired = s.plan === 'lite' && ['trial-ended', 'sub-expired'].includes(s.reason);
     chip.className = 'lic-chip ' + s.plan + (expired ? ' expired' : '');
-    const T = $('#licChipT'), S = $('#licChipS'), C = $('#licChipCta'), W = $('#licChipBarWrap');
-    let t, sub, cta = '', frac = null;
-    if (s.plan === 'lifetime') { t = 'Lifetime Pro'; sub = 'Все функции навсегда'; }
-    else if (s.plan === 'pro') { t = 'Pro активен'; sub = s.until ? `до ${fmtDate(s.until)} · ${days(s.daysLeft)}` : 'Все функции открыты'; frac = describe(s).frac; cta = s.daysLeft != null && s.daysLeft <= 5 ? 'Продлить' : ''; }
-    else if (s.plan === 'trial') { t = 'Пробный период'; sub = s.daysLeft != null ? `Осталось ${days(s.daysLeft)}, потом Lite` : 'Все функции открыты'; frac = describe(s).frac; cta = 'Купить Pro'; }
+    const T = $('#licChipT'), S = $('#licChipS'), C = $('#licChipCta');
+    let t, sub, cta = '';
+    if (s.plan === 'lifetime') { t = 'Lifetime'; sub = 'Бессрочная лицензия'; }
+    else if (s.plan === 'pro') { t = 'Pro'; sub = s.until ? `Действует до ${fmtDate(s.until)}` : 'Все функции открыты'; cta = s.daysLeft != null && s.daysLeft <= 5 ? 'Продлить' : ''; }
+    else if (s.plan === 'trial') { t = 'Пробный период'; sub = s.daysLeft != null ? `Осталось ${days(s.daysLeft)}, потом Lite` : 'Все функции открыты'; cta = 'Купить Pro'; }
     else if (expired) { t = s.reason === 'sub-expired' ? 'Подписка закончилась' : 'Пробный период закончился'; sub = 'Виджеты, аватар и Каспи закрыты'; cta = s.reason === 'sub-expired' ? 'Продлить Pro' : 'Открыть Pro'; }
     else { t = 'Тариф Lite'; sub = 'Откройте виджеты, аватар и Каспи'; cta = 'Открыть Pro'; }
     T.textContent = t; S.textContent = sub;
     C.textContent = cta; C.hidden = !cta;
-    W.hidden = frac == null;
-    if (frac != null) $('#licChipBar').style.width = Math.round(frac * 100) + '%';
   }
 
   // ---------- окно покупки Pro ----------

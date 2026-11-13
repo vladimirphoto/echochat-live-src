@@ -598,7 +598,7 @@ label+.csel{margin-top:0}
 /* слой блокировки лежит в <main> и закрывает всю страницу целиком (шапка, счётчики, вкладка): одно сильное размытие без переходов и границ; виден только когда открыта его вкладка */
 main{position:relative}
 .lock-ov{display:none;position:absolute;inset:0;z-index:20;align-items:center;justify-content:center;padding:20px;background:rgba(10,10,18,.5);backdrop-filter:blur(28px) saturate(.7);-webkit-backdrop-filter:blur(28px) saturate(.7);transition:opacity .7s ease}
-#tab-widgets.show~.lock-ov[data-for="widgets"],#tab-kaspi.show~.lock-ov[data-for="kaspi"],#tab-overlay.show~.lock-ov[data-for="overlay"]{display:flex}
+#tab-widgets.show~.lock-ov[data-for="widgets"],#tab-kaspi.show~.lock-ov[data-for="kaspi"],#tab-overlay.show~.lock-ov[data-for="overlay"],#tab-avatar.show~.lock-ov[data-for="avatar"]{display:flex}
 .lock-ov.out{opacity:0;pointer-events:none}
 .lock-card{width:min(390px,100%);padding:28px 26px 26px;border-radius:22px;text-align:center;background:linear-gradient(160deg,rgba(139,92,246,.2),rgba(236,72,153,.1)),rgba(21,21,31,.9);border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 70px rgba(0,0,0,.5);animation:cfpop .35s cubic-bezier(.2,.8,.2,1)}
 .lock-ic{width:54px;height:54px;margin:0 auto 14px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px rgba(139,92,246,.45)}
@@ -817,46 +817,25 @@ main{position:relative}
 .wish-heart{width:15px;height:15px;color:#ff4d8d;filter:drop-shadow(0 0 6px rgba(255,77,141,.8));animation:heartbeat 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.28)}28%{transform:scale(1)}42%{transform:scale(1.18)}70%{transform:scale(1)}}
 
-.lic-chip{position:relative;overflow:hidden;flex-direction:column;align-items:stretch;gap:8px;padding:12px 13px;border-radius:14px;isolation:isolate}
-.lic-chip .lc-glow{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .3s}
-.lic-chip .lc-top{display:flex;align-items:center;gap:10px;min-width:0}
-.lic-chip .lc-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;background:rgba(255,255,255,.07);color:var(--muted)}
-.lic-chip .lc-ic svg{width:18px;height:18px}
-.lic-chip .lc-body{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.lic-chip .lc-t{font-size:13.5px;font-weight:700;white-space:nowrap}
-.side-foot .lic-chip small{margin:0;padding:0;font-size:11px;font-weight:500;color:var(--muted);white-space:normal;line-height:1.3}
-.lic-chip .lc-bar{display:block;height:4px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
-.lic-chip .lc-bar[hidden]{display:none}
-.lic-chip .lc-bar b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#fbbf24,#f472b6,#8b5cf6);transition:width .6s ease}
-.lic-chip .lc-cta{display:block;text-align:center;padding:8px 10px;border-radius:10px;font-size:12.5px;font-weight:700;color:#fff;background:var(--grad);box-shadow:0 6px 18px rgba(139,92,246,.45);position:relative;overflow:hidden}
+.lic-chip{position:relative;flex-direction:column;align-items:stretch;gap:10px;padding:12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.lic-chip .lc-top{display:flex;align-items:center;gap:11px;min-width:0}
+.lic-chip .lc-ic{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;flex:none;color:#fff;background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 16px rgba(139,92,246,.4)}
+.lic-chip .lc-ic svg{width:20px;height:20px}
+.lic-chip .lc-body{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;line-height:1.25}
+.lic-chip .lc-t{font-size:13.5px;font-weight:700;color:#fff;white-space:normal;overflow-wrap:anywhere}
+.side-foot .lic-chip small{margin:0;padding:0;font-size:11.5px;font-weight:500;color:var(--muted);white-space:normal;line-height:1.35}
+.lic-chip .lc-cta{display:block;text-align:center;padding:9px 10px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 16px rgba(139,92,246,.35);transition:filter .2s}
 .lic-chip .lc-cta[hidden]{display:none}
-.lic-chip .lc-cta:after{content:"";position:absolute;inset:0;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-130%);animation:ctashine 2.8s ease-in-out infinite}
-@keyframes ctashine{0%,55%{transform:translateX(-130%)}100%{transform:translateX(330%)}}
-
-/* Lite и закончившийся тариф: яркая карточка, зовёт купить */
-.lic-chip.lite,.lic-chip.expired{border-color:rgba(236,72,153,.55);background:linear-gradient(145deg,rgba(139,92,246,.3),rgba(236,72,153,.24));box-shadow:0 0 0 0 rgba(236,72,153,.5),0 10px 28px rgba(139,92,246,.3);animation:litepulse 2.4s ease-in-out infinite}
-.lic-chip.lite .lc-glow,.lic-chip.expired .lc-glow{opacity:1;background:radial-gradient(120% 90% at 100% 0,rgba(251,191,36,.28),transparent 55%),radial-gradient(100% 80% at 0 100%,rgba(34,211,238,.18),transparent 60%)}
-.lic-chip.lite .lc-ic,.lic-chip.expired .lc-ic{background:linear-gradient(135deg,#fbbf24,#f472b6);color:#2a0f2e;box-shadow:0 4px 14px rgba(251,191,36,.45)}
-.lic-chip.lite .lc-t,.lic-chip.expired .lc-t{color:#fff}
-.lic-chip.lite small,.lic-chip.expired small{color:#f3d9ee!important}
-.lic-chip.expired{border-color:rgba(248,113,113,.6);background:linear-gradient(145deg,rgba(248,113,113,.26),rgba(236,72,153,.24))}
-.lic-chip.expired .lc-ic{background:linear-gradient(135deg,#f87171,#fbbf24)}
-.lic-chip.lite:hover,.lic-chip.expired:hover{transform:translateY(-1px);filter:brightness(1.1)}
-@keyframes litepulse{0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,.0),0 10px 28px rgba(139,92,246,.3)}50%{box-shadow:0 0 0 4px rgba(236,72,153,.16),0 10px 34px rgba(236,72,153,.4)}}
-
-/* пробный период: бирюзовый акцент */
-.lic-chip.trial{border-color:rgba(34,211,238,.4);background:linear-gradient(145deg,rgba(34,211,238,.14),rgba(139,92,246,.18))}
-.lic-chip.trial .lc-ic{background:rgba(34,211,238,.18);color:var(--a3)}
-
-/* Pro и Lifetime: премиальный золото-фиолетовый блок с бликом */
-.lic-chip.pro,.lic-chip.lifetime{border:1px solid transparent;background:linear-gradient(#150f22,#150f22) padding-box,linear-gradient(135deg,#fbbf24,#ec4899 50%,#8b5cf6) border-box;box-shadow:0 10px 30px rgba(139,92,246,.35),0 0 24px rgba(251,191,36,.12)}
-.lic-chip.pro .lc-glow,.lic-chip.lifetime .lc-glow{opacity:1;background:radial-gradient(110% 100% at 0 0,rgba(251,191,36,.22),transparent 55%),radial-gradient(110% 100% at 100% 100%,rgba(139,92,246,.3),transparent 60%)}
-.lic-chip.pro .lc-glow:after,.lic-chip.lifetime .lc-glow:after{content:"";position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);transform:translateX(-140%) skewX(-18deg);animation:crownshine 4.2s ease-in-out infinite}
-@keyframes crownshine{0%,60%{transform:translateX(-140%) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
-.lic-chip.pro .lc-ic,.lic-chip.lifetime .lc-ic{background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f472b6);color:#3b1650;box-shadow:0 4px 16px rgba(251,191,36,.55)}
-.lic-chip.pro .lc-t,.lic-chip.lifetime .lc-t{background:linear-gradient(90deg,#fde68a,#f9a8d4);-webkit-background-clip:text;background-clip:text;color:transparent}
-.lic-chip.pro .lc-cta{background:rgba(255,255,255,.08);box-shadow:none;border:1px solid rgba(251,191,36,.4);color:#fde68a}
-@media (prefers-reduced-motion:reduce){.wish-heart,.lic-chip.lite,.lic-chip.expired,.lic-chip .lc-cta:after,.lic-chip .lc-glow:after{animation:none!important}}
+.lic-chip:hover .lc-cta{filter:brightness(1.12)}
+/* Lite, пробный период и закончившийся тариф: спокойная фиолетовая карточка с заметной кнопкой */
+.lic-chip.lite,.lic-chip.trial,.lic-chip.expired{border-color:rgba(139,92,246,.45);background:linear-gradient(160deg,rgba(139,92,246,.2),rgba(236,72,153,.1))}
+.lic-chip.trial .lc-ic{background:linear-gradient(135deg,#22d3ee,#8b5cf6);box-shadow:0 6px 16px rgba(34,211,238,.3)}
+.lic-chip.expired{border-color:rgba(236,72,153,.5)}
+/* Pro и Lifetime: простая аккуратная плашка без анимаций */
+.lic-chip.pro,.lic-chip.lifetime{gap:0;border-color:rgba(139,92,246,.5);background:linear-gradient(160deg,rgba(139,92,246,.18),rgba(236,72,153,.1))}
+.lic-chip.pro .lc-t,.lic-chip.lifetime .lc-t{font-size:15px}
+.lic-chip.pro .lc-cta{margin-top:10px;background:rgba(255,255,255,.07);box-shadow:none;border:1px solid rgba(255,255,255,.14)}
+@media (prefers-reduced-motion:reduce){.wish-heart{animation:none!important}}
 
 /* ===== «Эфир»: мини-графики в карточках ===== */
 .stat>*:not(.spark){position:relative;z-index:1}
@@ -886,3 +865,6 @@ main{position:relative}
 @keyframes spkbar{0%,100%{height:6px}50%{height:24px}}
 .msg.sys .spk{display:none!important}
 @media (prefers-reduced-motion:reduce){.msg .spk s{animation:none;height:14px}}
+
+/* отступ между меню и нижним блоком: не прилипает к «Настройкам» даже на невысоком окне */
+.side-foot{padding-top:16px}
