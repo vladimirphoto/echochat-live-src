@@ -870,5 +870,5 @@ main{position:relative}
 .side-foot{padding-top:16px}
 
 /* логотип DonationAlerts в меню */
-.nav .ic-img{width:24px;height:24px;object-fit:contain;flex:none;opacity:.8;transition:opacity .2s;user-select:none;-webkit-user-drag:none}
+.nav .ic-img{width:24px;height:24px;object-fit:contain;flex:none;opacity:.85;transition:opacity .2s;user-select:none;-webkit-user-drag:none}
 .nav:hover .ic-img,.nav.active .ic-img{opacity:1}
