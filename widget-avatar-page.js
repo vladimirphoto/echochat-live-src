@@ -48,11 +48,11 @@ function hook(m){
   var internal=m.internalModel,core=internal.coreModel,blink=internal.eyeBlink;
   // ставим значения от трекера после движений модели, но до дыхания, фокуса и физики: волосы и одежда следуют за головой
   internal.on('beforeMotionUpdate',function(){internal.eyeBlink=live()?undefined:blink;});
-  internal.on('afterMotionUpdate',function(){if(!live())return;for(var id in V)core.setParameterValueById(id,V[id]);});
+  internal.on('afterMotionUpdate',function(){if(!live())return;for(var id in V)if(id.indexOf('Param')===0)core.setParameterValueById(id,V[id]);});
   var nat=internal.updateNaturalMovements.bind(internal);
   internal.updateNaturalMovements=function(dt,now){
     if(!live())return nat(dt,now);
-    var ids=Object.keys(V),saved=ids.map(function(id){return core.getParameterValueById(id);});
+    var ids=Object.keys(V).filter(function(k){return k.indexOf('Param')===0;}),saved=ids.map(function(id){return core.getParameterValueById(id);});
     nat(dt,now); // дыхание и «взгляд» не должны сдвигать то, что задал трекер
     for(var i=0;i<ids.length;i++)core.setParameterValueById(ids[i],saved[i]);
   };

@@ -17,6 +17,8 @@
     ParamBrowLY: 0, ParamBrowRY: 0,
     ParamMouthOpenY: 0, ParamMouthForm: 0,
     ParamBodyAngleX: 0, ParamBodyAngleY: 0, ParamBodyAngleZ: 0,
+    // для 3D (VRM): углы головы в градусах без зеркала (зеркало применяет страница 3D), закрытость глаз 0…1, рот, улыбка, взгляд
+    V_yaw: 0, V_pitch: 0, V_roll: 0, V_blinkL: 0, V_blinkR: 0, V_aa: 0, V_happy: 0, V_lookX: 0, V_lookY: 0,
   };
   // постоянная сглаживания, секунды: глаза и рот быстрые (морганье не должно запаздывать), голова спокойнее
   const TAU = {
@@ -25,6 +27,7 @@
     ParamBrowLY: 0.1, ParamBrowRY: 0.1,
     ParamAngleX: 0.07, ParamAngleY: 0.07, ParamAngleZ: 0.07,
     ParamBodyAngleX: 0.18, ParamBodyAngleY: 0.18, ParamBodyAngleZ: 0.18,
+    V_yaw: 0.06, V_pitch: 0.06, V_roll: 0.06, V_blinkL: 0.03, V_blinkR: 0.03, V_aa: 0.045, V_happy: 0.1, V_lookX: 0.05, V_lookY: 0.05,
   };
 
   // Блендшейпы + матрица 4×4 (по столбцам, как отдаёт MediaPipe) → лицо. Если данные неполные — null.
@@ -84,6 +87,15 @@
       ParamBrowRY: clamp(face.browR, -1, 1),
       ParamMouthOpenY: clamp(face.jaw * 1.5, 0, 1),
       ParamMouthForm: smile,
+      V_yaw: clamp(rel(face.yaw, n.yaw), -45, 45),
+      V_pitch: clamp(rel(face.pitch, n.pitch), -45, 45),
+      V_roll: clamp(rel(face.roll, n.roll), -45, 45),
+      V_blinkL: 1 - eye(face.blinkL),
+      V_blinkR: 1 - eye(face.blinkR),
+      V_aa: clamp(face.jaw * 1.5, 0, 1),
+      V_happy: clamp(face.smile * 1.8 - face.frown * 1.2, 0, 1),
+      V_lookX: clamp(face.gazeX, -1, 1),
+      V_lookY: clamp(face.gazeY, -1, 1),
     };
   }
 

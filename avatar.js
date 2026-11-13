@@ -11,9 +11,25 @@ const https = require('https');
 const { downloadWithRetry } = require('./fetch-retry');
 
 // ---------- настройки ----------
-const DEFAULTS = { model: 'builtin-Haru', scale: 100, offsetX: 0, offsetY: 0, mirror: false, bg: 'transparent', camera: '' };
+// Два движка со своими настройками: 2D (Live2D, плоские поля) и 3D (VRM, объект v3). Общие только камера и выбранная вкладка (mode).
+const V3_DEFAULTS = { model: 'builtin-seed', scale: 100, offsetX: 0, offsetY: 0, mirror: false, bg: 'transparent' };
+const DEFAULTS = { model: 'builtin-Haru', scale: 100, offsetX: 0, offsetY: 0, mirror: false, bg: 'transparent', camera: '', mode: '2d', v3: V3_DEFAULTS };
 const clampN = (v, a, b, d) => { v = Math.round(+v); return Number.isFinite(v) ? Math.max(a, Math.min(b, v)) : d; };
 const MODEL_ID = /^(builtin-(Haru|Hiyori|Mao)|user-[0-9a-f]{8})$/;
+const VRM_ID = /^(builtin-(seed|twist)|vrm-[0-9a-f]{8})$/;
+const BGS = ['transparent', 'green'];
+function cleanV3(s, base) {
+  const b = { ...V3_DEFAULTS, ...(base || {}) };
+  s = s && typeof s === 'object' ? s : {};
+  return {
+    model: typeof s.model === 'string' && VRM_ID.test(s.model) ? s.model : (VRM_ID.test(b.model) ? b.model : V3_DEFAULTS.model),
+    scale: clampN(s.scale !== undefined ? s.scale : b.scale, 40, 250, 100),
+    offsetX: clampN(s.offsetX !== undefined ? s.offsetX : b.offsetX, -100, 100, 0),
+    offsetY: clampN(s.offsetY !== undefined ? s.offsetY : b.offsetY, -100, 100, 0),
+    mirror: s.mirror !== undefined ? !!s.mirror : !!b.mirror,
+    bg: BGS.includes(s.bg) ? s.bg : (BGS.includes(b.bg) ? b.bg : 'transparent'),
+  };
+}
 function cleanSettings(s, base) {
   const b = { ...DEFAULTS, ...(base || {}) };
   s = s || {};
@@ -23,8 +39,10 @@ function cleanSettings(s, base) {
     offsetX: clampN(s.offsetX !== undefined ? s.offsetX : b.offsetX, -100, 100, 0),
     offsetY: clampN(s.offsetY !== undefined ? s.offsetY : b.offsetY, -100, 100, 0),
     mirror: s.mirror !== undefined ? !!s.mirror : !!b.mirror,
-    bg: ['transparent', 'green'].includes(s.bg) ? s.bg : (['transparent', 'green'].includes(b.bg) ? b.bg : 'transparent'),
+    bg: BGS.includes(s.bg) ? s.bg : (BGS.includes(b.bg) ? b.bg : 'transparent'),
     camera: typeof s.camera === 'string' ? s.camera.slice(0, 300) : String(b.camera || '').slice(0, 300),
+    mode: ['2d', '3d'].includes(s.mode) ? s.mode : (['2d', '3d'].includes(b.mode) ? b.mode : '2d'),
+    v3: cleanV3(s.v3, b.v3),
   };
 }
 
@@ -164,20 +182,20 @@ function checkIntegrity(buf, { sha256, integrity, shasum }) {
 // Версии зафиксированы (те же, что в VTubeLeaf). У пакетов npm целостность сверяется со значением из реестра, у файла Google и пакета Live2D — с зашитой суммой SHA-256.
 const SAMPLE_MODELS = ['Haru', 'Hiyori', 'Mao'];
 const COMPONENTS = [
-  { id: 'pixi', title: 'PixiJS (рисование)', kind: 'npm', pkg: 'pixi.js', version: '6.5.10', check: ['pixi.min.js'], pick: (n) => (n === 'package/dist/browser/pixi.min.js' ? 'pixi.min.js' : null), approxMb: 1.5 },
-  { id: 'live2d', title: 'Live2D для PixiJS', kind: 'npm', pkg: 'pixi-live2d-display', version: '0.4.0', check: ['cubism4.min.js'], pick: (n) => (n === 'package/dist/cubism4.min.js' ? 'cubism4.min.js' : null), approxMb: 0.5 },
+  { id: 'pixi', engines: ['2d'], title: 'PixiJS (рисование)', kind: 'npm', pkg: 'pixi.js', version: '6.5.10', check: ['pixi.min.js'], pick: (n) => (n === 'package/dist/browser/pixi.min.js' ? 'pixi.min.js' : null), approxMb: 1.5 },
+  { id: 'live2d', engines: ['2d'], title: 'Live2D для PixiJS', kind: 'npm', pkg: 'pixi-live2d-display', version: '0.4.0', check: ['cubism4.min.js'], pick: (n) => (n === 'package/dist/cubism4.min.js' ? 'cubism4.min.js' : null), approxMb: 0.5 },
   {
-    id: 'mediapipe', title: 'MediaPipe (поиск лица)', kind: 'npm', pkg: '@mediapipe/tasks-vision', version: '0.10.32',
+    id: 'mediapipe', engines: ['2d', '3d'], title: 'MediaPipe (поиск лица)', kind: 'npm', pkg: '@mediapipe/tasks-vision', version: '0.10.32',
     check: ['mediapipe/vision_bundle.mjs'], needAny: { dir: 'mediapipe/wasm', ext: '.wasm' }, // набор wasm-файлов отличается между версиями пакета: достаточно, чтобы они были
     pick: (n) => (n === 'package/vision_bundle.mjs' ? 'mediapipe/vision_bundle.mjs' : (/^package\/wasm\/[\w.-]+$/.test(n) ? 'mediapipe/wasm/' + n.slice('package/wasm/'.length) : null)),
     approxMb: 12,
   },
   {
-    id: 'face', title: 'Модель лица MediaPipe', kind: 'file', url: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+    id: 'face', engines: ['2d', '3d'], title: 'Модель лица MediaPipe', kind: 'file', url: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
     size: 3758596, sha256: '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff', to: 'mediapipe/face_landmarker.task', check: ['mediapipe/face_landmarker.task'], approxMb: 3.6,
   },
   {
-    id: 'cubism', title: 'Ядро Live2D и модели Haru, Hiyori, Mao', kind: 'zip', url: 'https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.4.zip',
+    id: 'cubism', engines: ['2d'], title: 'Ядро Live2D и модели Haru, Hiyori, Mao', kind: 'zip', url: 'https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.4.zip',
     sha256: 'd78904d908bd232b800219e01732e4ea2f0562b5e9f35a2670742a1c16d22942',
     check: ['live2dcubismcore.min.js', ...SAMPLE_MODELS.map((m) => `models/${m}/${m}.model3.json`)],
     pick: (n) => {
@@ -191,7 +209,39 @@ const COMPONENTS = [
     },
     approxMb: 60,
   },
+  // ---- 3D (VRM): three.js + three-vrm и два свободных образца моделей ----
+  // Модули ES: импорты "three" переписываются на локальный адрес при установке (rewriteImports), поэтому importmap не нужен.
+  {
+    id: 'three', engines: ['3d'], title: 'three.js (3D-графика)', kind: 'npm', pkg: 'three', version: '0.180.0', esm: true,
+    check: ['three/three.module.js', 'three/three.core.js', 'three/addons/loaders/GLTFLoader.js', 'three/addons/utils/BufferGeometryUtils.js'],
+    pick: (n) => ({
+      'package/build/three.module.js': 'three/three.module.js', 'package/build/three.core.js': 'three/three.core.js',
+      'package/examples/jsm/loaders/GLTFLoader.js': 'three/addons/loaders/GLTFLoader.js', 'package/examples/jsm/utils/BufferGeometryUtils.js': 'three/addons/utils/BufferGeometryUtils.js',
+    }[n] || null),
+    approxMb: 2.5,
+  },
+  {
+    id: 'vrm', engines: ['3d'], title: 'three-vrm (модели VRM)', kind: 'npm', pkg: '@pixiv/three-vrm', version: '3.5.5', esm: true,
+    check: ['vrm/three-vrm.module.js'], pick: (n) => (n === 'package/lib/three-vrm.module.js' ? 'vrm/three-vrm.module.js' : null), approxMb: 1.5,
+  },
+  // Образцы моделей берутся по зафиксированным коммитам GitHub. Обе модели по лицензии VRM Public License 1.0 разрешают распространение и коммерческое использование
+  {
+    id: 'vrm-seed', engines: ['3d'], title: 'Модель Seed-san (VirtualCast)', kind: 'file',
+    url: 'https://raw.githubusercontent.com/vrm-c/vrm-specification/94e82dd346fa6cf0337c4421728640e5252dd38e/samples/Seed-san/vrm/Seed-san.vrm',
+    size: 10917800, sha256: '624d0d554bc205bbdc33e22a68a2c3c20edebb3e573011ead8878a65e5329b23', to: 'vrm/seed.vrm', check: ['vrm/seed.vrm'], approxMb: 10.5,
+  },
+  {
+    id: 'vrm-twist', engines: ['3d'], title: 'Модель VRM1 Twist Sample (pixiv)', kind: 'file',
+    url: 'https://raw.githubusercontent.com/pixiv/three-vrm/3caf7a21ee68f0d5dfa363ab3d577450bbf60136/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm',
+    size: 10776032, sha256: '12c2b97e95e700783a6a550dc0eee2d7880aeedccef9ae67bc4c5a2f0f2631a2', to: 'vrm/twist.vrm', check: ['vrm/twist.vrm'], approxMb: 10.3,
+  },
 ];
+// ES-модули three/three-vrm ссылаются на «голые» имена ("three", "three/addons/..."): переписываем их на локальные адреса сервера приложения
+const THREE_URL = '/avatar-lib/three/three.module.js', ADDONS_URL = '/avatar-lib/three/addons/';
+function rewriteImports(src) {
+  return String(src).replace(/(\bfrom\s*|\bimport\s+)(['"])three(?:\/(?:addons|examples\/jsm)\/([^'"]+))?\2/g, (m, pre, q, sub) => pre + q + (sub ? ADDONS_URL + sub : THREE_URL) + q);
+}
+const inEngine = (c, engine) => !engine || (c.engines || ['2d']).includes(engine);
 const runtimeDir = (userData) => path.join(userData, 'avatar', 'runtime');
 const userModelsDir = (userData) => path.join(userData, 'avatar', 'models');
 const manifestFile = (userData) => path.join(runtimeDir(userData), 'installed.json');
@@ -205,10 +255,12 @@ function componentOk(userData, c, man) {
   if (c.needAny) { try { return fs.readdirSync(path.join(runtimeDir(userData), ...c.needAny.dir.split('/'))).some((n) => n.endsWith(c.needAny.ext)); } catch (_) { return false; } }
   return true;
 }
-function status(userData) {
+// engine: '2d' (по умолчанию) или '3d' — каждому движку нужны только его компоненты (MediaPipe общий)
+function status(userData, engine = '2d') {
   const man = readManifest(userData);
-  const items = COMPONENTS.map((c) => ({ id: c.id, title: c.title, ok: componentOk(userData, c, man), approxMb: c.approxMb }));
-  return { ready: items.every((i) => i.ok), items, totalMb: Math.round(COMPONENTS.reduce((a, c) => a + c.approxMb, 0)) };
+  const list = COMPONENTS.filter((c) => inEngine(c, engine));
+  const items = list.map((c) => ({ id: c.id, title: c.title, ok: componentOk(userData, c, man), approxMb: c.approxMb }));
+  return { ready: items.every((i) => i.ok), items, totalMb: Math.round(list.reduce((a, c) => a + c.approxMb, 0)) };
 }
 
 // Скачивает и ставит недостающие компоненты. opts.fetch(url, { onProgress }) → Buffer — подмена в тестах; opts.onProgress({ id, title, phase, done, total, index, count })
@@ -216,7 +268,7 @@ async function install(userData, opts = {}) {
   const get = opts.fetch || defaultFetch;
   const rt = runtimeDir(userData);
   fs.mkdirSync(rt, { recursive: true });
-  const todo = COMPONENTS.filter((c) => !componentOk(userData, c));
+  const todo = COMPONENTS.filter((c) => inEngine(c, opts.engine || '2d') && !componentOk(userData, c));
   const note = (c, i, phase, done, total) => opts.onProgress && opts.onProgress({ id: c.id, title: c.title, phase, done: done || 0, total: total || 0, index: i + 1, count: todo.length });
   for (let i = 0; i < todo.length; i++) {
     const c = todo[i];
@@ -246,12 +298,13 @@ async function install(userData, opts = {}) {
     const miss = c.check.filter((f) => !have.has(f));
     if (c.needAny && ![...have].some((f) => f.startsWith(c.needAny.dir + '/') && f.endsWith(c.needAny.ext))) miss.push(c.needAny.dir + '/*' + c.needAny.ext);
     if (miss.length) throw new Error(`${c.title}: в скачанном пакете нет файлов: ${miss.join(', ')}`);
+    if (c.esm) for (const f of files) f.data = Buffer.from(rewriteImports(f.data.toString('utf8')), 'utf8');
     for (const f of files) writeFileSafe(rt, f.rel, f.data);
     const man = readManifest(userData);
     man[c.id] = c.version || c.url;
     fs.writeFileSync(manifestFile(userData), JSON.stringify(man));
   }
-  return status(userData);
+  return status(userData, opts.engine || '2d');
 }
 
 // ---------- модели ----------
@@ -376,8 +429,77 @@ function activeModel(userData, wanted) {
   return list.find((m) => m.id === wanted) || list[0] || null;
 }
 
+// ---------- модели VRM (3D) ----------
+const vrmDir = (userData) => path.join(userData, 'avatar', 'vrm-models');
+const VRM_SAMPLES = [
+  { id: 'builtin-seed', name: 'Seed-san', file: 'seed.vrm', credit: 'Seed-san: © VirtualCast, Inc., лицензия VRM Public License 1.0 (vrm.dev/licenses/1.0)' },
+  { id: 'builtin-twist', name: 'VRM1 Twist Sample', file: 'twist.vrm', credit: 'VRM1 Constraint Twist Sample: © pixiv Inc., лицензия VRM Public License 1.0' },
+];
+const VRM_LIMIT = 250 * 1024 * 1024;
+// Читает заголовок .vrm (это glb): { ok, name, version } или { ok: false, error }. Файл целиком в память не читаем
+function readVrmHeader(file) {
+  let fd;
+  try {
+    fd = fs.openSync(file, 'r');
+    const size = fs.fstatSync(fd).size;
+    if (size > VRM_LIMIT) return { ok: false, error: 'Файл модели слишком большой (больше 250 МБ).' };
+    const h = Buffer.alloc(20);
+    if (fs.readSync(fd, h, 0, 20, 0) < 20 || h.readUInt32LE(0) !== 0x46546c67 || h.readUInt32LE(4) !== 2 || h.readUInt32LE(16) !== 0x4e4f534a) return { ok: false, error: 'Это не файл VRM (.vrm). Нужна модель VRM 0.x или 1.0.' };
+    const n = h.readUInt32LE(12);
+    if (n < 2 || n > 64 * 1024 * 1024 || 20 + n > size) return { ok: false, error: 'Файл VRM повреждён.' };
+    const j = Buffer.alloc(n); fs.readSync(fd, j, 0, n, 20);
+    let doc; try { doc = JSON.parse(j.toString('utf8')); } catch (_) { return { ok: false, error: 'Файл VRM повреждён.' }; }
+    const ext = (doc && doc.extensions) || {};
+    if (ext.VRMC_vrm) return { ok: true, version: '1', name: String((ext.VRMC_vrm.meta && ext.VRMC_vrm.meta.name) || '') };
+    if (ext.VRM) return { ok: true, version: '0', name: String((ext.VRM.meta && (ext.VRM.meta.title || ext.VRM.meta.name)) || '') };
+    return { ok: false, error: 'Это обычная 3D-модель, а не VRM: в файле нет данных VRM.' };
+  } catch (e) { return { ok: false, error: 'Не удалось прочитать файл: ' + String((e && e.message) || e) }; }
+  finally { if (fd !== undefined) try { fs.closeSync(fd); } catch (_) {} }
+}
+function importVrm(userData, src) {
+  try {
+    if (!/\.vrm$/i.test(src)) return { ok: false, error: 'Выберите файл модели с расширением .vrm.' };
+    if (!fs.statSync(src).isFile()) return { ok: false, error: 'Выберите файл модели с расширением .vrm.' };
+    const h = readVrmHeader(src);
+    if (!h.ok) return h;
+    const id = 'vrm-' + crypto.createHash('sha1').update(src + Date.now() + Math.random()).digest('hex').slice(0, 8);
+    const dest = path.join(vrmDir(userData), id);
+    fs.mkdirSync(dest, { recursive: true });
+    try {
+      fs.copyFileSync(src, path.join(dest, 'model.vrm'));
+      const name = (h.name || path.basename(src).replace(/\.vrm$/i, '') || 'Модель').slice(0, 60);
+      fs.writeFileSync(path.join(dest, 'meta.json'), JSON.stringify({ name, version: h.version }));
+      return { ok: true, id, name };
+    } catch (e) { fs.rmSync(dest, { recursive: true, force: true }); throw e; }
+  } catch (e) { return { ok: false, error: 'Не удалось добавить модель: ' + String((e && e.message) || e) }; }
+}
+function listVrm(userData) {
+  const out = [];
+  for (const m of VRM_SAMPLES) if (isFile(path.join(runtimeDir(userData), 'vrm', m.file))) out.push({ id: m.id, name: m.name, builtin: true, credit: m.credit });
+  let dirs = [];
+  try { dirs = fs.readdirSync(vrmDir(userData)).filter((d) => /^vrm-[0-9a-f]{8}$/.test(d)).sort(); } catch (_) {}
+  for (const d of dirs) {
+    if (!isFile(path.join(vrmDir(userData), d, 'model.vrm'))) continue;
+    let name = 'Модель';
+    try { name = String(JSON.parse(fs.readFileSync(path.join(vrmDir(userData), d, 'meta.json'), 'utf8')).name || name).slice(0, 60); } catch (_) {}
+    out.push({ id: d, name, builtin: false, credit: '' });
+  }
+  return out;
+}
+function removeVrm(userData, id) {
+  if (!/^vrm-[0-9a-f]{8}$/.test(String(id))) return { ok: false, error: 'Встроенные модели удалить нельзя' };
+  fs.rmSync(path.join(vrmDir(userData), id), { recursive: true, force: true });
+  return { ok: true };
+}
+function activeVrm(userData, wanted) { const l = listVrm(userData); return l.find((m) => m.id === wanted) || l[0] || null; }
+const vrmFile = (userData, id) => {
+  if (!VRM_ID.test(String(id))) return null;
+  const s = VRM_SAMPLES.find((m) => m.id === id);
+  return s ? path.join(runtimeDir(userData), 'vrm', s.file) : path.join(vrmDir(userData), id, 'model.vrm');
+};
+
 // ---------- раздача файлов локальным сервером ----------
-const LIB_FILE = /^(pixi\.min\.js|cubism4\.min\.js|live2dcubismcore\.min\.js|mediapipe\/vision_bundle\.mjs|mediapipe\/face_landmarker\.task|mediapipe\/wasm\/[\w.-]+)$/;
+const LIB_FILE = /^(pixi\.min\.js|cubism4\.min\.js|live2dcubismcore\.min\.js|mediapipe\/vision_bundle\.mjs|mediapipe\/face_landmarker\.task|mediapipe\/wasm\/[\w.-]+|three\/three\.module\.js|three\/three\.core\.js|three\/addons\/loaders\/GLTFLoader\.js|three\/addons\/utils\/BufferGeometryUtils\.js|vrm\/three-vrm\.module\.js)$/;
 const OWN_FILES = { 'avatar-map.js': path.join(__dirname, 'src', 'avatar-map.js'), 'avatar-tracker.js': path.join(__dirname, 'src', 'avatar-tracker.js') };
 // urlPath — путь запроса без параметров. Возвращает { file, mime } или null
 function resolveAsset(userData, urlPath) {
@@ -390,6 +512,8 @@ function resolveAsset(userData, urlPath) {
     const base = runtimeDir(userData), file = path.join(base, ...m[1].split('/'));
     return inside(base, file) && isFile(file) ? { file, mime: mimeOf(file) } : null;
   }
+  m = /^\/avatar-vrm\/([\w-]+)\.vrm$/.exec(p);
+  if (m) { const f = vrmFile(userData, m[1]); return f && isFile(f) ? { file: f, mime: 'model/gltf-binary' } : null; }
   m = /^\/avatar-model\/([\w-]+)\/(.+)$/.exec(p);
   if (m && MODEL_ID.test(m[1])) {
     const rel = safeRel(m[2]);
@@ -407,6 +531,6 @@ function isFile(f) { try { return fs.statSync(f).isFile(); } catch (_) { return 
 const TRACKER_PAGE = '<!doctype html><html><head><meta charset="utf-8"><title>Трекер аватара</title></head><body style="margin:0;background:#000"><video id="v" muted playsinline style="width:2px;height:2px"></video><script src="/avatar-lib/avatar-map.js"></script><script src="/avatar-lib/avatar-tracker.js"></script></body></html>';
 
 module.exports = {
-  DEFAULTS, cleanSettings, safeRel, readTarGz, readZip, checkIntegrity, COMPONENTS, SAMPLE_MODELS, runtimeDir, userModelsDir,
+  DEFAULTS, V3_DEFAULTS, cleanSettings, cleanV3, rewriteImports, importVrm, listVrm, removeVrm, activeVrm, readVrmHeader, VRM_SAMPLES, safeRel, readTarGz, readZip, checkIntegrity, COMPONENTS, SAMPLE_MODELS, runtimeDir, userModelsDir,
   status, install, importModel, listModels, removeModel, activeModel, validateModelFiles, pickEntry, resolveAsset, mimeOf, TRACKER_PAGE,
 };

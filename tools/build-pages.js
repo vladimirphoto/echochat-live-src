@@ -8,6 +8,7 @@ const LIKES = require('../widget-likes-page');
 const GIFTS = require('../widget-gifts-page');
 const ALERT = require('../widget-alert-page');
 const AVATAR = require('../widget-avatar-page');
+const AVATAR3D = require('../widget-avatar3d-page');
 const DA = require('../widget-da-page');
 const DA_AUTH = require('../da-auth-page');
 
@@ -24,6 +25,8 @@ fs.mkdirSync(path.join(docs, 'alert'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'alert', 'index.html'), ALERT);
 fs.mkdirSync(path.join(docs, 'avatar'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'avatar', 'index.html'), AVATAR);
+fs.mkdirSync(path.join(docs, 'avatar3d'), { recursive: true });
+fs.writeFileSync(path.join(docs, 'avatar3d', 'index.html'), AVATAR3D);
 fs.mkdirSync(path.join(docs, 'da'), { recursive: true });
 fs.writeFileSync(path.join(docs, 'da', 'index.html'), DA);
 fs.mkdirSync(path.join(docs, 'da-auth'), { recursive: true });

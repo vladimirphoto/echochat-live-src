@@ -743,19 +743,24 @@ main{position:relative}
 
 
 /* вкладка «Аватар» */
+#tab-avatar .avpane[hidden]{display:none}
+.avseg{display:inline-flex;gap:4px;padding:4px;margin-bottom:16px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.avseg button{border:0;background:transparent;color:var(--muted);padding:8px 18px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+.avseg button:hover{color:var(--text)}
+.avseg button.on{background:linear-gradient(135deg,var(--a1),#f472b6);color:#fff}
 #tab-avatar .cols{grid-template-columns:minmax(380px,440px) minmax(0,1fr);align-items:stretch}
 #tab-avatar .preview-card{min-height:0}
 #tab-avatar .prev-box{min-height:300px}
 #tab-avatar .wbtn-row{margin-top:12px}
 #tab-avatar .wbtn-row.wbtn-row3{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 #tab-avatar .wbtn{white-space:normal;line-height:1.2;min-height:40px;text-align:center}
-#tab-avatar #avRun,#tab-avatar #avRemove{grid-column:1/-1}
+#tab-avatar #avRun,#tab-avatar #avRemove,#tab-avatar #av3Run,#tab-avatar #av3Remove{grid-column:1/-1}
 #tab-avatar .muted{margin:14px 0 0;line-height:1.45}
-#tab-avatar #avSetupTxt{margin-top:12px;line-height:1.45}
+#tab-avatar #avSetupTxt,#tab-avatar #av3SetupTxt{margin-top:12px;line-height:1.45}
 .avprog{margin-top:12px;height:18px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .avbar{visibility:hidden}.avbar.on{visibility:visible}
 #tab-avatar .prev-box{position:relative;background:repeating-conic-gradient(#14141f 0 25%,#191927 0 50%) 0 0/20px 20px}
-#avFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;pointer-events:auto}
+#avFrame,#av3Frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;pointer-events:auto}
 .avbar{height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}.avbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--a1),#f472b6);transition:width .2s}
 /* ---------- DonationAlerts ---------- */
 .da-user{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}

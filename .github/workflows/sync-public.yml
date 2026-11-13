@@ -30,7 +30,7 @@ jobs:
         run: |
           # только страницы виджетов: главная страница docs/index.html и картинки docs/img ведутся вручную в публичном репозитории
           mkdir -p pub/docs pub/assets
-          for d in chat donate likes gifts alert avatar da da-auth; do rm -rf "pub/docs/$d" && cp -r "docs/$d" "pub/docs/$d"; done
+          for d in chat donate likes gifts alert avatar avatar3d da da-auth; do rm -rf "pub/docs/$d" && cp -r "docs/$d" "pub/docs/$d"; done
           touch pub/docs/.nojekyll
           cp assets/relay-url.txt assets/shortcut-link.txt pub/assets/
       - name: Commit and push

@@ -9,6 +9,7 @@ const LIKES_PAGE = require('./widget-likes-page');
 const GIFTS_PAGE = require('./widget-gifts-page');
 const ALERT_PAGE = require('./widget-alert-page');
 const AVATAR_PAGE = require('./widget-avatar-page');
+const AVATAR3D_PAGE = require('./widget-avatar3d-page');
 const fs = require('fs');
 const DA_PAGE = require('./widget-da-page');
 
@@ -19,6 +20,7 @@ const LIKES_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/likes/';
 const GIFTS_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/gifts/';
 const ALERT_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/alert/';
 const AVATAR_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/avatar/';
+const AVATAR3D_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/avatar3d/';
 const DA_PAGES_URL = PAGES_ORIGIN + '/jonny-chat-tiktok/da/';
 
 // страница-обёртка с плеером YouTube (идентификатор ролика проверяется в маршруте: 11 символов a-z, A-Z, 0-9, _ и -)
@@ -44,10 +46,11 @@ function start(getSettings, port = 7878, opts = {}) {
     if (u === '/donate') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(DONATE_PAGE); }
     if (u === '/gifts') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(GIFTS_PAGE); }
     if (u === '/likes') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(LIKES_PAGE); }
+    if (u === '/avatar3d') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(AVATAR3D_PAGE); }
     if (u === '/avatar') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(AVATAR_PAGE); }
     // окно трекера аватара: страницу открывает только приложение; файлы библиотек и модели — из папки данных приложения (avatar.js)
     if (u === '/avatar-tracker' && opts.getTrackerPage) { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(opts.getTrackerPage()); }
-    if ((u.startsWith('/avatar-lib/') || u.startsWith('/avatar-model/')) && opts.getAvatarAsset && req.method === 'GET') {
+    if ((u.startsWith('/avatar-lib/') || u.startsWith('/avatar-model/') || u.startsWith('/avatar-vrm/')) && opts.getAvatarAsset && req.method === 'GET') {
       const a = opts.getAvatarAsset(u);
       if (!a) { res.writeHead(404, cors); return res.end(); }
       const own = /^\/avatar-lib\/avatar-/.test(u);
@@ -87,6 +90,7 @@ function start(getSettings, port = 7878, opts = {}) {
       // закреп шлётся всегда, а если его нет — null: страница после обрыва связи не должна оставить закреп, который уже сняли
       res.write('event: pin\ndata: ' + JSON.stringify(lastPin && (!lastPin.until || lastPin.until > Date.now()) ? lastPin : null) + '\n\n');
       if (opts.getDonate) res.write('event: dsettings\ndata: ' + JSON.stringify(opts.getDonate()) + '\n\n');
+      if (opts.getAvatar3d) res.write('event: av3settings\ndata: ' + JSON.stringify(opts.getAvatar3d()) + '\n\n');
       if (opts.getAvatar) res.write('event: avsettings\ndata: ' + JSON.stringify(opts.getAvatar()) + '\n\n');
       if (opts.getDa) res.write('event: dasettings\ndata: ' + JSON.stringify(opts.getDa()) + '\n\n');
       if (opts.getAlerts) res.write('event: asettings\ndata: ' + JSON.stringify(opts.getAlerts()) + '\n\n');
@@ -119,4 +123,4 @@ function start(getSettings, port = 7878, opts = {}) {
     server.listen(p, host);
   });
 }
-module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, GIFTS_PAGES_URL, ALERT_PAGES_URL, AVATAR_PAGES_URL, DA_PAGES_URL, PAGES_ORIGIN };
+module.exports = { start, guidePage, PAGES_URL, DONATE_PAGES_URL, LIKES_PAGES_URL, GIFTS_PAGES_URL, ALERT_PAGES_URL, AVATAR_PAGES_URL, AVATAR3D_PAGES_URL, DA_PAGES_URL, PAGES_ORIGIN };

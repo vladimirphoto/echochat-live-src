@@ -46,6 +46,7 @@
       "widget-gifts-page.js",
       "widget-alert-page.js",
       "widget-avatar-page.js",
+      "widget-avatar3d-page.js",
       "avatar.js",
       "avatar-preload.js",
       "widget-da-page.js",

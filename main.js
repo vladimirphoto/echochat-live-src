@@ -755,7 +755,11 @@ function avWidgetSettings() {
   const st = av.status(avUD()), m = av.activeModel(avUD(), avSet.model);
   return { ready: st.ready, model: m ? m.id : '', entry: m ? m.entry : '', scale: avSet.scale, offsetX: avSet.offsetX, offsetY: avSet.offsetY, bg: avSet.bg };
 }
-const avPush = () => wsrv && wsrv.broadcast('avsettings', avWidgetSettings());
+function avWidgetSettings3d() {
+  const st = av.status(avUD(), '3d'), m = av.activeVrm(avUD(), avSet.v3.model), v = avSet.v3;
+  return { ready: st.ready, model: m ? m.id : '', credit: m ? m.credit : '', scale: v.scale, offsetX: v.offsetX, offsetY: v.offsetY, bg: v.bg, mirror: v.mirror };
+}
+const avPush = () => { if (!wsrv) return; wsrv.broadcast('avsettings', avWidgetSettings()); wsrv.broadcast('av3settings', avWidgetSettings3d()); };
 function avNotify() { send('avatar:state', { run: avRun }); }
 function avOpen() { return !!(avWin && !avWin.isDestroyed()); }
 function avCmd(c) { if (!avOpen()) return; if (avReady) avWin.webContents.send('av:cmd', c); else avPending.push(c); }
@@ -808,13 +812,15 @@ function avStop() { if (avOpen()) avCmd({ cmd: 'stop' }); }
 function closeAvatar() { if (avOpen()) { try { avWin.close(); } catch (_) {} } }
 async function avStart() {
   if (locked('widgets')) return { ok: false, locked: true };
-  if (!av.status(avUD()).ready) return { ok: false, error: 'Сначала скачайте компоненты аватара.' };
+  // камере нужны только MediaPipe и модель лица (они общие для 2D и 3D)
+  const trk = av.status(avUD(), '3d').items.filter((i) => i.id === 'mediapipe' || i.id === 'face');
+  if (!trk.length || !trk.every((i) => i.ok)) return { ok: false, error: 'Сначала скачайте компоненты аватара (2D или 3D).' };
   if (process.platform === 'darwin') { try { if (!(await systemPreferences.askForMediaAccess('camera'))) return { ok: false, error: 'Нет доступа к камере: разрешите в настройках macOS.' }; } catch (_) {} }
   if (!avEnsureWin()) return { ok: false, error: 'Не запущен сервер виджетов.' };
   avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
   return { ok: true };
 }
-const avFull = () => ({ settings: avSet, status: av.status(avUD()), models: av.listModels(avUD()), run: avRun, installing: avInstalling, locked: locked('widgets') });
+const avFull = () => ({ settings: avSet, status: av.status(avUD()), status3: av.status(avUD(), '3d'), models: av.listModels(avUD()), models3: av.listVrm(avUD()), run: avRun, installing: avInstalling, locked: locked('widgets') });
 ipcMain.handle('avatar:state', () => avFull());
 ipcMain.handle('avatar:cameras', (_e, ask) => avCall('cameras', { ask: !!ask }));
 ipcMain.handle('avatar:start', () => avStart());
@@ -826,23 +832,32 @@ ipcMain.handle('avatar:set', (_e, patch) => {
   const next = { ...patch };
   // при смене модели вид в предпросмотре возвращается к стандартному: по центру и в масштабе 100%
   if (next.model && next.model !== was.model) Object.assign(next, avViewReset);
+  if (next.v3 && next.v3.model && next.v3.model !== was.v3.model) next.v3 = { ...next.v3, ...avViewReset }; // то же для 3D
   avSet = av.cleanSettings(next, avSet); avSave();
   if (avSet.mirror !== was.mirror) avCmd({ cmd: 'opts', opts: { mirror: avSet.mirror } });
   if (avSet.camera !== was.camera && avRun.state !== 'off') avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
   avPush();
   return avFull();
 });
-ipcMain.handle('avatar:install', async () => {
+ipcMain.handle('avatar:install', async (_e, engine) => {
   if (avInstalling) return { ok: false, error: 'Скачивание уже идёт.' };
   avInstalling = true;
   try {
-    await av.install(avUD(), { onProgress: (p) => send('avatar:progress', p) });
+    await av.install(avUD(), { engine: engine === '3d' ? '3d' : '2d', onProgress: (p) => send('avatar:progress', p) });
     avPush();
     return { ok: true, ...avFull(), installing: false };
   } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
   finally { avInstalling = false; }
 });
 async function avPick(kind) {
+  if (kind === 'vrm') { // 3D: один файл .vrm
+    const r = await dialog.showOpenDialog(win, { title: 'Модель VRM (.vrm)', properties: ['openFile'], filters: [{ name: 'Модель VRM', extensions: ['vrm'] }] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+    const m = av.importVrm(avUD(), r.filePaths[0]);
+    if (!m.ok) return m;
+    avSet = av.cleanSettings({ v3: { model: m.id, ...avViewReset } }, avSet); avSave(); avPush();
+    return { ok: true, ...avFull() };
+  }
   const r = await dialog.showOpenDialog(win, kind === 'dir'
     ? { title: 'Папка модели Live2D', properties: ['openDirectory'] }
     : { title: 'Модель Live2D (.zip или .model3.json)', properties: ['openFile'], filters: [{ name: 'Модель Live2D', extensions: ['zip', 'json'] }] });
@@ -852,17 +867,23 @@ async function avPick(kind) {
   avSet = av.cleanSettings({ model: m.id, ...avViewReset }, avSet); avSave(); avPush();
   return { ok: true, ...avFull() };
 }
-ipcMain.handle('avatar:add', (_e, kind) => avPick(kind === 'dir' ? 'dir' : 'file'));
+ipcMain.handle('avatar:add', (_e, kind) => avPick(kind === 'dir' ? 'dir' : kind === 'vrm' ? 'vrm' : 'file'));
 ipcMain.handle('avatar:remove', (_e, id) => {
+  if (/^vrm-/.test(String(id))) {
+    const r3 = av.removeVrm(avUD(), id);
+    if (r3.ok) { if (avSet.v3.model === id) { avSet = av.cleanSettings({ v3: { model: 'builtin-seed', ...avViewReset } }, avSet); avSave(); } avPush(); }
+    return r3.ok ? { ok: true, ...avFull() } : r3;
+  }
   const r = av.removeModel(avUD(), id);
   if (r.ok) { if (avSet.model === id) { avSet = av.cleanSettings({ model: 'builtin-Haru', ...avViewReset }, avSet); avSave(); } avPush(); }
   return r.ok ? { ok: true, ...avFull() } : r;
 });
 // Где взять бесплатные модели: официальная страница примеров Live2D (адрес зашит, из окна его подменить нельзя)
-const AV_MODELS_URL = 'https://www.live2d.com/en/learn/sample/';
-ipcMain.handle('avatar:open-models', () => { shell.openExternal(AV_MODELS_URL).catch(() => {}); return { ok: true }; });
-ipcMain.handle('avatar:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/avatar` : ''));
-ipcMain.handle('avatar:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.AVATAR_PAGES_URL } : { ok: false, url: '' }));
+// Для 3D (VRM) — VRoid Hub: там модели, которые авторы разрешили скачивать (нужен аккаунт pixiv)
+const AV_MODELS_URL = 'https://www.live2d.com/en/learn/sample/', AV_MODELS3_URL = 'https://hub.vroid.com/en';
+ipcMain.handle('avatar:open-models', (_e, engine) => { shell.openExternal(engine === '3d' ? AV_MODELS3_URL : AV_MODELS_URL).catch(() => {}); return { ok: true }; });
+ipcMain.handle('avatar:url', (_e, engine) => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/${engine === '3d' ? 'avatar3d' : 'avatar'}` : ''));
+ipcMain.handle('avatar:link', (_e, engine) => (wsrv && wsrv.port ? { ok: true, url: engine === '3d' ? widget.AVATAR3D_PAGES_URL : widget.AVATAR_PAGES_URL } : { ok: false, url: '' }));
 
 // ---------- Оповещения о подписках: плашка на экране стрима (страница /alert), звук играет окно приложения ----------
 // Картинка и звук, которые загрузил человек, лежат в папке данных приложения (alerts.js); до 5 МБ каждый
@@ -1288,6 +1309,7 @@ app.whenReady().then(async () => {
       getGifts: () => ({ settings: gset, top: giftsBoard.top(LIKES_MAX) }),
       getAlerts: () => alertWidgetSettings(),
       getAvatar: () => avWidgetSettings(),
+      getAvatar3d: () => avWidgetSettings3d(),
       getTrackerPage: () => av.TRACKER_PAGE,
       getAvatarAsset: (u) => av.resolveAsset(avUD(), u),
       getDa: () => daWidgetSettings(),
