@@ -929,3 +929,10 @@ main{position:relative}
 .card.thanks h2{margin-bottom:6px}
 .th-btns{display:flex;flex-direction:column;gap:10px;margin-top:auto;padding-top:14px}
 .th-btns .btn{display:block;width:100%;box-sizing:border-box;margin-top:0;padding:12px 16px;font-size:14px}
+
+/* кнопки автора прижаты к низу блока, в «спасибо» больше воздуха между заголовком и текстом */
+.card.author .au-body{flex:1;display:flex;flex-direction:column}
+.au-btns{margin-top:auto;padding-top:22px}
+.card.thanks h2{margin-bottom:14px}
+.card.thanks p{line-height:1.55}
+.th-btns{padding-top:20px}
