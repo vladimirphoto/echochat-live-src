@@ -776,11 +776,12 @@ main{position:relative}
 .nav[data-tab=da]{font-size:14px;letter-spacing:-.1px}
 
 /* DonationAlerts: все блоки одной ширины, сетка 2 колонки, в строке одинаковая высота */
-.da-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
-.da-grid>.card{display:flex;flex-direction:column;margin:0;min-width:0}
-.da-grid .da-push{margin-top:auto;padding-top:14px}
-.da-grid .tp-grid{flex:1;grid-template-columns:repeat(2,minmax(0,1fr))}
-.da-prev .prev-box{flex:1;min-height:420px}
+.da-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.da-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.da-col>.card{margin:0;min-width:0}
+.da-grid .da-push{padding-top:14px}
+.da-grid .tp-grid{flex:none;grid-template-columns:repeat(2,minmax(0,1fr))}
+.da-prev .prev-box{flex:none;height:460px;min-height:0}
 .da-prev .snd-row{margin-top:14px}
 .da-prev .snd-name{margin-top:12px}
 .da-hint{display:block;margin-top:6px;font-size:11px}

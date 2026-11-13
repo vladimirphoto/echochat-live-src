@@ -384,6 +384,7 @@
       </section>
       <section class="tab" id="tab-da">
         <div class="da-grid">
+<div class="da-col">
           <div class="card kc">
             <div class="kc-head"><h2>Подключение DonationAlerts</h2><div class="kstat" id="daStat"></div></div>
             <p class="muted">Войдите в свой аккаунт DonationAlerts. Донаты оттуда будут появляться на экране стрима в вашем оформлении, со звуком и голосом. Пароль приложению не передаётся: вход проходит на сайте DonationAlerts</p>
@@ -391,15 +392,6 @@
             <div class="da-push"><button class="btn primary" id="daLogin" type="button">Войти через DonationAlerts</button><button class="btn ghost wide" id="daLogout" type="button" hidden style="margin-top:12px">Выйти</button></div>
             <small class="kwarn" id="daMsg" hidden></small>
             <small class="muted" id="daSetup" hidden>Администратору приложения: впишите client_id в assets/da-client-id.txt (создать приложение: donationalerts.com/application/clients), адрес перенаправления укажите как в этом файле</small>
-          </div>
-          <div class="card">
-            <h2>Виджет донатов DonationAlerts</h2>
-            <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
-            <div class="da-push">
-              <label>Ссылка на виджет</label>
-              <div class="nick-field"><input id="daUrl" readonly spellcheck="false" /></div>
-              <div class="wbtn-row"><button class="btn wbtn primary" id="daCopy" type="button">Копировать</button><button class="btn wbtn ghost" id="daTest" type="button">Тест доната</button></div>
-            </div>
           </div>
           <div class="card dz-card">
             <h2>Шаблон виджета</h2>
@@ -415,13 +407,6 @@
                 <button type="button" class="dz-opt tp-opt" data-dadesign="candy" role="radio"><div class="tp t-candy"><div class="tp-tx"><b>Mark</b><em>800 ₸</em></div><img src="../assets/da/8.gif" alt="" /></div><span>Белый котик</span></button>
             </div>
           </div>
-          <div class="card preview-card da-prev">
-            <div class="prev-head"><div><h2>Предпросмотр и картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
-            <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
-            <div class="snd-row one"><button class="btn ghost" id="daImgPick" type="button">Загрузить свою картинку</button></div>
-            <div class="snd-name"><small class="muted" id="daImgName">Сейчас: картинка шаблона</small><button class="snd-reset" id="daImgReset" type="button" hidden>Удалить свою</button></div>
-            <small class="muted da-hint">png, jpg, gif, webp до 5 МБ</small>
-          </div>
           <div class="card">
             <h2>Звук</h2>
             <p class="muted">Выберите готовый звук — он сразу прозвучит — или загрузите свой (mp3, wav, ogg и др. до 5 МБ)</p>
@@ -431,6 +416,24 @@
               <button class="btn ghost" id="daSoundPick" type="button">Загрузить свой звук</button>
             </div>
             <div class="snd-name"><small class="muted" id="daSoundName">Сейчас: колокольчик</small><button class="snd-reset" id="daSoundReset" type="button" hidden>Удалить свой</button></div>
+          </div>
+</div>
+<div class="da-col">
+          <div class="card">
+            <h2>Виджет донатов DonationAlerts</h2>
+            <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
+            <div class="da-push">
+              <label>Ссылка на виджет</label>
+              <div class="nick-field"><input id="daUrl" readonly spellcheck="false" /></div>
+              <div class="wbtn-row"><button class="btn wbtn primary" id="daCopy" type="button">Копировать</button><button class="btn wbtn ghost" id="daTest" type="button">Тест доната</button></div>
+            </div>
+          </div>
+          <div class="card preview-card da-prev">
+            <div class="prev-head"><div><h2>Предпросмотр и картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
+            <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
+            <div class="snd-row one"><button class="btn ghost" id="daImgPick" type="button">Загрузить свою картинку</button></div>
+            <div class="snd-name"><small class="muted" id="daImgName">Сейчас: картинка шаблона</small><button class="snd-reset" id="daImgReset" type="button" hidden>Удалить свою</button></div>
+            <small class="muted da-hint">png, jpg, gif, webp до 5 МБ</small>
           </div>
           <div class="card">
             <h2>Настройки виджета</h2>
@@ -444,6 +447,8 @@
             <div class="ctl"><div class="row"><label>Масштаб</label><b id="daScaleVal">100%</b></div><input type="range" id="daScale" min="50" max="200" value="100" /></div>
             <div class="ctl"><div class="row"><label>Минимальная сумма (в пересчёте на ₸, примерно)</label><b id="daMinVal">0 ₸</b></div><input type="range" id="daMin" min="0" max="10000" step="100" value="0" /></div>
           </div>
+        
+</div>
         </div>
       </section>
       <!-- НАСТРОЙКИ -->
