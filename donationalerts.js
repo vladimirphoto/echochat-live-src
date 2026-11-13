@@ -106,7 +106,7 @@ function parseDonation(raw) {
   if (!d || typeof d !== 'object') return null;
   const amount = Number(d.amount);
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  if (d.name && d.name !== 'donation') return null; // другие виды оповещений (например, продажа товара) пока не показываем
+  if (d.name && /merch/i.test(String(d.name))) return null; // продажа товара пока не показываем; донаты и тестовые оповещения с сайта пропускаем дальше
   const currency = String(d.currency || '').toUpperCase().slice(0, 4);
   return {
     id: d.id !== undefined ? String(d.id) : '',
@@ -152,7 +152,7 @@ function start(opts) {
   const o = { wsUrl: WS_URL, fetchImpl: fetch, ...opts };
   const Centrifuge = o.Centrifuge || require('centrifuge');
   const WebSocketImpl = o.WebSocket || require('ws');
-  const seen = new Set();
+  const seen = new Map(); // id → время: повтор одного и того же доната отсекаем только ненадолго, чтобы повторные тесты с сайта (у них id может совпадать) не пропадали
   let stopped = false, client = null, timer = null, watchdog = null, backoff = 3000;
   const state = (s, extra) => { try { o.onState && o.onState({ state: s, ...(extra || {}) }); } catch (_) {} };
 
@@ -191,9 +191,10 @@ function start(opts) {
     c.setToken(user.socketToken);
     const sub = c.subscribe(channel);
     sub.on('publish', (ctx) => {
+      try { o.onRaw && o.onRaw(ctx && ctx.data); } catch (_) {}
       const d = parseDonation(ctx && ctx.data);
       if (!d) return;
-      if (d.id) { if (seen.has(d.id)) return; seen.add(d.id); if (seen.size > 200) seen.delete(seen.values().next().value); }
+      if (d.id) { const now = Date.now(), t = seen.get(d.id); if (t && now - t < 15000) return; seen.set(d.id, now); if (seen.size > 200) seen.delete(seen.keys().next().value); }
       try { o.onDonation && o.onDonation(d); } catch (_) {}
     });
     sub.on('subscribe', () => { backoff = 3000; clearTimeout(watchdog); watchdog = null; state('live', { user: { id: user.id, name: user.name, avatar: user.avatar } }); });

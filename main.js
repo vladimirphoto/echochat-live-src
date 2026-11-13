@@ -1127,7 +1127,7 @@ const daClearToken = () => { try { require('fs').unlinkSync(daAuthFile()); } cat
 const daImage = () => alertsMod.findFile(daDir(), daMod.IMAGE_BASE, alertsMod.IMAGE_EXT);
 const daSound = () => alertsMod.findFile(daDir(), daMod.SOUND_BASE, alertsMod.SOUND_EXT);
 const daWidgetSettings = () => daMod.widgetSettings(daSet, daImage());
-const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
+const daPublic = () => ({ state: daSt.state, user: daSt.user, error: daSt.error || '', last: daSt.last || '', hasClientId: !!daClientId(), locked: locked('kaspi') });
 const daNotify = () => send('da:status', daPublic());
 function stopDa() { if (daHandle) { try { daHandle.stop(); } catch (_) {} daHandle = null; } }
 function startDa(token) {
@@ -1136,8 +1136,10 @@ function startDa(token) {
   daHandle = daMod.start({
     token,
     onDonation: (d) => handleDaDonation(d),
+    // что именно пришло с сайта (для подсказки в окне: видно, доходят ли события вообще)
+    onRaw: (r) => { try { const x = r && r.data && r.amount === undefined ? r.data : (r || {}); daSt.last = 'Последнее событие: ' + String(x.name || 'без названия').slice(0, 24) + ', ' + (x.amount !== undefined ? x.amount + ' ' + String(x.currency || '') : 'без суммы') + ' · ' + new Date().toLocaleTimeString('ru-RU'); daNotify(); } catch (_) {} },
     onState: (s) => {
-      daSt = { state: s.state, user: s.user || daSt.user, error: s.error || '' };
+      daSt = { state: s.state, user: s.user || daSt.user, error: s.error || '', last: daSt.last };
       if (s.state === 'auth') { stopDa(); daClearToken(); daSt = { state: 'off', user: null, error: s.error || 'Нужно войти заново' }; } // токен не принят: старый удаляем, чтобы не гонять запросы впустую
       daNotify();
     },
