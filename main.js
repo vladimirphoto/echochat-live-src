@@ -1314,12 +1314,12 @@ ipcMain.handle('bug:send', async (_e, d) => {
     const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 15000);
     const r = await fetch('https://formsubmit.co/ajax/' + AUTHOR_MAIL, {
       method: 'POST', signal: ctl.signal,
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Origin: 'https://vladimirphoto.github.io', Referer: 'https://vladimirphoto.github.io/jonny-chat-tiktok/' },
       body: JSON.stringify({ _subject: b.subject, _captcha: 'false', _template: 'table', Сообщение: b.text, Связь: b.contact || 'не указано', Система: b.sys }),
     });
     clearTimeout(tm);
     const j = await r.json().catch(() => ({}));
-    if (!r.ok || String(j.success) === 'false') return { ok: false, error: 'Не удалось отправить письмо', fallback: true };
+    if (!r.ok || String(j.success) === 'false') return { ok: false, error: 'Не удалось отправить письмо' + (j.message ? ': ' + String(j.message).slice(0, 160) : ' (код ' + r.status + ')'), fallback: true };
     lastBugAt = Date.now();
     return { ok: true };
   } catch (_) { return { ok: false, error: 'Нет связи с сервером', fallback: true }; }

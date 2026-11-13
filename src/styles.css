@@ -908,3 +908,15 @@ main{position:relative}
 @keyframes auwave{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(16deg)}20%,40%{transform:rotate(-8deg)}50%{transform:rotate(10deg)}}
 @media(max-width:900px){.card.author{grid-template-columns:1fr;justify-items:start}}
 @media (prefers-reduced-motion:reduce){.au-ring,.au-wave{animation:none}}
+
+/* Настройки: слева вертикальный блок автора, справа окно и трей, запуск, обновления */
+.card.author{display:flex;flex-direction:column;align-items:stretch;gap:0;margin-top:0;padding:26px 22px}
+.card.author .au-ava{align-self:center;margin-bottom:14px}
+.au-glow{inset:auto -90px -90px auto}
+.card.author h2{font-size:21px}
+.card.author p{font-size:13.5px}
+.au-btns{flex-direction:column}
+.au-btns .btn{width:100%;box-sizing:border-box}
+.au-btns .btn.primary{display:flex;align-items:center;justify-content:center;gap:9px}
+.au-tg svg{width:18px;height:18px;flex:none}
+@media(max-width:900px){.card.author{justify-items:stretch}}
