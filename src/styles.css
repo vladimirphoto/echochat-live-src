@@ -805,3 +805,5 @@ main{position:relative}
 .tp.t-arcade .tp-tx{font-family:"Courier New",Consolas,monospace}.tp.t-arcade .tp-tx b{color:#00e5ff;text-transform:uppercase}.tp.t-arcade .tp-tx em{color:#ffe600;text-shadow:2px 2px 0 #ff3df2}
 .tp.t-glass .tp-tx b{color:#fff;font-weight:300;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 8px #1ea7ff}.tp.t-glass .tp-tx em{color:#6fd6ff;text-shadow:0 0 8px #1ea7ff}
 .tp.t-candy .tp-tx b{color:#fff;-webkit-text-stroke:3px #e0357e;paint-order:stroke fill}.tp.t-candy .tp-tx em{color:#fff;-webkit-text-stroke:4px #ff5d9e;paint-order:stroke fill}
+
+.tp.at-top{flex-direction:column-reverse}

@@ -398,13 +398,13 @@
             <p class="muted">Только картинка и текст, без рамок. Предпросмотр справа сразу покажет выбранный вариант</p>
             <div class="dz-grid tp-grid" id="daGrid" role="radiogroup" aria-label="Шаблон виджета DonationAlerts">
                 <button type="button" class="dz-opt tp-opt" data-dadesign="classic" role="radio"><div class="tp t-classic"><img src="../assets/da/1.png" alt="" /><div class="tp-tx"><b>Айдос А.</b><em>3 000 ₸</em></div></div><span>Подарок</span></button>
-                <button type="button" class="dz-opt tp-opt" data-dadesign="neon" role="radio"><div class="tp t-neon"><div class="tp-tx"><b>Анна К.</b><em>150 ₽</em></div><img src="../assets/da/2.png" alt="" /></div><span>Монеты</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="neon" role="radio"><div class="tp t-neon"><img src="../assets/da/2.png" alt="" /><div class="tp-tx"><b>Анна К.</b><em>150 ₽</em></div></div><span>Монеты</span></button>
                 <button type="button" class="dz-opt tp-opt" data-dadesign="minimal" role="radio"><div class="tp t-minimal"><img src="../assets/da/3.png" alt="" /><div class="tp-tx"><b>Mark</b><em>5 $</em></div></div><span>Сердце</span></button>
-                <button type="button" class="dz-opt tp-opt" data-dadesign="party" role="radio"><div class="tp t-party"><div class="tp-tx"><b>Дина Н.</b><em>10 000 ₸</em></div><img src="../assets/da/4.png" alt="" /></div><span>Мешок</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="party" role="radio"><div class="tp t-party"><img src="../assets/da/4.png" alt="" /><div class="tp-tx"><b>Дина Н.</b><em>10 000 ₸</em></div></div><span>Мешок</span></button>
                 <button type="button" class="dz-opt tp-opt" data-dadesign="gold" role="radio"><div class="tp t-gold"><img src="../assets/da/5.gif" alt="" /><div class="tp-tx"><b>Тимур Б.</b><em>100 €</em></div></div><span>Серый кот</span></button>
-                <button type="button" class="dz-opt tp-opt" data-dadesign="arcade" role="radio"><div class="tp t-arcade"><div class="tp-tx"><b>Айдос А.</b><em>500 ₽</em></div><img src="../assets/da/6.gif" alt="" /></div><span>Панда</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="arcade" role="radio"><div class="tp t-arcade"><img src="../assets/da/6.gif" alt="" /><div class="tp-tx"><b>Айдос А.</b><em>500 ₽</em></div></div><span>Панда</span></button>
                 <button type="button" class="dz-opt tp-opt" data-dadesign="glass" role="radio"><div class="tp t-glass"><img src="../assets/da/7.gif" alt="" /><div class="tp-tx"><b>Анна К.</b><em>20 $</em></div></div><span>Акула</span></button>
-                <button type="button" class="dz-opt tp-opt" data-dadesign="candy" role="radio"><div class="tp t-candy"><div class="tp-tx"><b>Mark</b><em>800 ₸</em></div><img src="../assets/da/8.gif" alt="" /></div><span>Белый котик</span></button>
+                <button type="button" class="dz-opt tp-opt" data-dadesign="candy" role="radio"><div class="tp t-candy"><img src="../assets/da/8.gif" alt="" /><div class="tp-tx"><b>Mark</b><em>800 ₸</em></div></div><span>Белый котик</span></button>
             </div>
           </div>
           <div class="card">
@@ -431,6 +431,11 @@
           <div class="card preview-card da-prev">
             <div class="prev-head"><div><h2>Предпросмотр и картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
             <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
+            <label style="margin-top:14px">Текст</label>
+            <div class="da-chips" role="radiogroup" aria-label="Положение текста" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">
+              <button type="button" class="da-chip" data-datext="below" role="radio"><i>⬆️</i><span>Текст снизу</span></button>
+              <button type="button" class="da-chip" data-datext="above" role="radio"><i>⬇️</i><span>Текст сверху</span></button>
+            </div>
             <div class="snd-row one"><button class="btn ghost" id="daImgPick" type="button">Загрузить свою картинку</button></div>
             <div class="snd-name"><small class="muted" id="daImgName">Сейчас: картинка шаблона</small><button class="snd-reset" id="daImgReset" type="button" hidden>Удалить свою</button></div>
             <small class="muted da-hint">png, jpg, gif, webp до 5 МБ</small>

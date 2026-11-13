@@ -40,7 +40,7 @@ const SYMBOLS = { KZT: '\u20b8', RUB: '\u20bd', UAH: '\u20b4', USD: '$', EUR: '\
 
 const DEFAULTS = {
   enabled: true, voice: true, sound: true, showMessage: true,
-  duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top',
+  duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top', textPos: 'below',
   imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '',
 };
 const clampN = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
@@ -59,6 +59,7 @@ function cleanSettings(s) {
     minAmount: clampN(s.minAmount, 0, 1000000, 0),
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
     layout: s.layout === 'side' ? 'side' : 'top',
+    textPos: s.textPos === 'above' ? 'above' : 'below',
     imageKind: imgIds.includes(s.imageKind) ? s.imageKind : 'auto',
     soundKind: sndIds.includes(s.soundKind) ? s.soundKind : 'bell',
     imageName: String(s.imageName || '').slice(0, 120),
@@ -73,6 +74,7 @@ function widgetSettings(s, imageInfo) {
     duration: s.duration, scale: s.scale, showMessage: s.showMessage,
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
     layout: s.layout === 'side' ? 'side' : 'top',
+    textPos: s.textPos === 'above' ? 'above' : 'below',
     art: '',
     imageV: custom ? Math.max(1, imageInfo.mtime) : 0,
   };

@@ -44,10 +44,10 @@ html,body{background:transparent;overflow:hidden;font-family:'Segoe UI',Arial,sa
 <div id="stage" class="b"></div>
 <script>
 var PREVIEW=/[?&]preview=1/.test(location.search);
-var S={duration:8,scale:100,showMessage:true,design:'classic',imageV:0};
+var S={duration:8,scale:100,showMessage:true,design:'classic',textPos:'below',imageV:0};
 var DESIGNS=['classic','neon','minimal','party','gold','arcade','glass','candy'];
-// шаблон → картинка (1–4 PNG, 5–8 GIF) и где стоит текст: над картинкой или под ней
-var TPL={classic:{n:1,pos:'below'},neon:{n:2,pos:'above'},minimal:{n:3,pos:'below'},party:{n:4,pos:'above'},gold:{n:5,pos:'below'},arcade:{n:6,pos:'above'},glass:{n:7,pos:'below'},candy:{n:8,pos:'above'}};
+// шаблон → картинка (1–4 PNG, 5–8 GIF); текст по умолчанию под картинкой, над ней — если так выбрано в приложении (textPos)
+var TPL={classic:{n:1},neon:{n:2},minimal:{n:3},party:{n:4},gold:{n:5},arcade:{n:6},glass:{n:7},candy:{n:8}};
 function designOf(){return DESIGNS.indexOf(S.design)>=0?S.design:'classic';}
 var stage=document.getElementById('stage');
 function zoomOf(){return Math.max(40,Math.min(250,+S.scale||100))/100;}
@@ -68,7 +68,7 @@ function loadImage(){
 var queue=[],busy=false,curCard=null,curT1=0,curT2=0;
 function build(d){
   var ds=designOf(),tp=TPL[ds];
-  var c=document.createElement('div');c.className='card t-'+ds+(tp.pos==='above'?' at-top':'');
+  var c=document.createElement('div');c.className='card t-'+ds+(S.textPos==='above'?' at-top':'');
   var a=document.createElement('div');a.className='art';
   var im=document.createElement('img');im.alt='';im.src=imgUrl||(BASE+'/da-tpl/'+tp.n);a.appendChild(im);
   var x=document.createElement('div');x.className='tx';

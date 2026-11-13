@@ -1532,6 +1532,7 @@ const D = S.da;
 const DA_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 if (!DA_DESIGNS.includes(D.design)) D.design = 'classic';
 if (D.layout !== 'side') D.layout = 'top';
+if (D.textPos !== 'above') D.textPos = 'below';
 D.duration = Math.max(3, Math.min(30, Math.round(+D.duration) || 8));
 D.scale = Math.max(50, Math.min(200, Math.round(+D.scale) || 100));
 D.minAmount = Math.max(0, Math.min(1000000, Math.round(+D.minAmount) || 0));
@@ -1573,6 +1574,8 @@ function refreshDaChoicesUi() {
   $('#daSoundName').textContent = D.soundKind === 'custom' && daSoundFile ? 'Сейчас: ' + (D.soundName || 'свой звук') : 'Сейчас: ' + (sp ? sp.label.toLowerCase() : 'колокольчик');
   $('#daSoundReset').hidden = !daSoundFile;
 }
+function refreshDaTextUi() { $$('.da-chip[data-datext]').forEach((b) => { const on = b.dataset.datext === D.textPos; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); $$('#daGrid .tp').forEach((t) => t.classList.toggle('at-top', D.textPos === 'above')); }
+$$('.da-chip[data-datext]').forEach((b) => b.addEventListener('click', async () => { D.textPos = b.dataset.datext === 'above' ? 'above' : 'below'; refreshDaTextUi(); await pushDa(); window.echo.daPreview(); }));
 function refreshDaDesignUi() { $$('.dz-opt[data-dadesign]').forEach((b) => { const on = b.dataset.dadesign === D.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
 $$('.dz-opt[data-dadesign]').forEach((b) => b.addEventListener('click', async () => { D.design = b.dataset.dadesign; refreshDaDesignUi(); await pushDa(); window.echo.daPreview(); }));
 $$('input[data-dk]').forEach((el) => {
@@ -1708,7 +1711,7 @@ async function initDaPreview() {
 }
 (async () => {
   daPresets = await window.echo.daPresets().catch(() => daPresets);
-  refreshDaDesignUi(); refreshDaChoicesUi(); refreshDaSampleUi(); refreshDaLink();
+  refreshDaDesignUi(); refreshDaTextUi(); refreshDaChoicesUi(); refreshDaSampleUi(); refreshDaLink();
   await loadDaSound();
   await pushDa(); // заодно узнаём, есть ли файл своей картинки
   const s = await window.echo.daState().catch(() => null);
