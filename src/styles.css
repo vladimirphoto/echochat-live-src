@@ -839,7 +839,7 @@ main{position:relative}
 
 /* ===== «Эфир»: мини-графики в карточках ===== */
 .stat>*:not(.spark){position:relative;z-index:1}
-.spark{position:absolute;left:36%;width:50%;top:27%;bottom:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .8s ease;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 86%,transparent 100%)}
+.spark{position:absolute;left:41%;right:0;top:46%;bottom:5%;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .8s ease;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 92%,transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 14%,#000 92%,transparent 100%)}
 .stat.live .spark{opacity:1}
 .spark path{vector-effect:non-scaling-stroke}
 .spark .sp-line{fill:none;stroke:var(--sc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--sc))}
