@@ -775,7 +775,32 @@ main{position:relative}
 
 .nav[data-tab=da]{font-size:14px;letter-spacing:-.1px}
 
-/* DonationAlerts: «Звук» и «Настройки виджета» рядом в одну линию */
-.da-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
-.da-pair .snd-row{grid-template-columns:1fr}
-@media (max-width:900px){.da-pair{grid-template-columns:1fr}}
+/* DonationAlerts: все блоки одной ширины, сетка 2 колонки, в строке одинаковая высота */
+.da-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.da-grid>.card{display:flex;flex-direction:column;margin:0;min-width:0}
+.da-grid .da-push{margin-top:auto;padding-top:14px}
+.da-grid .tp-grid{flex:1;grid-template-columns:repeat(2,minmax(0,1fr))}
+.da-prev .prev-box{flex:1;min-height:420px}
+.da-prev .snd-row{margin-top:14px}
+.da-prev .snd-name{margin-top:12px}
+.da-hint{display:block;margin-top:6px;font-size:11px}
+.da-sounds{max-height:300px;overflow-y:auto;padding-right:4px;margin:12px 0 0}
+.da-sounds::-webkit-scrollbar{width:6px}.da-sounds::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:6px}
+.da-sounds .voice{flex-wrap:nowrap}
+.da-sounds .voice .av{flex:none;font-size:15px}
+.da-sounds .voice.sel .av{box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+@media (max-width:900px){.da-grid{grid-template-columns:1fr}}
+/* плитки шаблонов: картинка и подпись без рамок, текст сверху или снизу — как в самом виджете */
+.tp-opt{padding:10px 8px 8px}
+.tp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;min-height:120px}
+.tp img{display:block;width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+.tp-tx{display:flex;flex-direction:column;align-items:center;line-height:1.1}
+.tp-tx b{font-size:11px;font-weight:800}.tp-tx em{font-style:normal;font-size:15px;font-weight:900}
+.tp.t-classic .tp-tx b{color:#fff}.tp.t-classic .tp-tx em{color:#f5b92e}
+.tp.t-neon .tp-tx{font-family:Consolas,"Courier New",monospace}.tp.t-neon .tp-tx b{color:#fff;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 6px #ffb300}.tp.t-neon .tp-tx em{color:#ffe27a;text-shadow:0 0 8px #ff9100}
+.tp.t-minimal .tp-tx b{color:#fff;font-weight:600}.tp.t-minimal .tp-tx em{color:#ffc2d4;font-family:Georgia,serif;font-style:italic;text-shadow:0 0 8px #e0457b}
+.tp.t-party .tp-tx b{color:#fff;text-transform:uppercase;-webkit-text-stroke:3px #5a3511;paint-order:stroke fill}.tp.t-party .tp-tx em{color:#ffe066;-webkit-text-stroke:4px #5a3511;paint-order:stroke fill}
+.tp.t-gold .tp-tx b{color:#e9eff7}.tp.t-gold .tp-tx em{color:#c3d0e0;text-shadow:0 2px 0 #3d4a5c}
+.tp.t-arcade .tp-tx{font-family:"Courier New",Consolas,monospace}.tp.t-arcade .tp-tx b{color:#00e5ff;text-transform:uppercase}.tp.t-arcade .tp-tx em{color:#ffe600;text-shadow:2px 2px 0 #ff3df2}
+.tp.t-glass .tp-tx b{color:#fff;font-weight:300;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 8px #1ea7ff}.tp.t-glass .tp-tx em{color:#6fd6ff;text-shadow:0 0 8px #1ea7ff}
+.tp.t-candy .tp-tx b{color:#fff;-webkit-text-stroke:3px #e0357e;paint-order:stroke fill}.tp.t-candy .tp-tx em{color:#fff;-webkit-text-stroke:4px #ff5d9e;paint-order:stroke fill}

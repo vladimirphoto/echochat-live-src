@@ -72,6 +72,18 @@ function start(getSettings, port = 7878, opts = {}) {
       res.writeHead(200, { 'Content-Type': im.mime, 'Content-Length': im.data.length, 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'cross-origin', ...cors });
       return res.end(im.data);
     }
+    // картинки шаблонов DonationAlerts (PNG и GIF из assets/da): страница на GitHub Pages берёт их у приложения
+    {
+      const tm = /^\/da-tpl\/([1-8])$/.exec(u);
+      if (tm) {
+        const n = tm[1], ext = +n <= 4 ? 'png' : 'gif';
+        let buf = null;
+        try { buf = fs.readFileSync(require('path').join(__dirname, 'assets', 'da', n + '.' + ext)); } catch (_) {}
+        if (!buf) { res.writeHead(404, cors); return res.end(); }
+        res.writeHead(200, { 'Content-Type': ext === 'png' ? 'image/png' : 'image/gif', 'Content-Length': buf.length, 'Cache-Control': 'public, max-age=3600', 'Cross-Origin-Resource-Policy': 'cross-origin', ...cors });
+        return res.end(buf);
+      }
+    }
     // видеоинструкция во вкладке «Донаты Каспи»: плеер YouTube открывается со страницы на 127.0.0.1, а не с file://
     // (с file:// YouTube часто отвечает «ошибка 153», потому что у запроса нет адреса-источника)
     if (u === '/guide') {

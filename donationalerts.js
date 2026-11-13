@@ -16,25 +16,8 @@ const REDIRECT_URI = 'https://vladimirphoto.github.io/jonny-chat-tiktok/da-auth/
 const IMAGE_BASE = 'da-image';
 const SOUND_BASE = 'da-sound';
 
-// Готовые картинки (шаблоны): «auto» выбирает картинку по сумме, остальные — одна и та же всегда.
-const IMAGE_PRESETS = [
-  { id: 'auto', label: 'По сумме', art: '' },
-  { id: 'gift', label: 'Подарок', art: '\ud83c\udf81' },
-  { id: 'diamond', label: 'Бриллиант', art: '\ud83d\udc8e' },
-  { id: 'rocket', label: 'Ракета', art: '\ud83d\ude80' },
-  { id: 'fire', label: 'Огонь', art: '\ud83d\udd25' },
-  { id: 'heart', label: 'Сердце', art: '\u2764\ufe0f' },
-  { id: 'crown', label: 'Корона', art: '\ud83d\udc51' },
-  { id: 'star', label: 'Звезда', art: '\u2b50' },
-  { id: 'party', label: 'Праздник', art: '\ud83c\udf89' },
-  { id: 'coin', label: 'Монета', art: '\ud83e\ude99' },
-  { id: 'money', label: 'Деньги', art: '\ud83d\udcb0' },
-  { id: 'trophy', label: 'Кубок', art: '\ud83c\udfc6' },
-  { id: 'bolt', label: 'Молния', art: '\u26a1' },
-  { id: 'cat', label: 'Котик', art: '\ud83d\udc31' },
-  { id: 'champagne', label: 'Шампанское', art: '\ud83c\udf7e' },
-  { id: 'clover', label: 'Клевер', art: '\ud83c\udf40' },
-];
+// Картинка доната: «auto» — картинка выбранного шаблона (assets/da), «custom» — загруженная человеком.
+const IMAGE_PRESETS = [{ id: 'auto', label: 'Картинка шаблона', art: '' }];
 // Готовые звуки: ноты собирает окно приложения (renderer.js), файлов нет. 'custom' — загруженный файл.
 const SOUND_PRESETS = [
   { id: 'bell', label: 'Колокольчик' },
@@ -85,13 +68,12 @@ function cleanSettings(s) {
 
 // что получает страница виджета: art — готовая картинка-эмодзи (пусто = по сумме), imageV — версия своей картинки (0 = нет)
 function widgetSettings(s, imageInfo) {
-  const preset = IMAGE_PRESETS.find((p) => p.id === s.imageKind);
   const custom = s.imageKind === 'custom' && imageInfo;
   return {
     duration: s.duration, scale: s.scale, showMessage: s.showMessage,
     design: DESIGNS.includes(s.design) ? s.design : 'classic',
     layout: s.layout === 'side' ? 'side' : 'top',
-    art: custom ? '' : (preset ? preset.art : ''),
+    art: '',
     imageV: custom ? Math.max(1, imageInfo.mtime) : 0,
   };
 }

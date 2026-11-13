@@ -1548,37 +1548,33 @@ async function pushDa() {
   if (!daHasImage && (D.imageKind === 'custom' || D.imageName)) { D.imageKind = D.imageKind === 'custom' ? 'auto' : D.imageKind; D.imageName = ''; save(); window.echo.daSet({ ...D }).catch(() => {}); } // файл удалили — не показываем несуществующую картинку
   refreshDaChoicesUi();
 }
-// чипы выбора: готовые шаблоны + «Своя», если файл загружен
-function renderDaChips(box, items, current, onPick) {
+// список звуков оформлен как «Мои голоса»: строка с кружком, названием и кнопкой «послушать»; «Свой» — если файл загружен
+function renderDaSounds() {
+  const box = $('#daSndList'); if (!box) return;
   box.textContent = '';
+  const items = daPresets.sounds.concat(daSoundFile ? [{ id: 'custom', label: 'Свой звук' }] : []);
   items.forEach((p) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'da-chip' + (p.id === current ? ' on' : ''); b.dataset.id = p.id;
-    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', p.id === current ? 'true' : 'false');
-    if (p.art) { const i = document.createElement('i'); i.textContent = p.art; b.appendChild(i); }
-    const sp = document.createElement('span'); sp.textContent = p.label; b.appendChild(sp);
-    b.addEventListener('click', () => onPick(p.id));
-    box.appendChild(b);
+    const d = document.createElement('div');
+    d.className = 'voice' + (p.id === D.soundKind ? ' sel' : '');
+    d.dataset.id = p.id; d.setAttribute('role', 'radio'); d.setAttribute('aria-checked', p.id === D.soundKind ? 'true' : 'false'); d.tabIndex = 0;
+    const label = p.id === 'custom' ? (D.soundName || p.label) : p.label;
+    d.innerHTML = '<div class="av">♪</div><div class="vi"><b>' + esc(label) + '</b><small>' + (p.id === 'custom' ? 'Ваш файл' : 'Готовый звук') + '</small></div><button class="mini play" type="button" title="Прослушать">' + ICON_PLAY + '</button>';
+    const pick = () => { D.soundKind = p.id; pushDa(); playDaSample(); };
+    d.onclick = pick;
+    d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+    box.appendChild(d);
   });
 }
 function refreshDaChoicesUi() {
-  const imgs = daPresets.images.concat(daHasImage ? [{ id: 'custom', label: 'Своя', art: '🖼️' }] : []);
-  renderDaChips($('#daImgChips'), imgs, D.imageKind, (id) => { D.imageKind = id; pushDa(); window.echo.daPreview(); });
-  const snds = daPresets.sounds.concat(daSoundFile ? [{ id: 'custom', label: 'Свой', art: '🎵' }] : []);
-  renderDaChips($('#daSndChips'), snds, D.soundKind, (id) => { D.soundKind = id; pushDa(); playDaSample(); });
-  const ip = daPresets.images.find((p) => p.id === D.imageKind);
-  $('#daImgName').textContent = D.imageKind === 'custom' && daHasImage ? 'Сейчас: ' + (D.imageName || 'своя картинка') : 'Сейчас: ' + (ip && ip.id !== 'auto' ? ip.label.toLowerCase() : 'по сумме доната');
+  renderDaSounds();
+  $('#daImgName').textContent = D.imageKind === 'custom' && daHasImage ? 'Сейчас: ' + (D.imageName || 'своя картинка') : 'Сейчас: картинка шаблона';
   $('#daImgReset').hidden = !daHasImage;
   const sp = daPresets.sounds.find((p) => p.id === D.soundKind);
   $('#daSoundName').textContent = D.soundKind === 'custom' && daSoundFile ? 'Сейчас: ' + (D.soundName || 'свой звук') : 'Сейчас: ' + (sp ? sp.label.toLowerCase() : 'колокольчик');
   $('#daSoundReset').hidden = !daSoundFile;
 }
-// шаблон (оформление)
 function refreshDaDesignUi() { $$('.dz-opt[data-dadesign]').forEach((b) => { const on = b.dataset.dadesign === D.design; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
 $$('.dz-opt[data-dadesign]').forEach((b) => b.addEventListener('click', async () => { D.design = b.dataset.dadesign; refreshDaDesignUi(); await pushDa(); window.echo.daPreview(); }));
-function refreshDaLayoutUi() { $$('.da-chip[data-dalayout]').forEach((b) => { const on = b.dataset.dalayout === D.layout; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
-$$('.da-chip[data-dalayout]').forEach((b) => b.addEventListener('click', async () => { D.layout = b.dataset.dalayout === 'side' ? 'side' : 'top'; refreshDaLayoutUi(); await pushDa(); window.echo.daPreview(); }));
-refreshDaLayoutUi();
 $$('input[data-dk]').forEach((el) => {
   el.checked = !!D[el.dataset.dk];
   el.addEventListener('change', () => {
@@ -1696,7 +1692,7 @@ let daInit = false;
 function fitDa() {
   const box = $('#daBox'), fr = $('#daFrame'), w = box.clientWidth, h = box.clientHeight;
   if (!w || !h) return;
-  const k = Math.min(1, w / 560, h / 200);
+  const k = Math.min(1, w / 520, h / 400);
   fr.style.width = Math.ceil(w / k) + 'px'; fr.style.height = Math.ceil(h / k) + 'px';
   fr.style.transform = k === 1 ? '' : 'scale(' + k + ')';
 }
@@ -1726,6 +1722,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
+  '3.1.8': ['DonationAlerts: блоки вкладки выстроены ровной сеткой одной ширины; предпросмотр стал выше и объединён с блоком картинки (осталась кнопка «Загрузить свою картинку»); список звуков оформлен как «Мои голоса»; восемь новых шаблонов без рамок — картинка (4 PNG и 4 GIF) и текст над ней или под ней, у каждого свой стиль текста.'],
   '3.1.6': ['Новая вкладка «DonationAlerts» под «Донатами Каспи»: вход в аккаунт DonationAlerts в один клик, донаты приходят на экран стрима в реальном времени. 8 шаблонов виджета, готовые и свои картинки (png, jpg, gif, webp), готовые и свои звуки, озвучка голосом, минимальная сумма, предпросмотр и тест. Сумма показывается в валюте перевода', 'Окно приложения при запуске стало чуть выше: все пункты меню слева помещаются без прокрутки', 'Исправлено: выбор оформления в «Оповещениях» больше не сбрасывал оформление в «Донатах Каспи»'],
   '3.1.5': ['2D Аватар: кнопка «Скачать бесплатные модели» открывает официальную страницу Live2D с бесплатными моделями; скачанный .zip добавляется кнопкой «Архив .zip»'],
   '3.1.4': ['Вкладка переименована в «2D Аватар». В предпросмотре аватара колесо мыши меняет размер, а левая кнопка мыши двигает персонажа; двойной щелчок сбрасывает. Размер и положение сохраняются и действуют в OBS и TikTok LIVE Studio'],
