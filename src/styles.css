@@ -853,6 +853,8 @@ main{position:relative}
 .avseg button b{font-size:17px;font-weight:800;letter-spacing:.3px}
 .avseg button span{font-size:12.5px;font-weight:600;opacity:.85}
 .avseg button:hover{color:var(--text);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.5);transform:translateY(-1px)}
+/* запас сверху и слева, чтобы подъём при наведении и рамка фокуса не обрезались краем прокручиваемой вкладки */
+#tab-avatar.show{padding-top:6px;padding-left:5px;margin-left:-5px}
 .avseg button:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
 .avseg button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--a1),#f472b6);box-shadow:0 8px 22px rgba(139,92,246,.45)}
 
