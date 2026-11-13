@@ -813,7 +813,7 @@ main{position:relative}
 .side{overflow-y:auto;scrollbar-width:none}.side::-webkit-scrollbar{display:none}
 @media (max-height:820px){.nav{padding:9px 14px}.brand{margin-bottom:20px}nav{gap:4px}}
 
-.wish{display:flex;align-items:center;justify-content:center;gap:7px;padding:6px 10px;border-radius:99px;font-size:12px;font-weight:600;letter-spacing:.2px;color:#f9d4e6;background:linear-gradient(135deg,rgba(139,92,246,.14),rgba(236,72,153,.18));border:1px solid rgba(236,72,153,.28)}
+.wish{display:flex;align-items:center;justify-content:center;gap:7px;padding:6px 10px;border-radius:99px;font-size:12px;font-weight:600;letter-spacing:.2px;color:#f9d4e6;background:linear-gradient(135deg,rgba(139,92,246,.14),rgba(236,72,153,.18));border:0}
 .wish-heart{width:15px;height:15px;color:#ff4d8d;filter:drop-shadow(0 0 6px rgba(255,77,141,.8));animation:heartbeat 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.28)}28%{transform:scale(1)}42%{transform:scale(1.18)}70%{transform:scale(1)}}
 
