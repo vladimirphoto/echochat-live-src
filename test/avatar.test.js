@@ -184,7 +184,7 @@ test('предпросмотр аватара: колесо, перетаски�
 
 test('кнопка «Скачать бесплатные модели» открывает только зашитый адрес каталога моделей', () => {
   const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
-  assert.match(main, /AV_MODELS_URL = 'https:\/\/itch\.io\/game-assets\/free\/tag-live2d'/);
+  assert.match(main, /AV_MODELS_URL = 'https:\/\/booth\.pm\/en\/search\/free%20live%202d%20model\?tags%5B%5D=live2d'/);
   assert.match(main, /ipcMain\.handle\('avatar:open-models', \(\) =>/); // адрес не приходит из окна
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8'), /id="avGetModels"/);
 });
