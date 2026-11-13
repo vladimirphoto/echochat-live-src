@@ -57,11 +57,23 @@ function frameModel(){
   var vis=h*0.5; // сколько метров по высоте видно в кадре
   frame.cy=hy-vis*0.12;frame.cx=0;frame.d=(vis/2)/Math.tan(frame.fov*Math.PI/360);
 }
-function poseArms(){ // у VRM руки по умолчанию разведены в стороны (T-поза): опускаем
-  var l=bone('leftUpperArm'),r=bone('rightUpperArm');
-  if(l)l.rotation.z=-1.25;if(r)r.rotation.z=1.25;
-  var ll=bone('leftLowerArm'),rl=bone('rightLowerArm');
-  if(ll)ll.rotation.z=-0.1;if(rl)rl.rotation.z=0.1;
+function raw(n){try{return vrm.humanoid.getRawBoneNode(n);}catch(_){return null;}}
+function poseArms(){ // у VRM руки по умолчанию разведены в стороны (T-поза): опускаем. Знак поворота зависит от версии VRM (0.x и 1.0 смотрят в разные стороны), поэтому выбираем тот, при котором локоть оказывается ниже плеча
+  [['left',-1],['right',1]].forEach(function(side){
+    var up=bone(side[0]+'UpperArm'),lo=bone(side[0]+'LowerArm');
+    if(!up)return;
+    var best=side[1],drop=null;
+    if(lo){
+      var pu=new T.Vector3(),pl=new T.Vector3(),res=[];
+      [side[1],-side[1]].forEach(function(sg){
+        up.rotation.z=sg*1.25;vrm.update(0);var ru=raw(side[0]+'UpperArm'),rl=raw(side[0]+'LowerArm');
+        if(ru&&rl){ru.updateWorldMatrix(true,false);rl.updateWorldMatrix(true,false);ru.getWorldPosition(pu);rl.getWorldPosition(pl);}res.push(pl.y-pu.y);
+      });
+      best=res[0]<=res[1]?side[1]:-side[1];
+    }
+    up.rotation.z=best*1.25;
+    if(lo)lo.rotation.z=best*0.1;
+  });
 }
 function setExp(n,v){var m=vrm&&vrm.expressionManager;if(m&&m.getExpression(n))m.setValue(n,v);}
 function drive(dt,now){
