@@ -2,9 +2,9 @@
 .nav-winter{all:unset;cursor:pointer;display:flex;gap:12px;align-items:center;padding:10px 14px;margin-top:4px;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.3px;transition:.25s;box-shadow:inset 0 0 0 1px rgba(150,210,255,.22);background:rgba(150,210,255,.05);position:relative}
 .nav-winter:hover{background:rgba(150,210,255,.12);box-shadow:inset 0 0 0 1px rgba(170,225,255,.5),0 0 18px rgba(120,200,255,.25)}
 .nav-winter .ic{width:24px;height:24px;flex:none;color:#9fdcff;filter:drop-shadow(0 0 4px rgba(130,210,255,.7))}
-.nav-winter .wt{position:relative;padding-bottom:7px;background:linear-gradient(180deg,#fff 0%,#bfe8ff 55%,#6cb8f0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(120,200,255,.55))}
+.nav-winter .wt{position:relative;background:linear-gradient(180deg,#fff 0%,#bfe8ff 55%,#6cb8f0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px rgba(120,200,255,.55))}
 /* сосульки под замёрзшей надписью */
-.nav-winter .wt::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:conic-gradient(from 158deg at 50% 0,rgba(200,240,255,.9) 0 44deg,transparent 0) 0 0/7px 8px repeat-x,conic-gradient(from 166deg at 50% 0,rgba(160,220,255,.8) 0 28deg,transparent 0) 3px 0/13px 8px repeat-x;-webkit-text-fill-color:initial;mask:linear-gradient(90deg,#000 0,#000 100%)}
+.nav-winter .wt::after{content:"";position:absolute;left:0;right:0;top:calc(100% - 1px);height:8px;background:conic-gradient(from 158deg at 50% 0,rgba(200,240,255,.9) 0 44deg,transparent 0) 0 0/7px 8px repeat-x,conic-gradient(from 166deg at 50% 0,rgba(160,220,255,.8) 0 28deg,transparent 0) 3px 0/13px 8px repeat-x;-webkit-text-fill-color:initial;mask:linear-gradient(90deg,#000 0,#000 100%)}
 .nav-winter.on .ic{color:#ffb86b;filter:drop-shadow(0 0 4px rgba(255,170,90,.7))}
 .nav-winter.on .wt{background:linear-gradient(180deg,#fff2d6,#ffb86b);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 5px rgba(255,170,90,.45))}
 .nav-winter.on .wt::after{display:none}
@@ -12,22 +12,17 @@
 /* логотип под снежную шапку */
 body.winter .logo{position:relative}
 
-/* снежная шапка + сосульки на карточках */
-body.winter .card,body.winter .stat{position:relative}
-body.winter .card::before,body.winter .card::after{content:"";position:absolute;pointer-events:none;z-index:3}
-body.winter .card::after{left:16px;right:16px;top:-6px;height:10px;background:radial-gradient(circle at 50% 100%,#f6fbff 7px,transparent 7.5px) 0 0/22px 10px repeat-x,radial-gradient(circle at 50% 100%,#dcecfb 5px,transparent 5.5px) 8px 3px/37px 10px repeat-x,linear-gradient(#f6fbff,#f6fbff) 0 100%/100% 3px no-repeat;-webkit-mask:linear-gradient(90deg,#000 0,#000 35%,transparent 60%);mask:linear-gradient(90deg,#000 0,#000 35%,transparent 60%)}
-body.winter .card::before{left:14px;right:14px;top:3px;height:16px;
-  background:conic-gradient(from 160deg at 50% 0,rgba(205,240,255,.75) 0 40deg,transparent 0) 0 0/17px 12px repeat-x,conic-gradient(from 167deg at 50% 0,rgba(170,225,255,.6) 0 26deg,transparent 0) 8px 0/31px 16px repeat-x;
-  -webkit-mask:linear-gradient(90deg,#000 0,#000 30%,transparent 55%);mask:linear-gradient(90deg,#000 0,#000 30%,transparent 55%)}
-body.winter .card:nth-of-type(even)::after,body.winter .card:nth-of-type(even)::before{-webkit-mask-image:linear-gradient(270deg,#000 0,#000 34%,transparent 60%);mask-image:linear-gradient(270deg,#000 0,#000 34%,transparent 60%)}
-body.winter .stat::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,rgba(235,247,255,.8),transparent);pointer-events:none}
-/* сугроб на логотипе */
-body.winter .logo::after{content:"";position:absolute;left:3px;right:9px;top:-5px;height:8px;border-radius:8px 8px 3px 3px;background:#f6fbff;box-shadow:0 0 6px rgba(150,210,255,.55)}
-/* сугробы внизу окна и падающий снег */
-.w-drift{position:fixed;bottom:0;height:26px;pointer-events:none;z-index:40;display:none;
-  background:radial-gradient(ellipse 60px 22px at 40px 100%,#f4faff 96%,transparent) 0 100%/130px 100% repeat-x,radial-gradient(ellipse 44px 14px at 80px 100%,#dcecfb 96%,transparent) 0 100%/90px 100% repeat-x;filter:drop-shadow(0 -2px 6px rgba(150,210,255,.3))}
-.w-drift.l{left:232px;width:150px;-webkit-mask:linear-gradient(90deg,#000 60%,transparent);mask:linear-gradient(90deg,#000 60%,transparent)}
-.w-drift.r{right:0;width:260px;-webkit-mask:linear-gradient(270deg,#000 60%,transparent);mask:linear-gradient(270deg,#000 60%,transparent)}
+/* снег на карточках: шапка + сосульки (SVG) */
+body.winter .card{position:relative}
+body.winter .card::after{content:"";position:absolute;pointer-events:none;z-index:3;left:18px;top:-9px;width:160px;height:32px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='32' viewBox='0 0 160 32'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient><linearGradient id='i' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23e6f6ff' stop-opacity='.95'/><stop offset='1' stop-color='%238fcaf2' stop-opacity='.25'/></linearGradient></defs><path d='M20 10L26 10L23.0 24Z' fill='url(%23i)'/><path d='M44 10L49 10L46.5 19Z' fill='url(%23i)'/><path d='M62 10L70 10L66.0 31Z' fill='url(%23i)'/><path d='M84 10L89 10L86.5 18Z' fill='url(%23i)'/><path d='M104 10L110 10L107.0 26Z' fill='url(%23i)'/><path d='M128 10L133 10L130.5 21Z' fill='url(%23i)'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' transform='translate(0 1.5)' fill='%238fbfe8' opacity='.45'/><path d='M0 12C6 12 8 6 16 6C24 6 24 2 36 2C48 2 50 5 60 4C70 3 74 1 88 2C100 3 104 6 114 5C124 4 128 7 138 8C148 9 152 12 160 12Z' fill='url(%23g)'/></svg>") no-repeat 0 0/160px 32px;filter:drop-shadow(0 1px 2px rgba(120,190,255,.25))}
+body.winter .card:nth-of-type(even)::after{left:auto;right:18px;transform:scaleX(-1)}
+/* снег на логотипе */
+body.winter .logo{position:relative}
+body.winter .logo::after{content:"";position:absolute;left:0;top:-8px;width:46px;height:12px;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='46' height='12' viewBox='0 0 46 12'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient><linearGradient id='i' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23e6f6ff' stop-opacity='.95'/><stop offset='1' stop-color='%238fcaf2' stop-opacity='.25'/></linearGradient></defs><path d='M1 11C4 11 5 6 11 6C16 6 16 2 23 2C30 2 31 5 36 5C41 5 43 9 45 11Z' fill='url(%23g)'/></svg>") no-repeat 0 0/46px 12px}
+/* сугробы внизу окна */
+.w-drift{position:fixed;bottom:0;height:44px;pointer-events:none;z-index:40;display:none;background-repeat:no-repeat;background-position:0 100%}
+.w-drift.l{left:232px;width:240px;background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='44' viewBox='0 0 240 44'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient></defs><path d='M0 44C30 40 80 33 120 34C170 35 210 38 240 44Z' fill='%23b9d6f0' opacity='.55'/><path d='M0 44C14 43 24 36 44 30C64 24 84 22 110 25C136 28 156 20 184 24C206 27 222 36 240 44Z' fill='url(%23g)'/></svg>")}
+.w-drift.r{right:0;width:300px;background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='44' viewBox='0 0 300 44'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23fff'/><stop offset='1' stop-color='%23d6e8f8'/></linearGradient></defs><path d='M10 44C50 38 100 36 150 37C200 38 250 38 290 44Z' fill='%23b9d6f0' opacity='.55'/><path d='M0 44C20 42 40 38 64 36C92 33 108 26 140 25C170 24 186 32 214 31C246 30 270 38 300 44Z' fill='url(%23g)'/></svg>")}
 body.winter .w-drift{display:block}
 #winterSnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:45;display:none}
 body.winter #winterSnow{display:block}
