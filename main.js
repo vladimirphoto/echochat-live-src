@@ -859,7 +859,7 @@ ipcMain.handle('avatar:remove', (_e, id) => {
   return r.ok ? { ok: true, ...avFull() } : r;
 });
 // Где взять бесплатные модели: официальная страница примеров Live2D (адрес зашит, из окна его подменить нельзя)
-const AV_MODELS_URL = 'https://www.live2d.com/en/learn/sample/';
+const AV_MODELS_URL = 'https://itch.io/game-assets/free/tag-live2d';
 ipcMain.handle('avatar:open-models', () => { shell.openExternal(AV_MODELS_URL).catch(() => {}); return { ok: true }; });
 ipcMain.handle('avatar:url', () => (wsrv && wsrv.port ? `http://127.0.0.1:${wsrv.port}/avatar` : ''));
 ipcMain.handle('avatar:link', () => (wsrv && wsrv.port ? { ok: true, url: widget.AVATAR_PAGES_URL } : { ok: false, url: '' }));
