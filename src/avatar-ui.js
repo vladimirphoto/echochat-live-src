@@ -78,7 +78,8 @@
     else { q('AddDir').onclick = () => addModel('dir'); q('AddFile').onclick = () => addModel('file'); }
     q('Remove').onclick = async () => {
       const m = def.models(ST).find((x) => x.id === def.cfg(ST).model);
-      if (!m || m.builtin || !confirm('Удалить модель «' + m.name + '» из приложения? Исходные файлы на диске останутся.')) return;
+      if (!m || m.builtin) return;
+      if (!await askConfirm({ title: 'Удалить модель?', text: 'Модель «' + m.name + '» будет удалена из приложения. Исходные файлы на диске останутся.', ok: 'Удалить', danger: true })) return;
       const r = await api.avatarRemove(m.id).catch(() => null); if (r && r.ok) show(r);
     };
     q('Mirror').onchange = (e) => api.avatarSet(def.patch({ mirror: e.target.checked })).then(show);
