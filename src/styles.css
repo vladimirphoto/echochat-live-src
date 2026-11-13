@@ -749,6 +749,9 @@ main{position:relative}
 #tab-avatar .prev-box{min-height:300px}
 #tab-avatar .wbtn-row{margin-top:12px}
 #tab-avatar .wbtn-row,#tab-avatar .wbtn-row.wbtn-row3{display:flex!important;flex-wrap:wrap;gap:8px}
+/* кнопки камеры («Включить камеру», «Калибровка», «Обновить камеры») всегда в одну линию */
+#tab-avatar .wbtn-row.wbtn-line{flex-wrap:nowrap}
+#tab-avatar .wbtn-row.wbtn-line .btn{flex:1 1 auto;min-width:0;padding-left:10px;padding-right:10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tab-avatar .wbtn{width:auto!important;flex:0 0 auto;white-space:nowrap;line-height:1.2;min-height:40px;text-align:center;padding:10px 16px!important;overflow:visible}
 #tab-avatar .muted{margin:14px 0 0;line-height:1.45}
 #tab-avatar #avSetupTxt,#tab-avatar #av3SetupTxt{margin-top:12px;line-height:1.45}
