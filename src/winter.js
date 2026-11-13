@@ -69,7 +69,9 @@
     }
 
     const cards = document.querySelectorAll('.card');
+    let ci = -1;
     for (const c of cards) {
+      ci++;
       if (c.closest('.wn-back,.lic-wow,.lic-buy')) continue; // карточки внутри окон снег не получают
       const r = c.getBoundingClientRect();
       if (r.width < 40 || r.height < 20) continue;            // скрытые вкладки
@@ -88,7 +90,7 @@
       const py = r.top + 3;
       const a = document.elementFromPoint(x + 3, py), b = document.elementFromPoint(x + w - 3, py);
       if (!a || !b || !c.contains(a) || !c.contains(b)) continue;
-      put(n++, 'cc', x, y, even, w);
+      put(n++, 'cc cc' + ((ci * 2) % 5), x, y, even, w);
     }
     hideFrom(n);
   }
