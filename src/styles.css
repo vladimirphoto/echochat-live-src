@@ -960,3 +960,10 @@ main{position:relative}
 #tab-live .wish{margin:14px 0 0;padding:12px 0 0;border-top:1px dashed rgba(255,255,255,.14);justify-content:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.4px;background:none;color:transparent}
 #tab-live .wish span{background:linear-gradient(90deg,#ff8fc4,#c58bff 60%,#8fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 #tab-live .wish-heart{width:17px;height:17px;color:#ff4d8d}
+
+/* ===== мягкое затухание краёв прокручиваемой вкладки (управляется из renderer.js) ===== */
+@property --ft{syntax:'<length>';inherits:true;initial-value:0px}
+@property --fb{syntax:'<length>';inherits:true;initial-value:0px}
+.tab.show{transition:--ft .2s,--fb .2s;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
