@@ -50,7 +50,7 @@
   function rowOf(e) {
     const row = el('div', 'row ' + (e.platform === 'twitch' ? 'twitch' : 'tiktok'));
     if (e.kind === 'chat') {
-      if (e.fol) row.classList.add('fol'); // подписавшийся: ник розово-фиолетовый
+      if (e.fol) row.classList.add('fol'); // подписался в этом эфире: ник розово-фиолетовый
       row.appendChild(avatar(e));
       const b = el('div', 'body'), nm = el('div', 'nm');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);

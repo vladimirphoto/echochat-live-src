@@ -41,7 +41,7 @@ body.locked .top{-webkit-app-region:no-drag}
 .body{min-width:0;flex:1}
 .nm{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;color:var(--tt);word-break:break-word}
 .row.twitch .nm{color:var(--tw)}
-.row.fol .nm>span:first-of-type,.pin-nm.fol>span:first-of-type{background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none} /* ник подписавшегося — розово-фиолетовый, как плашка Sub; у остальных прежний цвет */
+.row.fol .nm>span:first-of-type,.pin-nm.fol>span:first-of-type{background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none} /* ник подписавшегося в этом эфире — розово-фиолетовый; у остальных прежний цвет */
 .nm svg{width:13px;height:13px;flex:none;opacity:.95}
 .tx{margin-top:1px;font-weight:600;font-size:14.5px;color:var(--text);word-break:break-word;overflow-wrap:anywhere}
 

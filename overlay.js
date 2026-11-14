@@ -11,8 +11,7 @@
 // hotkey — глобальное сочетание клавиш, которое открывает и закрывает оверлей (формат Electron: «Ctrl+Alt+I»); пустая строка — сочетание выключено
 const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true, hotkey: 'Ctrl+Alt+I' };
 const LIMITS = { opacity: [0, 100] };
-const SUB_BADGE_MS = 10 * 60 * 1000; // плашка Sub — только у недавно подписавшихся: столько минут после подписки
-const KNOWN_MAX = 50000; // сколько подписавшихся помнить между эфирами
+const SUB_BADGE_MS = 2 * 60 * 1000; // плашка Sub — только пару минут после подписки
 const PIN_MAX_MIN = 24 * 60; // дольше суток закреплять нельзя: до конца эфира есть отдельный вариант
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
@@ -93,13 +92,8 @@ const isNum = (n) => typeof n === 'number' && Number.isFinite(n);
 // Модель: что показывает оверлей. track() получает те же события, что и главное окно (каналы tt:* и tw:*),
 // обновляет счётчики так же, как главное окно, и возвращает запись для ленты (если событие её даёт).
 class OverlayModel {
-  // known — id тех, кто уже подписывался на канал раньше (хранится на диске между эфирами); onKnown вызывается, когда в этот список добавился новый человек
-  constructor({ max = 80, now = Date.now, color = () => '#6b7280', known = [], onKnown = () => {} } = {}) {
+  constructor({ max = 80, now = Date.now, color = () => '#6b7280' } = {}) {
     this.max = max; this.now = now; this.color = color;
-    this.known = new Set(Array.from(known || []).filter((x) => typeof x === 'string' && x).slice(0, KNOWN_MAX));
-    this.onKnown = typeof onKnown === 'function' ? onKnown : () => {}; // вызывается, когда список подписавшихся изменился (добавили или убрали человека)
-    this.ttTrusted = false; // true — TikTok хоть раз прислал «подписан», значит статус он отдаёт и его «не подписан» тоже настоящее
-    this.fstat = new Map(); // последний статус «подписан» (true/false), который TikTok прислал про человека в этом запуске
     this.entries = []; this.seq = 0;
     this.ttOn = false; this.twOn = false; this.since = 0;
     this.resetCounters();
@@ -110,30 +104,10 @@ class OverlayModel {
   resetCounters() { this.likes = 0; this.gifts = 0; this.follows = 0; this.ttViewers = null; this.libViews = null; this.users = new Set(); this.joined = new Set(); this.subs = new Map(); }
   _key(p) { return String((p && (p.id || (p.name && p.name !== 'Гость' ? p.name : ''))) || ''); }
   _see(p) { const k = this._key(p); if (!k) return ''; if (this.users.size < 200000) this.users.add(k); return k; }
-  // Плашка Sub — только у тех, кто подписался на канал прямо сейчас: в этом эфире, не раньше SUB_BADGE_MS назад (событие подписки видно всегда).
-  // Кто подписан давно, плашки не получает — у него розово-фиолетовый ник (см. _fol). Ключ sub есть в записи только когда он true
+  // Подписался прямо в этом эфире: плашка Sub — первые SUB_BADGE_MS, а ник розово-фиолетовый (fol) — до конца эфира.
+  // Ключи sub / fol добавляются в запись только когда они true, у остальных записей их нет
   _sub(p) { const k = this._key(p); const t = k ? this.subs.get(k) : undefined; return t !== undefined && this.now() - t < SUB_BADGE_MS ? { sub: true } : {}; }
-  // Цвет ника подписавшегося (признак fol; плашку Sub он не трогает). Главное — свежий статус от TikTok: как только человек зашёл, лайкнул,
-  // подарил или написал, мы узнаём, подписан ли он. Список на диске (known) — запасной вариант, когда TikTok статус не прислал.
-  // true из любого события — подписан, запоминаем; false из сообщения чата — отписался, забываем (false из входа/лайка не считаем: там статус бывает «не знаю»)
-  _learn(p, fromChat) {
-    const k = this._key(p);
-    if (!k || !p || typeof p.isFollower !== 'boolean') return;
-    if (p.isFollower) { this.ttTrusted = true; this.fstat.set(k, true); this._know(k); }
-    else if (fromChat && this.ttTrusted) { this.fstat.set(k, false); this._forget(k); } // «не подписан» верим, только если TikTok вообще присылает статус; иначе false у всех — это «не знаю»
-    if (this.fstat.size > 200000) this.fstat.clear();
-  }
-  _know(k) { if (!k || this.known.has(k) || this.known.size >= KNOWN_MAX) return; this.known.add(k); try { this.onKnown(k); } catch (_) {} }
-  // подписавшихся в этом эфире (subs) не забываем: TikTok обновляет их статус в сообщениях с задержкой
-  _forget(k) { if (!k || !this.known.has(k) || this.subs.has(k)) return; this.known.delete(k); try { this.onKnown(k); } catch (_) {} }
-  _fol(p) {
-    const k = this._key(p); if (!k) return {};
-    if (this.subs.has(k)) return { fol: true }; // подписался в этом эфире — ник цветной весь эфир, а плашка только первые минуты
-    const st = this.fstat.get(k);
-    if (st === true) return { fol: true };
-    if (st === false) return {}; // TikTok сказал «не подписан» — цвет обычный
-    return this.known.has(k) ? { fol: true } : {}; // статуса нет вовсе — верим списку с диска
-  }
+  _fol(p) { const k = this._key(p); return k && this.subs.has(k) ? { fol: true } : {}; }
   views() { const own = this.users.size; return this.libViews === null ? (own || null) : Math.max(this.libViews, own); }
   stats() {
     // twLive — значок онлайна Twitch виден, только когда канал подключён И стрим действительно идёт (число зрителей известно);
@@ -200,7 +174,7 @@ class OverlayModel {
       case 'tt:join': {
         // «ник — теперь с нами»: один раз на зрителя за эфир (TikTok присылает вход и при каждом возвращении).
         // Это НЕ запись ленты: окно показывает одну строку внизу на несколько секунд, новая заменяет прежнюю, в чате ничего не остаётся
-        const k = this._see(p); this._learn(p, false); // зашёл — сразу узнаём, подписан ли он
+        const k = this._see(p);
         r.stats = true;
         if (!k || this.joined.has(k)) break;
         this.joined.add(k);
@@ -212,28 +186,26 @@ class OverlayModel {
         // итог от TikTok надёжнее суммы событий; если итога нет (или 0) — копим сами
         this.likes = p.total > 0 ? Math.max(this.likes, p.total) : this.likes + (p.count || 1);
         r.like = Math.max(1, Math.round(Number(p.count)) || 1); // в ленту лайки не пишем (их тысячи): окно рисует летящие сердечки
-        this._learn(p, false);
         // а кто лайкает — в той же строке внизу, где «кто зашёл» (анонимные лайки — только сердечки)
         if (p.name && p.name !== 'Гость') r.liker = { name: cut(p.name, 60), avatar: cut(p.avatar, 500), color: this.color(p.name), count: r.like, ...this._sub(p) };
         r.stats = true; break;
       }
       case 'tt:gift': {
         const n = Math.max(1, Math.round(Number(p.count)) || 1);
-        this.gifts += n; r.stats = true; this._see(p); this._learn(p, false);
+        this.gifts += n; r.stats = true; this._see(p);
         r.entry = this._push({ platform: 'tiktok', kind: 'gift', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...this._sub(p), gift: { name: cut(p.gift, 60) || 'подарок', count: n, image: cut(p.image, 500) } });
         break;
       }
       case 'tt:follow': {
         this.follows += 1; r.stats = true;
         const k = this._see(p);
-        if (k && this.subs.size < 200000) this.subs.set(k, this.now()); // с этого момента рядом с его ником значок Sub
-        this._know(k); if (k) this.fstat.set(k, true); // и запоминаем на будущие эфиры: цвет ника у подписавшегося
+        if (k && this.subs.size < 200000) this.subs.set(k, this.now()); // с этого момента ник цветной, а рядом с ним пару минут значок Sub
         r.entry = this._push({ platform: 'tiktok', kind: 'follow', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') }); // в самой строке подписки значка нет: там и так написано «подписался(ась)»
         break;
       }
       case 'tt:share': {
         // репост эфира: строка в ленте, счётчики не трогает
-        this._see(p); this._learn(p, false);
+        this._see(p);
         r.entry = this._push({ platform: 'tiktok', kind: 'share', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...this._sub(p) });
         break;
       }
@@ -241,7 +213,6 @@ class OverlayModel {
         const text = cut(p.text, 500);
         if (!text.trim()) break; // пустые сообщения не показываем
         if (channel === 'tt:chat' && this._see(p)) r.stats = true;
-        if (channel === 'tt:chat') this._learn(p, true); // статус из сообщения — самый свежий: подписан — запоминаем, отписался — забываем
         // значок Sub — только у подписчиков TikTok-канала; у зрителей Twitch его нет
         r.entry = this._push({ platform: channel === 'tw:chat' ? 'twitch' : 'tiktok', kind: 'chat', name: cut(p.name, 60) || 'Гость', text, avatar: cut(p.avatar, 500), color: this.color(p.name || ''), ...(channel === 'tt:chat' ? { ...this._sub(p), ...this._fol(p) } : {}) });
         break;

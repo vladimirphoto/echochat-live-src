@@ -46,11 +46,10 @@ function pushGifts() {
 // Его питают те же события, что и главное окно (см. send ниже): модель считает счётчики всегда, поэтому оверлей, включённый посреди эфира, сразу показывает верные цифры.
 // Включается и выключается переключателем во вкладке «Виджеты» и пунктом в меню трея. Как и виджеты, входит в тариф Pro.
 const ovMod = require('./overlay');
-let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null, ovKnown = [];
+const ovModel = new ovMod.OverlayModel({ color: colorOf });
+let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null;
 const OV_FILE = () => path.join(app.getPath('userData'), 'overlay.json');
-try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; ovKnown = Array.isArray(j && j.known) ? j.known : []; } catch (_) {}
-// known — кто подписывался на канал раньше: хранится в overlay.json, от этого ник в чате розово-фиолетовый
-const ovModel = new ovMod.OverlayModel({ color: colorOf, known: ovKnown, onKnown: () => ovSave() });
+try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; } catch (_) {}
 const ovOpen = () => !!(ovWin && !ovWin.isDestroyed());
 const ovPublic = (on) => ({ on: on === undefined ? ovOpen() : !!on, settings: ovSet, locked: locked('widgets'), hotkeyBusy: ovHotkeyBusy });
 // Глобальное сочетание клавиш: открывает и закрывает оверлей из любой программы (в том числе из игры в оконном режиме).
@@ -72,7 +71,7 @@ function ovHotkeyOn() {
 }
 function ovSave() {
   clearTimeout(ovSaveT);
-  ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds, known: Array.from(ovModel.known) })); } catch (_) {} }, 300);
+  ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds })); } catch (_) {} }, 300);
 }
 // событие приложения → модель → окно оверлея (если оно открыто)
 function ovTrack(channel, payload) {
@@ -456,7 +455,6 @@ async function doConnect(rawName) {
 
   c.on(WebcastEvent.CHAT || 'chat', (d) => {
     if (!alive()) return;
-    followDebug(d, 'chat');
     const m = ev.chatOf(d);
     send('tt:chat', m);
     if (m.text) wmsg({ platform: 'tiktok', name: m.name, text: m.text, avatar: m.avatar, color: colorOf(m.name) });
@@ -510,7 +508,6 @@ async function doConnect(rawName) {
   });
   // кто-то зашёл на эфир: в оверлее «ник — теперь с нами» и счётчик просмотров за эфир
   c.on(WebcastEvent.MEMBER || 'member', (d) => {
-    followDebug(d, 'join');
     if (!alive()) return;
     const u = ev.userOf(d);
     if (u.name !== 'Гость' || u.id) send('tt:join', u);
@@ -538,21 +535,6 @@ async function doConnect(rawName) {
     try { c.removeAllListeners(); c.disconnect().catch(() => {}); } catch (_) {}
     return { ok: false, ...explain(err) };
   }
-}
-
-// Что TikTok присылает про «подписан» (анонимное подключение может не присылать ничего): первые 300 зрителей за запуск пишутся в follow-debug.json
-// рядом с настройками. Только служебные поля — ни текста сообщений, ни аватарок. Нужно, чтобы понять, откуда брать подписчиков, подписавшихся раньше
-const fdSeen = new Map(); let fdT = null;
-function followDebug(d, kind) {
-  try {
-    const u = (d && d.user) || d || {}, id = String(u.uniqueId || u.userId || '');
-    if (!id || fdSeen.size >= 300) return;
-    const e = fdSeen.get(id) || { id, kinds: {}, isFollower: u.isFollower, followRole: [u.followRole, d && d.followRole], followStatus: u.followStatus, followInfo: u.followInfo || u.follow_info || (d && (d.followInfo || d.follow_info)) || null, keys: Object.keys(u).slice(0, 60), badges: JSON.stringify(u.badges || u.badgeList || u.userBadges || []).slice(0, 400) };
-    e.kinds[kind] = (e.kinds[kind] || 0) + 1;
-    fdSeen.set(id, e);
-    clearTimeout(fdT);
-    fdT = setTimeout(() => { try { require('fs').writeFileSync(path.join(app.getPath('userData'), 'follow-debug.json'), JSON.stringify([...fdSeen.values()], (k, v) => (typeof v === 'bigint' ? String(v) : v), 1)); } catch (_) {} }, 5000);
-  } catch (_) {}
 }
 
 ipcMain.handle('tt:connect', async (_e, rawName) => {
