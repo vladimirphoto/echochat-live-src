@@ -25,7 +25,7 @@ const wmsg = (m) => !locked('widgets') && wsrv && wsrv.broadcast('msg', m);
 // ---- виджет «Топ лайков»: считаем лайки каждого зрителя и отдаём страницам виджета лучших (до 10, сколько показать — решает страница)
 const likesBoard = new ev.LikesBoard();
 const LIKES_MAX = 10;
-let lset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true };
+let lset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, round: false, punch: true };
 const clampN = (v, a, b, d) => { v = Math.round(+v); return Number.isFinite(v) ? Math.max(a, Math.min(b, v)) : d; };
 let likesTimer = null, likesTestTimer = null;
 function pushLikes() { // не чаще раза в 0,4 с: лайки сыплются пачками
@@ -35,7 +35,7 @@ function pushLikes() { // не чаще раза в 0,4 с: лайки сыпл�
 
 // ---- виджет «Топ подарков»: очки = цена подарка в монетах × количество; обнуляется с новым эфиром
 const giftsBoard = new ev.GiftsBoard();
-let gset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true };
+let gset = { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, round: false, celebrate: true };
 let giftsTimer = null, giftsTestTimer = null;
 function pushGifts() {
   if (giftsTimer) return;
@@ -686,7 +686,7 @@ ipcMain.handle('widget:test', () => {
 });
 ipcMain.handle('likes:set', (_e, s) => {
   s = s || {};
-  lset = { count: clampN(s.count, 5, LIKES_MAX, 5),scale: clampN(s.scale, 30, 300, 100), align: ['left', 'center', 'right'].includes(s.align) ? s.align : 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, punch: s.punch !== false };
+  lset = { count: clampN(s.count, 5, LIKES_MAX, 5),scale: clampN(s.scale, 30, 300, 100), align: ['left', 'center', 'right'].includes(s.align) ? s.align : 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, round: s.round === true, punch: s.punch !== false };
   wsrv && wsrv.broadcast('lsettings', lset);
   return { ok: true };
 });
@@ -716,7 +716,7 @@ ipcMain.handle('likes:test', () => {
 ipcMain.handle('likes:clear', () => { likesBoard.clear(); wsrv && wsrv.broadcast('likes', []); return { ok: true }; });
 ipcMain.handle('gifts:set', (_e, s) => {
   s = s || {};
-  gset = { count: clampN(s.count, 5, LIKES_MAX, 5), scale: 100, align: 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, celebrate: s.celebrate !== false };
+  gset = { count: clampN(s.count, 5, LIKES_MAX, 5), scale: 100, align: 'center', showCount: s.showCount !== false, showRank: s.showRank !== false, shadow: s.shadow !== false, round: s.round === true, celebrate: s.celebrate !== false };
   wsrv && wsrv.broadcast('gsettings', gset);
   return { ok: true };
 });

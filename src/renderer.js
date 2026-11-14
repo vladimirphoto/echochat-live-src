@@ -28,8 +28,8 @@ const DEFAULTS = {
   widgets: [], wSel: '', twNick: '',
   ttChat: true, twChat: true, readName: true, gifts: true, follows: true, eventVoice: '', ttVoice: '', twVoice: '',
   skipCmd: true, skipLinks: true, onlyRu: true, noRepeat: true, profanity: true, skipMentions: true, noEmoji: true,
-  likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, punch: true },
-  gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, celebrate: true },
+  likes: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, round: false, punch: true },
+  gifts: { count: 5, scale: 100, align: 'center', showCount: true, showRank: true, shadow: true, round: false, celebrate: true },
   alerts: { enabled: true, sound: true, showAvatar: true, duration: 6, scale: 100, imageName: '', soundName: '', design: 'classic' },
   da: { enabled: true, voice: true, sound: true, showMessage: true, duration: 8, scale: 100, minAmount: 0, design: 'classic', layout: 'top', imageKind: 'auto', soundKind: 'bell', imageName: '', soundName: '' },
   kaspi: { enabled: true, token: '', strict: true, minAmount: 0, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, voice: true, sound: true, soundName: '', design: 'classic', layout: 'top' },
@@ -1742,6 +1742,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
   '3.5.7': ['Вкладка «Аватар»: кнопки камеры («Включить камеру», «Калибровка», «Обновить камеры») теперь в одну линию и в 2D, и в 3D.'],
+  '3.5.23': ['Топ лайков и топ подарков: новая настройка «Круглые аватарки» делает аватарки полностью круглыми.'],
   '3.5.22': ['Оверлей чата: кто подписался в эфире, запоминается на будущие эфиры — его ник остаётся розово-фиолетовым. Плашка Sub по-прежнему только первые 2 минуты после подписки.'],
   '3.5.21': ['Оверлей чата: всё возвращено как было. Кто подписался в эфире — ник розово-фиолетовый до конца эфира, плашка Sub — первые 2 минуты.'],
   '3.5.20': ['Оверлей чата: плашка Sub теперь только у тех, кто подписался прямо сейчас (первые 10 минут после подписки), ник подписавшегося остаётся розово-фиолетовым. Добавлена запись служебных данных о подписке (follow-debug.json) для диагностики.'],

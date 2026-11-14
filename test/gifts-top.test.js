@@ -48,3 +48,18 @@ test('топ подарков вертикальный: колонка, а не 
   assert.match(GIFTS, /#root\{[^}]*flex-direction:column/);
   assert.doesNotMatch(GIFTS, /flex-wrap:wrap/);
 });
+
+test('«Круглые аватарки»: переключатель в приложении, настройка проходит через main.js, обе страницы виджетов делают аватарки круглыми', () => {
+  const LIKES = require('../widget-likes-page');
+  const html = rd('src/index.html'), main = rd('main.js'), rend = rd('src/renderer.js');
+  assert.match(html, /data-lk="round"/);
+  assert.match(html, /data-gf="round"/);
+  assert.match(main, /round: s\.round === true, punch:/);
+  assert.match(main, /round: s\.round === true, celebrate:/);
+  assert.match(rend, /likes: \{[^}]*round: false/);
+  assert.match(rend, /gifts: \{[^}]*round: false/);
+  for (const page of [LIKES, GIFTS]) {
+    assert.match(page, /\(S\.round\?' rd':''\)/);
+    assert.match(page, /\.rd \.a\{border-radius:50%;overflow:visible\}/);
+  }
+});
