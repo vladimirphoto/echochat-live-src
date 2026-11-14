@@ -533,6 +533,24 @@ const TRACKER_PAGE = '<!doctype html><html><head><meta charset="utf-8"><title>Т
 // ---------- окна аватара для «Захвата окна» ----------
 // TikTok LIVE Studio не всегда показывает WebGL-виджет по ссылке. Поэтому ту же страницу виджета можно открыть в обычном окне
 // приложения с зелёным фоном (хромакей) и захватить как окно. Здесь только расчёты, само окно открывает main.js.
+// Скрипт для окна без фона: всё окно тянется мышью, в уголке меняется размер, крестик закрывает; видны они только пока окно в фокусе
+function winTransparentScript() {
+  return `(() => { if (window.__avw) return; window.__avw = 1;
+  const st = document.createElement('style');
+  st.textContent = 'html,body{-webkit-app-region:drag}.avw-c{position:fixed;z-index:99999;display:none;-webkit-app-region:no-drag;color:#fff;background:rgba(20,20,30,.65);font:14px/1 sans-serif;text-align:center;user-select:none}.avw-f .avw-c{display:block}#avw-x{top:6px;right:6px;width:24px;height:24px;line-height:24px;border-radius:50%;cursor:pointer}#avw-g{right:0;bottom:0;width:22px;height:22px;line-height:22px;border-top-left-radius:8px;cursor:nwse-resize}';
+  document.head.appendChild(st);
+  const x = document.createElement('div'); x.id = 'avw-x'; x.className = 'avw-c'; x.textContent = '✕'; x.title = 'Закрыть окно';
+  const g = document.createElement('div'); g.id = 'avw-g'; g.className = 'avw-c'; g.textContent = '⤡'; g.title = 'Потяните, чтобы изменить размер';
+  document.body.append(x, g);
+  const f = () => document.documentElement.classList.toggle('avw-f', document.hasFocus());
+  window.addEventListener('focus', f); window.addEventListener('blur', f); f();
+  x.onclick = () => console.log('__avw:close');
+  g.onmousedown = (e) => { e.preventDefault(); const sx = e.screenX, sy = e.screenY, w = window.innerWidth, h = window.innerHeight;
+    const mv = (m) => console.log('__avw:' + Math.round(w + m.screenX - sx) + ',' + Math.round(h + m.screenY - sy));
+    const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); };
+    addEventListener('mousemove', mv); addEventListener('mouseup', up); };
+})()`;
+}
 const WIN = { minW: 240, minH: 240, maxW: 4000, maxH: 4000, defW: 480, defH: 640, bg: '#00b140' };
 const winEngine = (e) => (e === '3d' ? '3d' : '2d');
 const winTitle = (e) => 'ЭхоЧат LIVE — аватар ' + (winEngine(e) === '3d' ? '3D' : '2D'); // имя окна видно в списке «Захват окна»
@@ -554,7 +572,7 @@ function winDefaultBounds(area) {
 }
 
 module.exports = {
-  WIN, winEngine, winTitle, winPage, winBounds, winDefaultBounds,
+  winTransparentScript, WIN, winEngine, winTitle, winPage, winBounds, winDefaultBounds,
   DEFAULTS, V3_DEFAULTS, cleanSettings, cleanV3, rewriteImports, importVrm, listVrm, removeVrm, activeVrm, readVrmHeader, VRM_SAMPLES, safeRel, readTarGz, readZip, checkIntegrity, COMPONENTS, SAMPLE_MODELS, runtimeDir, userModelsDir,
   status, install, importModel, listModels, removeModel, activeModel, validateModelFiles, pickEntry, resolveAsset, mimeOf, TRACKER_PAGE,
 };

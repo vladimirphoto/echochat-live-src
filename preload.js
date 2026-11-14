@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('echo', {
   avatarUrl: (engine) => ipcRenderer.invoke('avatar:url', engine),
   avatarLink: (engine) => ipcRenderer.invoke('avatar:link', engine),
   avatarWindow: (engine, open) => ipcRenderer.invoke('avatar:window', engine, open),
+  avatarWindowBg: (engine, transparent) => ipcRenderer.invoke('avatar:window-bg', engine, transparent),
   onAvatarState: on('avatar:state'),
   onAvatarProgress: on('avatar:progress'),
   overlayState: () => ipcRenderer.invoke('overlay:state'),

@@ -95,6 +95,11 @@
       if (r && !r.ok) errLine(q('WinTxt'), r.locked ? 'Окно аватара доступно в Pro.' : (r.error || 'Не удалось открыть окно.'));
       renderWins();
     };
+    q('WinTr').onchange = async (e) => {
+      const r = await api.avatarWindowBg(def.engine, e.target.checked).catch(() => null);
+      if (r && ST) { ST.windows = r.windows; ST.winTransp = r.winTransp; }
+      renderWins();
+    };
     q('Url').onfocus = (e) => e.target.select();
     q('Copy').onclick = async () => {
       const u = q('Url').value, b = q('Copy');
@@ -123,6 +128,7 @@
   function renderWins() {
     for (const k of Object.keys(E)) {
       const open = !!(ST && ST.windows && ST.windows[E[k].engine]);
+      $('#' + E[k].P + 'WinTr').checked = !!(ST && ST.winTransp && ST.winTransp[E[k].engine]);
       $('#' + E[k].P + 'WinBtn').textContent = (open ? 'Закрыть' : 'Открыть') + ' окно аватара ' + E[k].engine.toUpperCase();
     }
   }

@@ -49,5 +49,15 @@ test('окно аватара: кнопки 2D и 3D, API, обработчик 
   assert.match(main, /if \(locked\('widgets'\)\) return \{ ok: false, locked: true \}/); // как и сам аватар, окно только в Pro
   assert.match(main, /function closeAvatar\(\) \{ closeAvatarWindows\(\)/); // окна закрываются вместе с приложением
   assert.match(main, /closeOverlay\(\); closeAvatarWindows\(\); \}/); // и когда тариф закончился
-  assert.match(main, /windows: avWinsState\(\), installing/);
+  assert.match(main, /windows: avWinsState\(\), winTransp: avWinTr2\(\), installing/);
+});
+
+test('окно аватара: прозрачный вариант — переключатель, IPC, окно без рамки и скрипт уголка', () => {
+  const html = rd('src/index.html'), ui = rd('src/avatar-ui.js'), pre = rd('preload.js'), main = rd('main.js');
+  assert.match(html, /id="avWinTr"/); assert.match(html, /id="av3WinTr"/);
+  assert.match(ui, /avatarWindowBg/); assert.match(pre, /avatar:window-bg/);
+  assert.match(main, /frame: false, transparent: true/);
+  assert.match(main, /ipcMain\.handle\('avatar:window-bg'/);
+  assert.doesNotThrow(() => new Function(av.winTransparentScript())); // скрипт в странице должен быть корректным JS
+  assert.match(av.winTransparentScript(), /__avw:close/);
 });

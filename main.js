@@ -817,6 +817,7 @@ const AVW_FILE = () => path.join(app.getPath('userData'), 'avatar-win.json');
 let avWinB = {};
 try { avWinB = JSON.parse(require('fs').readFileSync(AVW_FILE(), 'utf8')) || {}; } catch (_) {}
 const avWins = { '2d': null, '3d': null };
+const avWinTr = (k) => !!(avWinB.tr && avWinB.tr[k]); // «Прозрачный фон окна»: без рамки и без зелёного
 const avWinOpen = (k) => !!(avWins[k] && !avWins[k].isDestroyed());
 function avWinsState() { return { '2d': avWinOpen('2d'), '3d': avWinOpen('3d') }; }
 function avWinSaveBounds(k, w) {
@@ -831,9 +832,12 @@ function openAvatarWindow(k) {
   if (!wsrv || !wsrv.port) return { ok: false, error: 'Не запущен сервер виджетов.' };
   const areas = screen.getAllDisplays().map((d) => d.workArea);
   const b = av.winBounds(avWinB[k], areas) || av.winDefaultBounds(screen.getPrimaryDisplay().workArea);
+  const tr = avWinTr(k);
   const w = new BrowserWindow({
     ...b, minWidth: av.WIN.minW, minHeight: av.WIN.minH,
-    show: false, autoHideMenuBar: true, backgroundColor: av.WIN.bg, // зелёный фон, а не прозрачность: «Захват окна» прозрачность не передаёт
+    show: false, autoHideMenuBar: true,
+    // по умолчанию зелёный фон под хромакей; «прозрачный» вариант — окно без рамки (прозрачное окно Windows не тянется за края, размер меняет уголок)
+    ...(tr ? { frame: false, transparent: true, hasShadow: false, backgroundColor: '#00000000' } : { backgroundColor: av.WIN.bg }),
     title: av.winTitle(k), // это имя окна видно в TikTok LIVE Studio и OBS («Захват окна»)
     icon: path.join(__dirname, 'src', 'icon.png'),
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, partition: 'avatar-window' }, // окно за другими окнами продолжает обновляться
@@ -844,7 +848,20 @@ function openAvatarWindow(k) {
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   w.webContents.on('will-navigate', (e) => e.preventDefault());
   // страница сама ставит фон по настройке «Зелёный фон» (прозрачный у неё по умолчанию): в окне фон всегда зелёный
-  w.webContents.on('did-finish-load', () => { try { w.webContents.insertCSS('html,body{background:' + av.WIN.bg + ' !important;overflow:hidden !important}'); } catch (_) {} });
+  w.webContents.on('did-finish-load', () => {
+    try { w.webContents.insertCSS(tr ? 'html,body{background:transparent !important;overflow:hidden !important}' : 'html,body{background:' + av.WIN.bg + ' !important;overflow:hidden !important}'); } catch (_) {}
+    if (tr) { try { w.webContents.executeJavaScript(av.winTransparentScript()); } catch (_) {} }
+  });
+  if (tr) { // уголок и крестик из страницы сообщают о действиях через console.log
+    w.webContents.on('console-message', (e, level, message) => {
+      const m = String(typeof message === 'string' ? message : (e && e.message) || '');
+      if (m.indexOf('__avw:') !== 0 || w.isDestroyed()) return;
+      const v = m.slice(6);
+      if (v === 'close') { w.close(); return; }
+      const mm = /^(\d+),(\d+)$/.exec(v);
+      if (mm) w.setSize(Math.min(av.WIN.maxW, Math.max(av.WIN.minW, +mm[1])), Math.min(av.WIN.maxH, Math.max(av.WIN.minH, +mm[2])));
+    });
+  }
   let t = null;
   const later = () => { clearTimeout(t); t = setTimeout(() => avWinSaveBounds(k, w), 500); };
   w.on('resize', later); w.on('move', later);
@@ -856,6 +873,19 @@ function openAvatarWindow(k) {
 }
 function closeAvatarWindow(k) { k = av.winEngine(k); if (avWinOpen(k)) { avWinSaveBounds(k, avWins[k]); try { avWins[k].close(); } catch (_) {} } }
 function closeAvatarWindows() { closeAvatarWindow('2d'); closeAvatarWindow('3d'); }
+ipcMain.handle('avatar:window-bg', (_e, engine, on) => {
+  const k = av.winEngine(engine);
+  avWinB.tr = Object.assign({}, avWinB.tr, { [k]: !!on });
+  try { require('fs').writeFileSync(AVW_FILE(), JSON.stringify(avWinB)); } catch (_) {}
+  if (avWinOpen(k)) { // тип окна не меняется на лету: открываем заново на том же месте
+    avWinSaveBounds(k, avWins[k]);
+    try { avWins[k].destroy(); } catch (_) {}
+    avWins[k] = null;
+    openAvatarWindow(k);
+  }
+  return { ok: true, windows: avWinsState(), winTransp: avWinTr2() };
+});
+function avWinTr2() { return { '2d': avWinTr('2d'), '3d': avWinTr('3d') }; }
 ipcMain.handle('avatar:window', (_e, engine, want) => {
   const k = av.winEngine(engine);
   if (want === false) { closeAvatarWindow(k); return { ok: true, windows: avWinsState() }; }
@@ -872,7 +902,7 @@ async function avStart() {
   avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
   return { ok: true };
 }
-const avFull = () => ({ settings: avSet, status: av.status(avUD()), status3: av.status(avUD(), '3d'), models: av.listModels(avUD()), models3: av.listVrm(avUD()), run: avRun, windows: avWinsState(), installing: avInstalling, locked: locked('widgets') });
+const avFull = () => ({ settings: avSet, status: av.status(avUD()), status3: av.status(avUD(), '3d'), models: av.listModels(avUD()), models3: av.listVrm(avUD()), run: avRun, windows: avWinsState(), winTransp: avWinTr2(), installing: avInstalling, locked: locked('widgets') });
 ipcMain.handle('avatar:state', () => avFull());
 ipcMain.handle('avatar:cameras', (_e, ask) => avCall('cameras', { ask: !!ask }));
 ipcMain.handle('avatar:start', () => avStart());
