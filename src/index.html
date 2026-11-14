@@ -14,7 +14,7 @@
     <aside class="side">
       <div class="brand">
         <div class="logo"><span></span><span></span><span></span><span></span><span></span></div>
-        <div><b>ЭхоЧат</b><small>LIVE · озвучка стрима</small></div>
+        <div><b>ЭхоЧат</b><small>Озвучка стрима</small></div>
       </div>
       <nav>
         <button class="nav active" data-tab="live"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.4" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>Эфир</button>
@@ -43,7 +43,7 @@
 
     <main>
       <header>
-        <div><h1 id="title">Эфир</h1><p id="subtitle">Подключись к TikTok LIVE и слушай чат вслух</p></div>
+        <div><h1 id="title">Эфир</h1><p id="subtitle">Подключитесь к TikTok LIVE и слушайте чат</p></div>
         <div class="pills" id="status"><div class="pill status idle tt" id="pillTt"><span class="pi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></svg></span><s></s><span class="pt">Не в эфире TikTok</span></div><div class="pill status idle tw" id="pillTw"><span class="pi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2 2.5 6v14H8v2.5h3L13.5 20H18l3.5-3.5V2H4zm15.5 13-2.5 2.5h-4.5L10 20v-2.5H6V4h13.5v11zM16 7.5h-2v5h2v-5zm-5 0H9v5h2v-5z"/></svg></span><s></s><span class="pt">Не в эфире Twitch</span></div></div>
       </header>
 
@@ -61,20 +61,20 @@
             <div class="card tips">
               <h2>Перед эфиром</h2>
               <ol>
-                <li>Запусти TikTok LIVE</li>
-                <li>Введи ник и подключись</li>
-                <li>Выбери голос во вкладке «Озвучка»</li>
+                <li>Запустите TikTok LIVE</li>
+                <li>Введите ник и подключитесь</li>
+                <li>Выберите голос на вкладке «Озвучка»</li>
               </ol>
             </div>
             <div class="card">
               <h2>Подключение</h2>
-              <p class="muted">Подключай платформы независимо друг от друга</p>
+              <p class="muted">Платформы подключаются отдельно</p>
               <label>TikTok</label>
               <div class="plat-row">
                 <div class="nick-field"><span class="plat-ico tt-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8A4.3 4.3 0 0 1 15.5 3h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.2-1.5z"/></svg></span><input id="nick" placeholder="ник стримера" spellcheck="false" /></div>
                 <button class="btn plat-btn tt-btn" id="btnConnect">Подключить</button>
               </div>
-              <label>Twitch <small class="muted">(для мультистрима, необязательно)</small></label>
+              <label>Twitch <small class="muted">(необязательно)</small></label>
               <div class="plat-row">
                 <div class="nick-field"><span class="plat-ico tw-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 2 2.5 6v14H8v2.5h3L13.5 20H18l3.5-3.5V2H4zm15.5 13-2.5 2.5h-4.5L10 20v-2.5H6V4h13.5v11zM16 7.5h-2v5h2v-5zm-5 0H9v5h2v-5z"/></svg></span><input id="twNick" placeholder="канал" spellcheck="false" /></div>
                 <button class="btn plat-btn tw-btn" id="btnTwitch">Подключить</button>
@@ -122,7 +122,7 @@
             </div>
             <div class="card studio" id="studio">
               <h2>Студия озвучки</h2>
-              <p class="muted">Напиши любую фразу — она прозвучит выбранным голосом.</p>
+              <p class="muted">Введите фразу, она прозвучит выбранным голосом.</p>
               <div class="eq" id="eq"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
               <textarea id="studioText" rows="3" maxlength="200" placeholder="Например: Всем привет! Спасибо, что вы с нами в эфире!"></textarea>
               <div class="chips" id="chips">
@@ -141,9 +141,9 @@
             <div class="voices" id="voices"></div>
             <div class="row"><label>Громкость</label><b id="volVal">80%</b></div>
             <input type="range" id="vol" min="0" max="100" value="80" />
-            <div class="ctl"><div class="row"><label>Скорость выбранного голоса</label><b id="rateVal">0%</b></div>
+            <div class="ctl"><div class="row"><label>Скорость голоса</label><b id="rateVal">0%</b></div>
             <input type="range" id="rate" min="-30" max="40" value="0" /></div>
-            <div class="ctl"><div class="row"><label>Тон выбранного голоса</label><b id="pitchVal">0 Гц</b></div>
+            <div class="ctl"><div class="row"><label>Тон голоса</label><b id="pitchVal">0 Гц</b></div>
             <input type="range" id="pitch" min="-30" max="30" value="0" /></div>
             <button class="btn primary" id="btnTest"></button>
           </div>
@@ -157,13 +157,13 @@
           <h2>Фильтры озвучки</h2>
           <p class="muted">Решают, что голос прочитает вслух. В ленте приложения и в виджете для OBS остаются все сообщения</p>
           <div class="toggles two">
-            <label class="sw"><input type="checkbox" data-k="skipCmd" checked /><i></i><span>Не озвучивать команды<small>Сообщения, которые начинаются с ! или /, например !play</small></span></label>
-            <label class="sw"><input type="checkbox" data-k="skipLinks" checked /><i></i><span>Не озвучивать ссылки<small>Сообщение со ссылкой или адресом сайта пропускается целиком</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="skipCmd" checked /><i></i><span>Не озвучивать команды<small>Команды с ! или /, например !play</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="skipLinks" checked /><i></i><span>Не озвучивать ссылки<small>Сообщения со ссылками пропускаются</small></span></label>
             <label class="sw"><input type="checkbox" data-k="onlyRu" checked /><i></i><span>Озвучивать только русский<small>Сообщения без единой русской буквы (hello, 123) пропускаются. Смешанные читаются</small></span></label>
-            <label class="sw"><input type="checkbox" data-k="noRepeat" checked /><i></i><span>Не озвучивать повторы<small>Такой же текст в течение 20 секунд повторно не читается</small></span></label>
-            <label class="sw"><input type="checkbox" data-k="profanity" checked /><i></i><span>Не озвучивать мат<small>Сообщение с матом пропускается целиком</small></span></label>
-            <label class="sw"><input type="checkbox" data-k="skipMentions" checked /><i></i><span>Вырезать @упоминания<small>@ник убирается из текста, остальное сообщение читается</small></span></label>
-            <label class="sw"><input type="checkbox" data-k="noEmoji" checked /><i></i><span>Вырезать эмодзи<small>Смайлики убираются из текста перед озвучкой</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="noRepeat" checked /><i></i><span>Не озвучивать повторы<small>Одинаковые фразы за 20 секунд не повторяются</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="profanity" checked /><i></i><span>Не озвучивать мат<small>Сообщения с матом пропускаются</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="skipMentions" checked /><i></i><span>Вырезать @упоминания<small>Убирает @ник из текста</small></span></label>
+            <label class="sw"><input type="checkbox" data-k="noEmoji" checked /><i></i><span>Вырезать эмодзи<small>Убирает смайлики из текста</small></span></label>
           </div>
           <label style="margin-top:18px">Обрезать озвучку до <b id="lenVal">140</b> символов</label>
           <input type="range" id="maxLen" min="30" max="300" value="140" />
@@ -189,7 +189,7 @@
           </div>
           <div class="card preview-card">
             <div class="prev-head">
-              <div><h2>Предпросмотр</h2><small>Так виджет выглядит в OBS. Настройки применяются сразу</small></div>
+              <div><h2>Предпросмотр</h2><small>Так виджет будет в OBS. Изменения видны сразу</small></div>
               <button class="btn ghost" id="pvTest">Тест</button>
             </div>
             <div class="prev-box"><iframe id="pvFrame" title="Предпросмотр чата" tabindex="-1"></iframe></div>
@@ -203,7 +203,7 @@
               <label class="sw"><input type="checkbox" data-k="wIcons" checked /><i></i><span>Иконки платформ (TikTok / Twitch)</span></label>
               <label class="sw"><input type="checkbox" data-k="wAvatars" checked /><i></i><span>Аватарки</span></label>
               <label class="sw"><input type="checkbox" data-k="wGifts" checked /><i></i><span>Показывать подарки</span></label>
-              <label class="sw"><input type="checkbox" data-k="wShadow" checked /><i></i><span>Лёгкая тень за сообщениями</span></label>
+              <label class="sw"><input type="checkbox" data-k="wShadow" checked /><i></i><span>Тень за сообщениями</span></label>
               <label class="sw"><input type="checkbox" data-k="wFade" checked /><i></i><span>Исчезающие сообщения</span></label>
             </div>
             <div class="ctl-row">
@@ -219,18 +219,18 @@
             <p class="muted">Самые активные зрители TikTok по лайкам за эфир: квадратики с аватарками и никами. Таблица сбрасывается при новом подключении. Кнопка «Тест» показывает, как работает удар рукой. Ссылка подходит для OBS и Twitch Studio (источник «Браузер»).</p>
             <div class="ctl"><div class="row"><label>Сколько показывать</label><b id="lCountVal">5</b></div><input type="range" id="lCount" min="5" max="10" value="5" /></div>
             <div class="toggles" style="margin-top:10px">
-              <label class="sw"><input type="checkbox" data-lk="showCount" checked /><i></i><span>Число лайков под аватаркой</span></label>
+              <label class="sw"><input type="checkbox" data-lk="showCount" checked /><i></i><span>Лайки под аватаркой</span></label>
               <label class="sw"><input type="checkbox" data-lk="showRank" checked /><i></i><span>Номер места</span></label>
-              <label class="sw"><input type="checkbox" data-lk="punch" checked /><i></i><span>Удар рукой, когда кто-то выходит на 1 или 2 место</span></label>
-              <label class="sw"><input type="checkbox" data-lk="shadow" checked /><i></i><span>Лёгкая тень за никами</span></label>
+              <label class="sw"><input type="checkbox" data-lk="punch" checked /><i></i><span>Удар рукой на 1 и 2 месте</span></label>
+              <label class="sw"><input type="checkbox" data-lk="shadow" checked /><i></i><span>Тень за никами</span></label>
             </div>
-            <label>Ссылка на виджет (OBS и Twitch)</label>
+            <label>Ссылка для OBS и Twitch</label>
             <div class="nick-field"><input id="lUrl" readonly spellcheck="false" /></div>
             <div class="wbtn-row"><button class="btn wbtn primary" id="lCopy">Копировать</button><button class="btn wbtn ghost" id="lClear">Сбросить</button></div>
           </div>
           <div class="card preview-card">
             <div class="prev-head">
-              <div><h2>Предпросмотр</h2><small>Так виджет выглядит в OBS. Настройки применяются сразу</small></div>
+              <div><h2>Предпросмотр</h2><small>Так виджет будет в OBS. Изменения видны сразу</small></div>
               <button class="btn ghost" id="lTest">Тест</button>
             </div>
             <div class="lk-prev"><iframe id="lkFrame" title="Предпросмотр топа лайков" tabindex="-1"></iframe></div>
@@ -242,18 +242,18 @@
             <p class="muted">Зрители, которые больше всех отправили монет в подарках за эфир. Список сверху вниз: аватарка, ник, монеты. Таблица сбрасывается при новом подключении. Ссылка подходит для OBS и Twitch Studio (источник «Браузер»).</p>
             <div class="ctl"><div class="row"><label>Сколько показывать</label><b id="gCountVal">5</b></div><input type="range" id="gCount" min="5" max="10" value="5" /></div>
             <div class="toggles" style="margin-top:10px">
-              <label class="sw"><input type="checkbox" data-gf="showCount" checked /><i></i><span>Число монет под аватаркой</span></label>
+              <label class="sw"><input type="checkbox" data-gf="showCount" checked /><i></i><span>Монеты под аватаркой</span></label>
               <label class="sw"><input type="checkbox" data-gf="showRank" checked /><i></i><span>Номер места</span></label>
-              <label class="sw"><input type="checkbox" data-gf="celebrate" checked /><i></i><span>Ликование, когда кто-то выходит на 1 место</span></label>
-              <label class="sw"><input type="checkbox" data-gf="shadow" checked /><i></i><span>Лёгкая тень за никами</span></label>
+              <label class="sw"><input type="checkbox" data-gf="celebrate" checked /><i></i><span>Анимация на 1 месте</span></label>
+              <label class="sw"><input type="checkbox" data-gf="shadow" checked /><i></i><span>Тень за никами</span></label>
             </div>
-            <label>Ссылка на виджет (OBS и Twitch)</label>
+            <label>Ссылка для OBS и Twitch</label>
             <div class="nick-field"><input id="gUrl" readonly spellcheck="false" /></div>
             <div class="wbtn-row"><button class="btn wbtn primary" id="gCopy">Копировать</button><button class="btn wbtn ghost" id="gClear">Сбросить</button></div>
           </div>
           <div class="card preview-card">
             <div class="prev-head">
-              <div><h2>Предпросмотр</h2><small>Так виджет выглядит в OBS. Настройки применяются сразу</small></div>
+              <div><h2>Предпросмотр</h2><small>Так виджет будет в OBS. Изменения видны сразу</small></div>
               <button class="btn ghost" id="gTest">Тест</button>
             </div>
             <div class="lk-prev" id="gkPrev"><iframe id="gkFrame" title="Предпросмотр топа подарков" tabindex="-1"></iframe></div>
@@ -271,7 +271,7 @@
             <div class="snd-row one">
               <button class="btn ghost" id="aImgPick" type="button">Загрузить свою картинку</button>
             </div>
-            <div class="snd-name"><small class="muted" id="aImgName">Сейчас: стандартное сердечко</small><button class="snd-reset" id="aImgReset" type="button" hidden>Сбросить</button></div>
+            <div class="snd-name"><small class="muted" id="aImgName">Сейчас: сердечко</small><button class="snd-reset" id="aImgReset" type="button" hidden>Сбросить</button></div>
             <div class="snd-row">
               <button class="btn ghost" id="aSoundTest" type="button"><span id="aSoundIcon"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></span><span id="aSoundLbl">Прослушать звук</span></button>
               <button class="btn ghost" id="aSoundPick" type="button">Загрузить свой звук</button>
@@ -279,21 +279,21 @@
             <div class="snd-name"><small class="muted" id="aSoundName">Сейчас: стандартный звук</small><button class="snd-reset" id="aSoundReset" type="button" hidden>Сбросить</button></div>
             <div class="ctl"><div class="row"><label>Показывать оповещение</label><b id="aDurVal">6 с</b></div><input type="range" id="aDur" min="3" max="20" value="6" /></div>
             <div class="ctl"><div class="row"><label>Масштаб</label><b id="aScaleVal">100%</b></div><input type="range" id="aScale" min="50" max="200" value="100" /></div>
-            <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
+            <label>Ссылка для OBS и TikTok Studio</label>
             <div class="nick-field"><input id="aUrl" readonly spellcheck="false" /></div>
             <div class="wbtn-row"><button class="btn wbtn primary" id="aCopy">Копировать</button></div>
           </div>
           <div class="col-right alert-right">
             <div class="card preview-card">
               <div class="prev-head">
-                <div><h2>Предпросмотр</h2><small>Так оповещение выглядит в OBS. «Тест» ещё и играет звук</small></div>
+                <div><h2>Предпросмотр</h2><small>Так будет в OBS. «Тест» играет звук</small></div>
                 <button class="btn ghost" id="aTest">Тест</button>
               </div>
               <div class="prev-box" id="alBox"><iframe id="alFrame" title="Предпросмотр оповещения" tabindex="-1"></iframe></div>
             </div>
             <div class="card dz-card alert-dz">
               <h2>Дизайн оповещения</h2>
-              <p class="muted">Оформление плашки подписчика, то же что у донатов</p>
+              <p class="muted">Вид плашки, как у донатов</p>
               <div class="dz-grid" id="adzGrid" role="radiogroup" aria-label="Дизайн оповещения">
                 <button type="button" class="dz-opt" data-adesign="classic" role="radio"><div class="dz dz-classic"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Стандарт</span></button>
                 <button type="button" class="dz-opt" data-adesign="neon" role="radio"><div class="dz dz-neon"><i>А</i><div><b>Анна К.</b><em>♥ подписался</em></div></div><span>Неон</span></button>
@@ -314,7 +314,7 @@
         <div class="cols">
           <div class="col-left">
             <div class="card kc">
-              <div class="kc-head"><h2>Подключение iPhone с iOS 27</h2><div class="kstat" id="kStat"></div></div>
+              <div class="kc-head"><h2>Подключение iPhone (iOS 27)</h2><div class="kstat" id="kStat"></div></div>
               <div id="kBox" hidden>
               <div class="kstep"><span class="kn">1</span><div class="kb"><b>Скопируйте токен</b>
                 <input id="kTok" class="ktok" readonly spellcheck="false" />
@@ -331,7 +331,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center"><b>Журнал уведомлений</b><button class="btn ghost" id="kLogClear" style="padding:4px 12px;font-size:12px">Очистить</button></div>
                 <div class="klog" id="kLog"><div class="empty">Пока ничего не приходило</div></div></div></div>
               <details class="kmore"><summary>Дополнительно</summary>
-                <div class="toggles" style="margin-top:8px"><label class="sw"><input type="checkbox" data-kk="strict" checked /><i></i><span>Пропускать покупки и исходящие<small>Выключите, если настоящие донаты не проходят</small></span></label></div>
+                <div class="toggles" style="margin-top:8px"><label class="sw"><input type="checkbox" data-kk="strict" checked /><i></i><span>Пропускать покупки и исходящие<small>Выключите, если донаты не приходят</small></span></label></div>
               </details>
               </div>
             </div>
@@ -428,7 +428,7 @@
 </div>
 <div class="da-col">
           <div class="card">
-            <h2>Виджет донатов DonationAlerts</h2>
+            <h2>Виджет DonationAlerts</h2>
             <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка»). Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
             <div class="da-push">
               <label>Ссылка на виджет</label>
@@ -437,7 +437,7 @@
             </div>
           </div>
           <div class="card preview-card da-prev">
-            <div class="prev-head"><div><h2>Предпросмотр и картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
+            <div class="prev-head"><div><h2>Картинка</h2><small>Так донат выглядит в OBS. «Тест доната» ещё и играет звук. Картинку можно заменить своей</small></div></div>
             <div class="prev-box" id="daBox"><iframe id="daFrame" title="Предпросмотр доната DonationAlerts" tabindex="-1"></iframe></div>
             <label style="margin-top:14px">Текст</label>
             <div class="da-chips" role="radiogroup" aria-label="Положение текста" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">
@@ -458,7 +458,7 @@
             </div>
             <div class="ctl"><div class="row"><label>Показывать каждый донат</label><b id="daDurVal">8 с</b></div><input type="range" id="daDur" min="3" max="30" value="8" /></div>
             <div class="ctl"><div class="row"><label>Масштаб</label><b id="daScaleVal">100%</b></div><input type="range" id="daScale" min="50" max="200" value="100" /></div>
-            <div class="ctl"><div class="row"><label>Минимальная сумма (в пересчёте на ₸, примерно)</label><b id="daMinVal">0 ₸</b></div><input type="range" id="daMin" min="0" max="10000" step="100" value="0" /></div>
+            <div class="ctl"><div class="row"><label>Минимальная сумма (≈ в ₸)</label><b id="daMinVal">0 ₸</b></div><input type="range" id="daMin" min="0" max="10000" step="100" value="0" /></div>
           </div>
         
 </div>
@@ -471,7 +471,7 @@
         <div class="avpane" id="avPane">
         <div class="cols">
           <div class="card">
-            <h2>2D аватар (Live2D)</h2>
+            <h2>2D (Live2D)</h2>
             <p class="muted">Live2D-персонаж повторяет движения лица с веб-камеры. Видео не покидает компьютер. Идея и формулы — из проекта VTubeLeaf (MIT). Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется. Идея и формулы отслеживания — из проекта VTubeLeaf (MIT).</p>
             <div id="avSetup">
               <div class="wstat" id="avSetupTxt"></div>
@@ -481,7 +481,7 @@
               <div class="wstat bad" id="avSetupErr" hidden></div>
             </div>
             <div id="avMain" hidden>
-              <label>Камера (общая для 2D и 3D)</label>
+              <label>Камера</label>
               <div class="csel" id="avCamSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div>
               <div class="wbtn-row wbtn-row3 wbtn-line" style="margin-top:10px">
                 <button class="btn wbtn primary" id="avRun" type="button">Включить камеру</button>
@@ -492,7 +492,7 @@
               <label>Модель</label>
               <div class="csel" id="avModelSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div>
               <div class="wbtn-row wbtn-row3" style="margin-top:10px">
-                <button class="btn wbtn ghost" id="avGetModels" type="button">Скачать бесплатные модели (BOOTH — сотни моделей)</button>
+                <button class="btn wbtn ghost" id="avGetModels" type="button">Скачать модели (BOOTH)</button>
                 <button class="btn wbtn ghost" id="avAddDir" type="button">Папка модели</button>
                 <button class="btn wbtn ghost" id="avAddFile" type="button">Архив .zip</button>
                 <button class="btn wbtn ghost" id="avRemove" type="button">Удалить модель</button>
@@ -510,17 +510,17 @@
           </div>
         </div>
         <div class="card" style="margin-top:16px">
-          <h2>Настройки 2d аватара</h2>
+          <h2>Настройки 2D</h2>
           <div class="toggles two" style="margin-top:8px">
-            <label class="sw"><input type="checkbox" id="avMirror" /><i></i><span>Зеркально (как в зеркале)</span></label>
-            <label class="sw"><input type="checkbox" id="avGreen" /><i></i><span>Зелёный фон (для хромакея)</span></label>
+            <label class="sw"><input type="checkbox" id="avMirror" /><i></i><span>Зеркально</span></label>
+            <label class="sw"><input type="checkbox" id="avGreen" /><i></i><span>Зелёный фон</span></label>
           </div>
           <div class="ctl-row">
             <div class="ctl"><div class="row"><label>Размер</label><b id="avScaleVal">100%</b></div><input type="range" id="avScale" min="40" max="250" value="100" /></div>
             <div class="ctl"><div class="row"><label>Сдвиг по горизонтали</label><b id="avOxVal">0</b></div><input type="range" id="avOx" min="-100" max="100" value="0" /></div>
             <div class="ctl"><div class="row"><label>Сдвиг по вертикали</label><b id="avOyVal">0</b></div><input type="range" id="avOy" min="-100" max="100" value="0" /></div>
           </div>
-          <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
+          <label>Ссылка для OBS и TikTok Studio</label>
           <div class="nick-field"><input id="avUrl" readonly spellcheck="false" /></div>
           <div class="wbtn-row"><button class="btn wbtn primary" id="avCopy" type="button">Копировать</button></div>
           <p class="muted" style="margin-top:8px">Камеру держит ЭхоЧат LIVE, поэтому программа должна быть запущена с включённой камерой. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
@@ -529,7 +529,7 @@
         <div class="avpane" id="av3Pane" hidden>
         <div class="cols">
           <div class="card">
-            <h2>3D аватар (VRM)</h2>
+            <h2>3D (VRM)</h2>
             <p class="muted">VRM-персонаж повторяет движения лица с веб-камеры. Видео не покидает компьютер. Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется.</p>
             <div id="av3Setup">
               <div class="wstat" id="av3SetupTxt"></div>
@@ -539,7 +539,7 @@
               <div class="wstat bad" id="av3SetupErr" hidden></div>
             </div>
             <div id="av3Main" hidden>
-              <label>Камера (общая для 2D и 3D)</label>
+              <label>Камера</label>
               <div class="csel" id="av3CamSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div>
               <div class="wbtn-row wbtn-row3 wbtn-line" style="margin-top:10px">
                 <button class="btn wbtn primary" id="av3Run" type="button">Включить камеру</button>
@@ -550,7 +550,7 @@
               <label>Модель</label>
               <div class="csel" id="av3ModelSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div>
               <div class="wbtn-row wbtn-row3" style="margin-top:10px">
-                <button class="btn wbtn ghost" id="av3GetModels" type="button">Скачать бесплатные модели (VRoid Hub)</button>
+                <button class="btn wbtn ghost" id="av3GetModels" type="button">Скачать модели (VRoid Hub)</button>
                 <button class="btn wbtn ghost" id="av3AddFile" type="button">Файл модели .vrm</button>
                 <button class="btn wbtn ghost" id="av3Remove" type="button">Удалить модель</button>
               </div>
@@ -567,17 +567,17 @@
           </div>
         </div>
         <div class="card" style="margin-top:16px">
-          <h2>Настройки 3d аватара</h2>
+          <h2>Настройки 3D</h2>
           <div class="toggles two" style="margin-top:8px">
-            <label class="sw"><input type="checkbox" id="av3Mirror" /><i></i><span>Зеркально (как в зеркале)</span></label>
-            <label class="sw"><input type="checkbox" id="av3Green" /><i></i><span>Зелёный фон (для хромакея)</span></label>
+            <label class="sw"><input type="checkbox" id="av3Mirror" /><i></i><span>Зеркально</span></label>
+            <label class="sw"><input type="checkbox" id="av3Green" /><i></i><span>Зелёный фон</span></label>
           </div>
           <div class="ctl-row">
             <div class="ctl"><div class="row"><label>Размер</label><b id="av3ScaleVal">100%</b></div><input type="range" id="av3Scale" min="40" max="250" value="100" /></div>
             <div class="ctl"><div class="row"><label>Сдвиг по горизонтали</label><b id="av3OxVal">0</b></div><input type="range" id="av3Ox" min="-100" max="100" value="0" /></div>
             <div class="ctl"><div class="row"><label>Сдвиг по вертикали</label><b id="av3OyVal">0</b></div><input type="range" id="av3Oy" min="-100" max="100" value="0" /></div>
           </div>
-          <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
+          <label>Ссылка для OBS и TikTok Studio</label>
           <div class="nick-field"><input id="av3Url" readonly spellcheck="false" /></div>
           <div class="wbtn-row"><button class="btn wbtn primary" id="av3Copy" type="button">Копировать</button></div>
           <p class="muted" style="margin-top:8px">Камеру держит ЭхоЧат LIVE, поэтому программа должна быть запущена с включённой камерой. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
