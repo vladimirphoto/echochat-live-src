@@ -418,33 +418,56 @@ test('закреп: ставится только из оверлея и рас�
   assert.ok(!html.includes('Закреп сообщения'), 'в index.html нет блока закрепа');
 });
 
-test('оверлей: подписавшийся запоминается между эфирами — его ник получает fol, а плашка Sub не меняется', () => {
+test('оверлей: подписавшийся запоминается между эфирами — ник получает fol, плашка Sub не меняется', () => {
   const saved = [];
   const m1 = new ov.OverlayModel({ onKnown: (k) => saved.push(k) });
-  // подписался в эфире (TikTok в его сообщениях «подписан» пока не пишет)
-  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
+  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' }); // подписался в эфире
   assert.deepEqual(saved, ['rashid']);
   m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
   assert.equal(saved.length, 1, 'повторно в список не добавляется');
-  // новый запуск приложения: список читается с диска
+  // новый запуск приложения: список с диска; TikTok про статус молчит (нет isFollower) — верим списку
   const m2 = new ov.OverlayModel({ known: saved });
-  const e = m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'привет', isFollower: false }).entry;
-  assert.equal(e.fol, true, 'ник подписавшегося другого цвета');
+  const e = m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'привет' }).entry;
+  assert.equal(e.fol, true);
   assert.ok(!('sub' in e), 'плашка Sub по-прежнему только по данным TikTok');
   const other = m2.track('tt:chat', { name: 'Декстер', id: 'dexter', text: 'привет', isFollower: false }).entry;
   assert.ok(!('fol' in other) && !('sub' in other), 'неподписанный — всё как раньше');
-  // сброс счётчиков после эфира не стирает память о подписавшихся
-  m2.track('tt:status', { state: 'offline' });
-  assert.equal(m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'ещё', isFollower: false }).entry.fol, true);
+  m2.track('tt:status', { state: 'offline' }); // конец эфира память не стирает
+  assert.equal(m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'ещё' }).entry.fol, true);
 });
 
-test('оверлей: если TikTok сам прислал isFollower === true — fol есть сразу и человек запоминается; у Twitch fol нет', () => {
+test('оверлей: человек зашёл — статус «подписан» узнаётся сразу, и его сообщения уже цветные, даже если в них статуса нет', () => {
   const saved = [];
   const m = new ov.OverlayModel({ onKnown: (k) => saved.push(k) });
-  const e = m.track('tt:chat', { name: 'Анна', id: 'anna', text: 'hi', isFollower: true }).entry;
+  m.track('tt:join', { name: 'Анна', id: 'anna', isFollower: true });
+  assert.deepEqual(saved, ['anna'], 'и запомнилась на будущее');
+  assert.equal(m.track('tt:chat', { name: 'Анна', id: 'anna', text: 'hi' }).entry.fol, true);
+  // подписан, сказал это TikTok в сообщении — и плашка, и цвет
+  const e = m.track('tt:chat', { name: 'Боря', id: 'boris', text: 'hi', isFollower: true }).entry;
   assert.equal(e.sub, true); assert.equal(e.fol, true);
-  assert.deepEqual(saved, ['anna']);
+  // у Twitch цвета подписчика нет
   assert.ok(!('fol' in m.track('tw:chat', { name: 'Max', id: 'anna', text: 'hi', isFollower: true }).entry));
+});
+
+test('оверлей: отписался — цвет возвращается обычный и человек забывается; «не подписан» из входа или лайка этого не делает', () => {
+  const saved = [];
+  const m = new ov.OverlayModel({ known: ['kate'], onKnown: (k) => saved.push(k) });
+  assert.equal(m.track('tt:chat', { name: 'Катя', id: 'kate', text: 'a' }).entry.fol, true, 'пока TikTok молчит — по списку');
+  m.track('tt:join', { name: 'Катя', id: 'kate', isFollower: false });
+  m.track('tt:like', { name: 'Катя', id: 'kate', count: 1, isFollower: false });
+  assert.equal(m.track('tt:chat', { name: 'Катя', id: 'kate', text: 'b' }).entry.fol, true, 'вход и лайк с false не отписывают');
+  const e = m.track('tt:chat', { name: 'Катя', id: 'kate', text: 'c', isFollower: false }).entry;
+  assert.ok(!('fol' in e) && !('sub' in e), 'сообщение с «не подписан» — цвет обычный');
+  assert.ok(!m.known.has('kate')); assert.deepEqual(saved, ['kate']);
+  assert.ok(!('fol' in m.track('tt:chat', { name: 'Катя', id: 'kate', text: 'd' }).entry), 'и дальше без статуса — уже обычный');
+});
+
+test('оверлей: подписавшегося в этом эфире не «отписывает» запоздавший статус TikTok', () => {
+  const m = new ov.OverlayModel();
+  m.track('tt:follow', { name: 'Тима', id: 'tima' });
+  const e = m.track('tt:chat', { name: 'Тима', id: 'tima', text: 'hi', isFollower: false }).entry;
+  assert.equal(e.sub, true); assert.equal(e.fol, true);
+  assert.ok(m.known.has('tima'));
 });
 
 test('оверлей: закреп сохраняет fol только когда он true', () => {
