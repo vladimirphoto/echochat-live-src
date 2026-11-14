@@ -319,9 +319,10 @@ test('оверлей: подписался в эфире — ник цветно
   // Twitch ни плашки, ни цвета не получает
   const tw = m.track('tw:chat', { name: 'Max', id: 'vera', text: 'hi' }).entry;
   assert.ok(!('sub' in tw) && !('fol' in tw));
-  // новый эфир (всё отключилось) — подписавшиеся этого эфира забываются
+  // новый эфир: плашка Sub не возвращается, а цвет ника остаётся (подписавшийся запомнен)
   m.track('tt:status', { state: 'offline' });
-  assert.ok(!('fol' in m.track('tt:chat', { name: 'Вера', id: 'vera', text: 'снова' }).entry));
+  const next = m.track('tt:chat', { name: 'Вера', id: 'vera', text: 'снова' }).entry;
+  assert.ok(!('sub' in next)); assert.equal(next.fol, true);
 });
 
 test('оверлей: плашка Sub у входа, лайка, подарка и репоста свежеподписавшегося; у строки подписки её нет', () => {
@@ -432,4 +433,24 @@ test('оверлей: закреп сохраняет fol только когд�
   const m = new ov.OverlayModel();
   assert.equal(m.setPin({ kind: 'chat', name: 'Анна', text: 'hi', fol: true }, 'end').entry.fol, true);
   assert.ok(!('fol' in m.setPin({ kind: 'chat', name: 'Анна', text: 'hi', fol: 'yes' }, 'end').entry));
+});
+
+test('оверлей: подписавшийся в эфире запоминается на будущие эфиры — ник цветной (fol), а плашки Sub в новом эфире нет', () => {
+  const saved = [];
+  const m1 = new ov.OverlayModel({ onKnown: (k) => saved.push(k) });
+  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
+  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
+  assert.deepEqual(saved, ['rashid'], 'в список попадает один раз');
+  // новый запуск приложения: список читается с диска
+  const m2 = new ov.OverlayModel({ known: saved });
+  const e = m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'привет' }).entry;
+  assert.equal(e.fol, true); assert.ok(!('sub' in e), 'плашка только пару минут после подписки');
+  const other = m2.track('tt:chat', { name: 'Декстер', id: 'dexter', text: 'привет' }).entry;
+  assert.ok(!('fol' in other) && !('sub' in other));
+  // конец эфира список не стирает
+  m2.track('tt:status', { state: 'offline' });
+  assert.equal(m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'ещё' }).entry.fol, true);
+  // Twitch цвета не получает; мусор в списке с диска игнорируется
+  assert.ok(!('fol' in m2.track('tw:chat', { name: 'Max', id: 'rashid', text: 'hi' }).entry));
+  assert.equal(new ov.OverlayModel({ known: [1, null, '', 'a'] }).known.size, 1);
 });

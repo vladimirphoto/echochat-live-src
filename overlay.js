@@ -12,6 +12,7 @@
 const DEFAULTS = { opacity: 100, onTop: true, locked: false, events: true, joins: true, stats: true, hearts: true, hotkey: 'Ctrl+Alt+I' };
 const LIMITS = { opacity: [0, 100] };
 const SUB_BADGE_MS = 2 * 60 * 1000; // плашка Sub — только пару минут после подписки
+const KNOWN_MAX = 50000; // сколько подписавшихся помнить между эфирами
 const PIN_MAX_MIN = 24 * 60; // дольше суток закреплять нельзя: до конца эфира есть отдельный вариант
 const SIZE = { minW: 280, minH: 320, maxW: 1400, maxH: 2400, defW: 400, defH: 560 };
 
@@ -92,8 +93,11 @@ const isNum = (n) => typeof n === 'number' && Number.isFinite(n);
 // Модель: что показывает оверлей. track() получает те же события, что и главное окно (каналы tt:* и tw:*),
 // обновляет счётчики так же, как главное окно, и возвращает запись для ленты (если событие её даёт).
 class OverlayModel {
-  constructor({ max = 80, now = Date.now, color = () => '#6b7280' } = {}) {
+  // known — id тех, кто подписался в прошлых эфирах (хранится на диске); onKnown вызывается, когда в этот список добавился новый человек
+  constructor({ max = 80, now = Date.now, color = () => '#6b7280', known = [], onKnown = () => {} } = {}) {
     this.max = max; this.now = now; this.color = color;
+    this.known = new Set(Array.from(known || []).filter((x) => typeof x === 'string' && x).slice(0, KNOWN_MAX));
+    this.onKnown = typeof onKnown === 'function' ? onKnown : () => {};
     this.entries = []; this.seq = 0;
     this.ttOn = false; this.twOn = false; this.since = 0;
     this.resetCounters();
@@ -107,7 +111,9 @@ class OverlayModel {
   // Подписался прямо в этом эфире: плашка Sub — первые SUB_BADGE_MS, а ник розово-фиолетовый (fol) — до конца эфира.
   // Ключи sub / fol добавляются в запись только когда они true, у остальных записей их нет
   _sub(p) { const k = this._key(p); const t = k ? this.subs.get(k) : undefined; return t !== undefined && this.now() - t < SUB_BADGE_MS ? { sub: true } : {}; }
-  _fol(p) { const k = this._key(p); return k && this.subs.has(k) ? { fol: true } : {}; }
+  // цвет ника: подписался в этом эфире или в одном из прошлых (запомнили на диск)
+  _fol(p) { const k = this._key(p); return k && (this.subs.has(k) || this.known.has(k)) ? { fol: true } : {}; }
+  _know(k) { if (!k || this.known.has(k) || this.known.size >= KNOWN_MAX) return; this.known.add(k); try { this.onKnown(k); } catch (_) {} }
   views() { const own = this.users.size; return this.libViews === null ? (own || null) : Math.max(this.libViews, own); }
   stats() {
     // twLive — значок онлайна Twitch виден, только когда канал подключён И стрим действительно идёт (число зрителей известно);
@@ -200,6 +206,7 @@ class OverlayModel {
         this.follows += 1; r.stats = true;
         const k = this._see(p);
         if (k && this.subs.size < 200000) this.subs.set(k, this.now()); // с этого момента ник цветной, а рядом с ним пару минут значок Sub
+        this._know(k); // и запоминаем на будущие эфиры: ник останется цветным
         r.entry = this._push({ platform: 'tiktok', kind: 'follow', name: cut(p.name, 60) || 'Гость', avatar: cut(p.avatar, 500), color: this.color(p.name || '') }); // в самой строке подписки значка нет: там и так написано «подписался(ась)»
         break;
       }

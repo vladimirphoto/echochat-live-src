@@ -46,10 +46,11 @@ function pushGifts() {
 // Его питают те же события, что и главное окно (см. send ниже): модель считает счётчики всегда, поэтому оверлей, включённый посреди эфира, сразу показывает верные цифры.
 // Включается и выключается переключателем во вкладке «Виджеты» и пунктом в меню трея. Как и виджеты, входит в тариф Pro.
 const ovMod = require('./overlay');
-const ovModel = new ovMod.OverlayModel({ color: colorOf });
-let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null;
+let ovWin = null, ovSet = { ...ovMod.DEFAULTS }, ovBounds = null, ovSaveT = null, ovKnown = [];
 const OV_FILE = () => path.join(app.getPath('userData'), 'overlay.json');
-try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; } catch (_) {}
+try { const j = JSON.parse(require('fs').readFileSync(OV_FILE(), 'utf8')); ovSet = ovMod.cleanSettings(j && j.settings); ovBounds = (j && j.bounds) || null; ovKnown = Array.isArray(j && j.known) ? j.known : []; } catch (_) {}
+// known — кто подписывался на канал в прошлых эфирах: хранится в overlay.json, от этого ник в чате розово-фиолетовый
+const ovModel = new ovMod.OverlayModel({ color: colorOf, known: ovKnown, onKnown: () => ovSave() });
 const ovOpen = () => !!(ovWin && !ovWin.isDestroyed());
 const ovPublic = (on) => ({ on: on === undefined ? ovOpen() : !!on, settings: ovSet, locked: locked('widgets'), hotkeyBusy: ovHotkeyBusy });
 // Глобальное сочетание клавиш: открывает и закрывает оверлей из любой программы (в том числе из игры в оконном режиме).
@@ -71,7 +72,7 @@ function ovHotkeyOn() {
 }
 function ovSave() {
   clearTimeout(ovSaveT);
-  ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds })); } catch (_) {} }, 300);
+  ovSaveT = setTimeout(() => { try { require('fs').writeFileSync(OV_FILE(), JSON.stringify({ settings: ovSet, bounds: ovBounds, known: Array.from(ovModel.known) })); } catch (_) {} }, 300);
 }
 // событие приложения → модель → окно оверлея (если оно открыто)
 function ovTrack(channel, payload) {
