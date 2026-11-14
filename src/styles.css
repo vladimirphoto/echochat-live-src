@@ -860,7 +860,7 @@ main{position:relative}
 .avseg button span{font-size:12.5px;font-weight:600;opacity:.85}
 .avseg button:hover{color:var(--text);background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.5);transform:translateY(-1px)}
 /* запас сверху и слева, чтобы подъём при наведении и рамка фокуса не обрезались краем прокручиваемой вкладки */
-#tab-avatar.show{padding-top:18px;padding-left:14px;margin-top:-12px;margin-left:-14px}
+#tab-avatar.show{padding-top:18px;padding-left:26px;margin-top:-12px;margin-left:-26px}
 .avseg button:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
 .avseg button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--a1),#f472b6);box-shadow:0 8px 22px rgba(139,92,246,.45)}
 
@@ -960,10 +960,3 @@ main{position:relative}
 #tab-live .wish{margin:14px 0 0;padding:12px 0 0;border-top:1px dashed rgba(255,255,255,.14);justify-content:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.4px;background:none;color:transparent}
 #tab-live .wish span{background:linear-gradient(90deg,#ff8fc4,#c58bff 60%,#8fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 #tab-live .wish-heart{width:17px;height:17px;color:#ff4d8d}
-
-/* ===== мягкое затухание краёв прокручиваемой вкладки (управляется из renderer.js) ===== */
-@property --ft{syntax:'<length>';inherits:true;initial-value:0px}
-@property --fb{syntax:'<length>';inherits:true;initial-value:0px}
-.tab.show{transition:--ft .2s,--fb .2s;
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);
-  mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}

@@ -1725,6 +1725,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
   '3.5.7': ['Вкладка «Аватар»: кнопки камеры («Включить камеру», «Калибровка», «Обновить камеры») теперь в одну линию и в 2D, и в 3D.'],
+  '3.5.14': ['Вкладки снова с чёткими краями сверху и снизу, без затухания.', 'Аватар: свечение кнопок 2D / 3D больше не обрезается слева.'],
   '3.5.13': ['DonationAlerts: первые четыре шаблона заменены на анимации: Облако, Медведь, Пингвин и Зомби.'],
   '3.5.12': ['Плавное затухание сверху и снизу у прокручиваемых вкладок вместо резкого среза.'],
   '3.5.11': ['Аватар: свечение кнопок 2D / 3D больше не обрезается сверху.', 'Убран повтор в описании 2D.'],
@@ -1924,23 +1925,4 @@ refreshKaspiUi();
     send.disabled = false; send.textContent = 'Повторить';
     if (r && r.fallback) mail.hidden = false;
   });
-})();
-
-// Плавное затухание у верхнего и нижнего края прокручиваемой вкладки (вместо резкого среза)
-(() => {
-  let raf = 0;
-  const update = () => {
-    raf = 0;
-    const t = document.querySelector('.tab.show');
-    if (!t) return;
-    const max = t.scrollHeight - t.clientHeight;
-    t.style.setProperty('--ft', max > 2 && t.scrollTop > 2 ? '26px' : '0px');
-    t.style.setProperty('--fb', max > 2 && t.scrollTop < max - 2 ? '34px' : '0px');
-  };
-  const queue = () => { if (!raf) raf = requestAnimationFrame(update); };
-  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('scroll', queue, { passive: true }));
-  window.addEventListener('resize', queue);
-  const main = document.querySelector('main');
-  if (main) new MutationObserver(queue).observe(main, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden'] });
-  queue();
 })();
