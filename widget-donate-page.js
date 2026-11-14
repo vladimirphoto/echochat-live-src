@@ -12,6 +12,8 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
  box-shadow:0 10px 36px rgba(0,0,0,.55),0 0 0 2px var(--ac,#f14635),0 0 34px var(--ac,#f14635);
  animation:pop .55s cubic-bezier(.2,1.4,.4,1) both;box-sizing:border-box}
 .card.out{animation:bye .45s ease-in both}
+.card .art.img{background:none!important;box-shadow:none!important;border-radius:0!important;animation:none!important;font-size:0}
+.art.img img{display:block;width:100%;height:100%;object-fit:contain}
 .art{flex:none;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;font-size:54px;line-height:1;
  background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.28),rgba(255,255,255,.06));box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;animation:bob 1.8s ease-in-out infinite}
@@ -58,7 +60,7 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 .d-gold .am{background:linear-gradient(180deg,#fff6c4,#f5b301);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .d-gold .ms{color:#f4e3b0}
 .d-gold .sp{background:#f5c542}
-.d-arc{background:#0b0b2b;border:4px solid #ff3df2;border-radius:0;font-family:"Courier New",Consolas,monospace;box-shadow:6px 6px 0 #00e5ff;animation:arc .6s steps(6) both}
+.d-arc{background:#0b0b2b;border:4px solid #ff3df2;border-radius:0;font-family:"Courier New",Consolas,monospace;box-shadow:6px 6px 0 #00e5ff;animation:arc .45s cubic-bezier(.2,.9,.3,1.05) both;will-change:transform,opacity}
 .d-arc .art{border-radius:0;width:80px;height:80px;font-size:46px;background:transparent;box-shadow:inset 0 0 0 3px #00e5ff;animation:none}
 .d-arc .cap{color:#00e5ff;letter-spacing:2px;font-weight:700}
 .d-arc .nm{text-transform:uppercase;font-size:26px;letter-spacing:1px}
@@ -123,6 +125,16 @@ function apply(){
   stage.className=PREVIEW?'c m':({left:'l',center:'c',right:'r'}[S.align]||'c')+' '+({top:'t',center:'m',bottom:'b'}[S.vpos]||'b');
   var c=stage.firstChild;if(c&&c.style)c.style.zoom=zoomOf();
 }
+var BASE='',imgUrl='',imgFor=0;
+// своя картинка: берём у приложения один раз на версию и держим в памяти
+function loadImage(){
+  var v=+S.imageV||0;
+  if(!v){if(imgUrl){URL.revokeObjectURL(imgUrl);imgUrl='';}imgFor=0;return Promise.resolve();}
+  if(imgFor===v&&imgUrl)return Promise.resolve();
+  return fetch(BASE+'/donate-image?v='+v,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.blob();}).then(function(b){
+    if(imgUrl)URL.revokeObjectURL(imgUrl);imgUrl=URL.createObjectURL(b);imgFor=v;
+  }).catch(function(){if(imgUrl){URL.revokeObjectURL(imgUrl);}imgUrl='';imgFor=v;});
+}
 var queue=[],busy=false;
 function sparks(card,ac){
   for(var i=0;i<14;i++){var s=document.createElement('i');s.className='sp';var a=Math.random()*6.283,d=70+Math.random()*90;
@@ -141,7 +153,8 @@ function hearts(card){ // «Конфетка»: сердечки поднима�
 function show(d){
   var t=tierOf(+d.amount||0);
   var c=document.createElement('div');var ds=designOf();c.className='card'+(DCLS[ds]?' '+DCLS[ds]:'')+(S.layout==='side'?'':' v-top');c.style.setProperty('--ac',t.ac);
-  var a=document.createElement('div');a.className='art';a.textContent=t.art;
+  var a=document.createElement('div');a.className='art';
+  if(imgUrl){a.className='art img';var im=document.createElement('img');im.alt='';im.src=imgUrl;a.appendChild(im);}else a.textContent=t.art;
   var x=document.createElement('div');x.className='tx';
   var cap=document.createElement('div');cap.className='cap';cap.textContent='Донат · '+t.cap;
   var nm=document.createElement('div');nm.className='nm';nm.textContent=d.name||'Аноним';
@@ -152,7 +165,7 @@ function show(d){
   var ms=Math.max(2,+S.duration||8)*1000;
   setTimeout(function(){c.classList.add('out');setTimeout(function(){c.remove();busy=false;next();},500);},ms);
 }
-function next(){if(busy||!queue.length)return;busy=true;show(queue.shift());}
+function next(){if(busy||!queue.length)return;busy=true;loadImage().then(function(){var d=queue.shift();if(!d){busy=false;return;}show(d);});}
 function add(d){queue.push(d);if(queue.length>20)queue.shift();next();}
 var Q=new URLSearchParams(location.search),FIXED=+Q.get('port')||0;
 var REMOTE=!(/^(127\\.0\\.0\\.1|localhost)$/.test(location.hostname)&&!FIXED);
@@ -175,7 +188,7 @@ function connect(){
     var es=new EventSource('http://127.0.0.1:'+port+'/events'),got=false,t;
     function fail(){if(got)return;clearTimeout(t);es.close();offline();setTimeout(probe,PORTS.length>1&&i%PORTS.length?30:2500);}
     t=setTimeout(fail,1500);
-    es.addEventListener('settings',function(){if(!got){got=true;clearTimeout(t);online();}});
+    es.addEventListener('settings',function(){if(!got){got=true;clearTimeout(t);BASE='http://127.0.0.1:'+port;online();}});
     es.onerror=function(){if(got)offline();else fail();};
     es.onopen=function(){if(got)online();};
     bind(es);

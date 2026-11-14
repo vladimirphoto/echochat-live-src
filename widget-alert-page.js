@@ -66,7 +66,7 @@ html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI"
 .a-gold .cap{color:#f5c542;letter-spacing:2px}
 .a-gold .nm{background:linear-gradient(180deg,#fff6c4,#f5b301);-webkit-background-clip:text;background-clip:text;color:transparent;filter:none}
 .a-gold .hp{color:#f5c542;text-shadow:0 0 10px rgba(245,197,66,.9)}.a-gold .hp.v{color:#fff1a8}
-.a-arc{animation:arc .6s steps(6) both}
+.a-arc{animation:arc .45s cubic-bezier(.2,.9,.3,1.05) both;will-change:transform,opacity}
 .a-arc .plate{background:#0b0b2b;border:4px solid #ff3df2;border-radius:0;font-family:"Courier New",Consolas,monospace;box-shadow:6px 6px 0 #00e5ff}
 .a-arc .plate:after{display:none}
 .a-arc .av{border-radius:0;box-shadow:0 0 0 3px #00e5ff}

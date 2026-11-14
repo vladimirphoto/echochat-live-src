@@ -69,6 +69,12 @@ function start(getSettings, port = 7878, opts = {}) {
       return res.end(im.data);
     }
     // своя картинка доната DonationAlerts: так же, как картинка оповещения (CORS как у /events, версия в адресе)
+    if (u === '/donate-image') {
+      const im = opts.getDonateImage && opts.getDonateImage();
+      if (!im) { res.writeHead(404, cors); return res.end(); }
+      res.writeHead(200, { 'Content-Type': im.mime, 'Content-Length': im.data.length, 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'cross-origin', ...cors });
+      return res.end(im.data);
+    }
     if (u === '/da-image') {
       const im = opts.getDaImage && opts.getDaImage();
       if (!im) { res.writeHead(404, cors); return res.end(); }

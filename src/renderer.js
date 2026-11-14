@@ -1145,6 +1145,23 @@ refreshDesignUi();
 function refreshLayoutUi() { $$('.da-chip[data-klayout]').forEach((b) => { const on = b.dataset.klayout === K.layout; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); }); }
 $$('.da-chip[data-klayout]').forEach((b) => b.addEventListener('click', async () => { K.layout = b.dataset.klayout === 'side' ? 'side' : 'top'; refreshLayoutUi(); await pushDonate(); window.echo.donatePreview(); }));
 refreshLayoutUi();
+// своя картинка доната: вместо эмодзи по сумме; предпросмотр и OBS получают её сразу
+let dHasImage = false, dImageName = '';
+function refreshDonateImgUi() {
+  $('#dImgName').textContent = dHasImage ? 'Сейчас: ' + (dImageName || 'своя картинка') : 'Сейчас: картинка по сумме';
+  $('#dImgReset').disabled = !dHasImage;
+}
+window.echo.donateImageInfo().then((i) => { if (i && i.ok) { dHasImage = !!i.has; dImageName = K.imageName || ''; refreshDonateImgUi(); } }).catch(() => {});
+$('#dImgPick').addEventListener('click', async () => {
+  const r = await window.echo.donateImagePick().catch(() => null);
+  if (!r || r.canceled) return;
+  if (!r.ok) { $('#dImgName').textContent = r.error || 'Не удалось загрузить картинку'; return; }
+  dHasImage = true; dImageName = r.name || 'своя картинка'; K.imageName = dImageName; save(); refreshDonateImgUi(); window.echo.donatePreview();
+});
+$('#dImgReset').addEventListener('click', async () => {
+  await window.echo.donateImageClear().catch(() => {});
+  dHasImage = false; dImageName = ''; K.imageName = ''; save(); refreshDonateImgUi(); window.echo.donatePreview();
+});
 $$('input[data-kk]').forEach((el) => {
   el.checked = !!K[el.dataset.kk];
   el.addEventListener('change', () => {
@@ -1725,6 +1742,7 @@ window.__echo = { K, UPD_EVERY_MS, get netOnline() { return netOnline; }, get vo
 /* ---------- «Что нового» после обновления ---------- */
 const CHANGES = {
   '3.5.7': ['Вкладка «Аватар»: кнопки камеры («Включить камеру», «Калибровка», «Обновить камеры») теперь в одну линию и в 2D, и в 3D.'],
+  '3.5.16': ['Донаты Каспи: можно загрузить свою картинку вместо значка по сумме (png, jpg, gif, webp до 5 МБ).', 'Дизайн «Аркада» теперь появляется плавно, без рывков.'],
   '3.5.15': ['«Эфир»: в блоке «Подключение» появились кнопки «Пропустить фразу» и «Очистить очередь», у Twitch убрана надпись «(необязательно)».'],
   '3.5.14': ['Вкладки снова с чёткими краями сверху и снизу, без затухания.', 'Аватар: свечение кнопок 2D / 3D больше не обрезается слева.'],
   '3.5.13': ['DonationAlerts: первые четыре шаблона заменены на анимации: Облако, Медведь, Пингвин и Зомби.'],

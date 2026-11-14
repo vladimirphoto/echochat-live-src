@@ -956,7 +956,10 @@ const kaspi = require('./kaspi');
 let dset = { enabled: true, token: '', minAmount: 0, strict: true, duration: 8, scale: 100, align: 'center', vpos: 'bottom', showMessage: true, design: 'classic', layout: 'top' };
 const DONATE_DESIGNS = ['classic', 'neon', 'minimal', 'party', 'gold', 'arcade', 'glass', 'candy'];
 let krx = null, krxP = null;
-const donateWidgetSettings = () => ({ duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage, design: DONATE_DESIGNS.includes(dset.design) ? dset.design : 'classic', layout: dset.layout === 'side' ? 'side' : 'top' });
+// своя картинка доната (вместо эмодзи по сумме): копия лежит в папке данных, до 5 МБ
+const DIMG_BASE = 'donate-image';
+const donateImage = () => alertsMod.findFile(app.getPath('userData'), DIMG_BASE, alertsMod.IMAGE_EXT);
+const donateWidgetSettings = () => { const im = donateImage(); return { duration: dset.duration, scale: dset.scale, align: dset.align, vpos: dset.vpos, showMessage: dset.showMessage, design: DONATE_DESIGNS.includes(dset.design) ? dset.design : 'classic', layout: dset.layout === 'side' ? 'side' : 'top', imageV: im ? Math.max(1, im.mtime) : 0 }; };
 let lastDon = { key: '', t: 0 };
 function handleDonation(d, test = false) {
   if (locked('kaspi')) return { accepted: false, reason: 'раздел доступен в Pro' };
@@ -1071,6 +1074,15 @@ ipcMain.handle('donate:set', async (_e, s) => {
 const DSND_MAX = 5 * 1024 * 1024, DSND_EXT = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', webm: 'audio/webm' };
 const dsndFiles = () => { try { return require('fs').readdirSync(app.getPath('userData')).filter((f) => /^donate-sound\.[a-z0-9]+$/.test(f)); } catch (_) { return []; } };
 const dsndClear = () => dsndFiles().forEach((f) => { try { require('fs').unlinkSync(path.join(app.getPath('userData'), f)); } catch (_) {} });
+ipcMain.handle('donimg:pick', async () => {
+  const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title: 'Своя картинка доната', properties: ['openFile'], filters: [{ name: 'Картинка', extensions: Object.keys(alertsMod.IMAGE_EXT) }] }).catch(() => null);
+  if (!r || r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  const res = alertsMod.saveFile(app.getPath('userData'), DIMG_BASE, alertsMod.IMAGE_EXT, r.filePaths[0], 'image');
+  if (res.ok) wsrv && wsrv.broadcast('dsettings', donateWidgetSettings());
+  return res;
+});
+ipcMain.handle('donimg:clear', () => { alertsMod.clearFiles(app.getPath('userData'), DIMG_BASE); wsrv && wsrv.broadcast('dsettings', donateWidgetSettings()); return { ok: true }; });
+ipcMain.handle('donimg:info', () => { const im = donateImage(); return { ok: true, has: !!im, name: im ? im.name : '' }; });
 ipcMain.handle('donsound:pick', async () => {
   const fs = require('fs');
   const r = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title: 'Свой звук доната', properties: ['openFile'], filters: [{ name: 'Звук', extensions: Object.keys(DSND_EXT) }] }).catch(() => null);
@@ -1351,6 +1363,7 @@ app.whenReady().then(async () => {
       getTrackerPage: () => av.TRACKER_PAGE,
       getAvatarAsset: (u) => av.resolveAsset(avUD(), u),
       getDa: () => daWidgetSettings(),
+      getDonateImage: () => { const i = donateImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
       getDaImage: () => { const i = daImage(); if (!i || daSet.imageKind !== 'custom') return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
       getAlertImage: () => { const i = alertImage(); if (!i) return null; try { return { mime: i.mime, data: require('fs').readFileSync(i.file) }; } catch (_) { return null; } },
     }); } catch (_) { wsrv = null; }

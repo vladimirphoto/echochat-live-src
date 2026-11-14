@@ -64,3 +64,10 @@ test('страница DonationAlerts слушает свои события; у
 test('страница входа DonationAlerts для GitHub Pages совпадает с модулем', () => {
   assert.equal(fs.readFileSync(path.join(__dirname, '..', 'docs', 'da-auth', 'index.html'), 'utf8'), require('../da-auth-page'));
 });
+
+test('виджет донатов: своя картинка берётся у приложения, «Аркада» без рваной анимации', () => {
+  const DON = require('../widget-donate-page');
+  assert.match(DON, /donate-image\?v=/);
+  assert.ok(!DON.includes('steps('), 'анимация появления не должна идти ступеньками');
+  assert.equal(fs.readFileSync(path.join(__dirname, '..', 'docs', 'donate', 'index.html'), 'utf8'), DON);
+});
