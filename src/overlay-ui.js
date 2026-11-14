@@ -50,6 +50,7 @@
   function rowOf(e) {
     const row = el('div', 'row ' + (e.platform === 'twitch' ? 'twitch' : 'tiktok'));
     if (e.kind === 'chat') {
+      if (e.sub) row.classList.add('issub');
       row.appendChild(avatar(e));
       const b = el('div', 'body'), nm = el('div', 'nm');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
@@ -134,7 +135,7 @@
     nm.replaceChildren(); tx.textContent = '';
     if (PIN) {
       const e = PIN.entry;
-      nm.className = 'pin-nm' + (e.platform === 'twitch' ? ' twitch' : '');
+      nm.className = 'pin-nm' + (e.platform === 'twitch' ? ' twitch' : '') + (e.sub ? ' issub' : '');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
       nm.firstChild.style.cssText = 'width:13px;height:13px;flex:none';
       nm.appendChild(el('span', '', String(e.name || 'Гость')));
