@@ -761,7 +761,7 @@ function avWidgetSettings3d() {
   return { ready: st.ready, model: m ? m.id : '', credit: m ? m.credit : '', scale: v.scale, offsetX: v.offsetX, offsetY: v.offsetY, bg: v.bg, mirror: v.mirror };
 }
 const avPush = () => { if (!wsrv) return; wsrv.broadcast('avsettings', avWidgetSettings()); wsrv.broadcast('av3settings', avWidgetSettings3d()); };
-function avNotify() { send('avatar:state', { run: avRun }); }
+function avNotify() { send('avatar:state', { run: avRun, windows: avWinsState() }); }
 function avOpen() { return !!(avWin && !avWin.isDestroyed()); }
 function avCmd(c) { if (!avOpen()) return; if (avReady) avWin.webContents.send('av:cmd', c); else avPending.push(c); }
 function avEnsureWin() {
@@ -810,7 +810,58 @@ ipcMain.on('av:frame', (e, f) => { // только известные парам
   wsrv.broadcast('aframe', { p });
 });
 function avStop() { if (avOpen()) avCmd({ cmd: 'stop' }); }
-function closeAvatar() { if (avOpen()) { try { avWin.close(); } catch (_) {} } }
+function closeAvatar() { closeAvatarWindows(); if (avOpen()) { try { avWin.close(); } catch (_) {} } }
+// Окна аватара 2D и 3D для «Захвата окна» (TikTok LIVE Studio): та же страница виджета, но в обычном окне с зелёным фоном под хромакей.
+// Страница берёт данные у локального сервера виджетов, поэтому камера и настройки работают так же, как в предпросмотре.
+const AVW_FILE = () => path.join(app.getPath('userData'), 'avatar-win.json');
+let avWinB = {};
+try { avWinB = JSON.parse(require('fs').readFileSync(AVW_FILE(), 'utf8')) || {}; } catch (_) {}
+const avWins = { '2d': null, '3d': null };
+const avWinOpen = (k) => !!(avWins[k] && !avWins[k].isDestroyed());
+function avWinsState() { return { '2d': avWinOpen('2d'), '3d': avWinOpen('3d') }; }
+function avWinSaveBounds(k, w) {
+  if (!w || w.isDestroyed() || w.isMinimized() || w.isMaximized() || w.isFullScreen()) return;
+  avWinB[k] = w.getBounds();
+  try { require('fs').writeFileSync(AVW_FILE(), JSON.stringify(avWinB)); } catch (_) {}
+}
+function openAvatarWindow(k) {
+  k = av.winEngine(k);
+  if (avWinOpen(k)) { try { avWins[k].show(); } catch (_) {} return { ok: true }; }
+  if (locked('widgets')) return { ok: false, locked: true };
+  if (!wsrv || !wsrv.port) return { ok: false, error: 'Не запущен сервер виджетов.' };
+  const areas = screen.getAllDisplays().map((d) => d.workArea);
+  const b = av.winBounds(avWinB[k], areas) || av.winDefaultBounds(screen.getPrimaryDisplay().workArea);
+  const w = new BrowserWindow({
+    ...b, minWidth: av.WIN.minW, minHeight: av.WIN.minH,
+    show: false, autoHideMenuBar: true, backgroundColor: av.WIN.bg, // зелёный фон, а не прозрачность: «Захват окна» прозрачность не передаёт
+    title: av.winTitle(k), // это имя окна видно в TikTok LIVE Studio и OBS («Захват окна»)
+    icon: path.join(__dirname, 'src', 'icon.png'),
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, partition: 'avatar-window' }, // окно за другими окнами продолжает обновляться
+  });
+  avWins[k] = w;
+  w.setMenu(null);
+  w.on('page-title-updated', (e) => e.preventDefault());
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  // страница сама ставит фон по настройке «Зелёный фон» (прозрачный у неё по умолчанию): в окне фон всегда зелёный
+  w.webContents.on('did-finish-load', () => { try { w.webContents.insertCSS('html,body{background:' + av.WIN.bg + ' !important;overflow:hidden !important}'); } catch (_) {} });
+  let t = null;
+  const later = () => { clearTimeout(t); t = setTimeout(() => avWinSaveBounds(k, w), 500); };
+  w.on('resize', later); w.on('move', later);
+  w.once('ready-to-show', () => { if (!w.isDestroyed()) w.show(); });
+  w.on('closed', () => { clearTimeout(t); if (avWins[k] === w) avWins[k] = null; avNotify(); });
+  w.loadURL(`http://127.0.0.1:${wsrv.port}/${av.winPage(k)}?debug=1`).catch(() => {}); // ?debug=1: подсказки («модель не выбрана», «нет компонентов») видны и в окне
+  avNotify();
+  return { ok: true };
+}
+function closeAvatarWindow(k) { k = av.winEngine(k); if (avWinOpen(k)) { avWinSaveBounds(k, avWins[k]); try { avWins[k].close(); } catch (_) {} } }
+function closeAvatarWindows() { closeAvatarWindow('2d'); closeAvatarWindow('3d'); }
+ipcMain.handle('avatar:window', (_e, engine, want) => {
+  const k = av.winEngine(engine);
+  if (want === false) { closeAvatarWindow(k); return { ok: true, windows: avWinsState() }; }
+  const r = openAvatarWindow(k);
+  return { ...r, windows: avWinsState() };
+});
 async function avStart() {
   if (locked('widgets')) return { ok: false, locked: true };
   // камере нужны только MediaPipe и модель лица (они общие для 2D и 3D)
@@ -821,7 +872,7 @@ async function avStart() {
   avCmd({ cmd: 'start', opts: { camera: avSet.camera, mirror: avSet.mirror } });
   return { ok: true };
 }
-const avFull = () => ({ settings: avSet, status: av.status(avUD()), status3: av.status(avUD(), '3d'), models: av.listModels(avUD()), models3: av.listVrm(avUD()), run: avRun, installing: avInstalling, locked: locked('widgets') });
+const avFull = () => ({ settings: avSet, status: av.status(avUD()), status3: av.status(avUD(), '3d'), models: av.listModels(avUD()), models3: av.listVrm(avUD()), run: avRun, windows: avWinsState(), installing: avInstalling, locked: locked('widgets') });
 ipcMain.handle('avatar:state', () => avFull());
 ipcMain.handle('avatar:cameras', (_e, ask) => avCall('cameras', { ask: !!ask }));
 ipcMain.handle('avatar:start', () => avStart());
@@ -1279,7 +1330,7 @@ const licPub = () => { const b = readAsset('license-pub.txt'); return b ? (Strin
 function initLicense() {
   license = new licMod.LicenseManager({ dir: app.getPath('userData'), getServer: relayServer, pub: licPub(), onChange: (st, meta) => {
     send('lic:state', { ...st, justActivated: !!(meta && meta.activated) });
-    if (st && Array.isArray(st.locked) && st.locked.includes('widgets')) closeOverlay(); // тариф закончился — оверлей закрывается, как и виджеты
+    if (st && Array.isArray(st.locked) && st.locked.includes('widgets')) { closeOverlay(); closeAvatarWindows(); } // тариф закончился — оверлей и окна аватара закрываются, как и виджеты
     else ovNotify(); // тариф открылся — переключатель в приложении снова доступен
   } });
   if (!SELFTEST) license.start();

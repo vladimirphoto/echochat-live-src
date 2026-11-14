@@ -530,7 +530,31 @@ function isFile(f) { try { return fs.statSync(f).isFile(); } catch (_) { return 
 // Страница окна трекера (скрытое окно приложения). Команды и результаты идут через preload, а не через сеть.
 const TRACKER_PAGE = '<!doctype html><html><head><meta charset="utf-8"><title>Трекер аватара</title></head><body style="margin:0;background:#000"><video id="v" muted playsinline style="width:2px;height:2px"></video><script src="/avatar-lib/avatar-map.js"></script><script src="/avatar-lib/avatar-tracker.js"></script></body></html>';
 
+// ---------- окна аватара для «Захвата окна» ----------
+// TikTok LIVE Studio не всегда показывает WebGL-виджет по ссылке. Поэтому ту же страницу виджета можно открыть в обычном окне
+// приложения с зелёным фоном (хромакей) и захватить как окно. Здесь только расчёты, само окно открывает main.js.
+const WIN = { minW: 240, minH: 240, maxW: 4000, maxH: 4000, defW: 480, defH: 640, bg: '#00b140' };
+const winEngine = (e) => (e === '3d' ? '3d' : '2d');
+const winTitle = (e) => 'ЭхоЧат LIVE — аватар ' + (winEngine(e) === '3d' ? '3D' : '2D'); // имя окна видно в списке «Захват окна»
+const winPage = (e) => (winEngine(e) === '3d' ? 'avatar3d' : 'avatar');
+// Сохранённое положение окна: возвращается только если оно ещё заметно видно на каком-то из экранов, иначе null (окно откроется по умолчанию)
+function winBounds(b, areas) {
+  if (!b || typeof b !== 'object') return null;
+  const x = Number(b.x), y = Number(b.y), w = Number(b.width), h = Number(b.height);
+  if (![x, y, w, h].every(Number.isFinite)) return null;
+  const width = Math.min(WIN.maxW, Math.max(WIN.minW, Math.round(w)));
+  const height = Math.min(WIN.maxH, Math.max(WIN.minH, Math.round(h)));
+  const X = Math.round(x), Y = Math.round(y);
+  const vis = (areas || []).some((a) => Math.min(X + width, a.x + a.width) - Math.max(X, a.x) >= 120 && Math.min(Y + height, a.y + a.height) - Math.max(Y, a.y) >= 80);
+  return vis ? { x: X, y: Y, width, height } : null;
+}
+function winDefaultBounds(area) {
+  const width = Math.min(WIN.defW, area.width), height = Math.min(WIN.defH, Math.max(WIN.minH, area.height - 80));
+  return { width, height, x: area.x + Math.max(0, Math.round((area.width - width) / 2)), y: area.y + Math.max(0, Math.round((area.height - height) / 2)) };
+}
+
 module.exports = {
+  WIN, winEngine, winTitle, winPage, winBounds, winDefaultBounds,
   DEFAULTS, V3_DEFAULTS, cleanSettings, cleanV3, rewriteImports, importVrm, listVrm, removeVrm, activeVrm, readVrmHeader, VRM_SAMPLES, safeRel, readTarGz, readZip, checkIntegrity, COMPONENTS, SAMPLE_MODELS, runtimeDir, userModelsDir,
   status, install, importModel, listModels, removeModel, activeModel, validateModelFiles, pickEntry, resolveAsset, mimeOf, TRACKER_PAGE,
 };

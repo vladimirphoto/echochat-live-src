@@ -87,6 +87,14 @@
     for (const [id, k] of [['Scale', 'scale'], ['Ox', 'offsetX'], ['Oy', 'offsetY']]) {
       q(id).addEventListener('input', (e) => { const v = +e.target.value; q(id + 'Val').textContent = k === 'scale' ? v + '%' : v; api.avatarSet(def.patch({ [k]: v })); });
     }
+    q('WinBtn').onclick = async () => {
+      const open = !!(ST && ST.windows && ST.windows[def.engine]);
+      errLine(q('WinTxt'), '');
+      const r = await api.avatarWindow(def.engine, !open).catch((e) => ({ ok: false, error: String(e) }));
+      if (r && r.windows && ST) ST.windows = r.windows;
+      if (r && !r.ok) errLine(q('WinTxt'), r.locked ? 'Окно аватара доступно в Pro.' : (r.error || 'Не удалось открыть окно.'));
+      renderWins();
+    };
     q('Url').onfocus = (e) => e.target.select();
     q('Copy').onclick = async () => {
       const u = q('Url').value, b = q('Copy');
@@ -111,12 +119,19 @@
   }
   for (const k of Object.keys(E)) panes[k] = makePane(E[k]);
   const runAll = () => { for (const k of Object.keys(panes)) runText(E[k].P); };
+  // кнопки окон аватара: «Открыть» или «Закрыть» по тому, открыто ли окно сейчас
+  function renderWins() {
+    for (const k of Object.keys(E)) {
+      const open = !!(ST && ST.windows && ST.windows[E[k].engine]);
+      $('#' + E[k].P + 'WinBtn').textContent = (open ? 'Закрыть' : 'Открыть') + ' окно аватара ' + E[k].engine.toUpperCase();
+    }
+  }
 
   function show(s) {
     if (!s) return;
     ST = Object.assign(ST || {}, s);
     if (!ST.settings || !ST.status || !ST.status3) return;
-    panes['2d'].render(); panes['3d'].render();
+    panes['2d'].render(); panes['3d'].render(); renderWins();
   }
   api.onAvatarProgress((p) => {
     if (!p || !installing) return;
@@ -124,7 +139,7 @@
     $('#' + P + 'BarFill').style.width = Math.round(((p.index - 1) + f) / Math.max(1, p.count) * 100) + '%';
     $('#' + P + 'Prog').textContent = (p.phase === 'unpack' ? 'Распаковываю' : 'Скачиваю') + ' ' + p.index + ' из ' + p.count + ': ' + String(p.title).split(' (')[0].split(' и ')[0] + (p.total ? ' · ' + mb(p.done) + ' из ' + mb(p.total) + ' МБ' : '');
   });
-  api.onAvatarState((d) => { if (d && d.run && ST) { const was = ST.run && ST.run.state; ST.run = d.run; runAll(); if (was !== 'on' && d.run.state === 'on') refreshCams(true); } });
+  api.onAvatarState((d) => { if (d && d.windows && ST) { ST.windows = d.windows; renderWins(); } if (d && d.run && ST) { const was = ST.run && ST.run.state; ST.run = d.run; runAll(); if (was !== 'on' && d.run.state === 'on') refreshCams(true); } });
   async function refreshCams(ask) { cams = await api.avatarCameras(!!ask).catch(() => []); panes['2d'].camSel(); panes['3d'].camSel(); }
 
   // предпросмотр сообщает новый размер и сдвиг (колесо мыши и перетаскивание): сохраняем, ползунки обновятся сами
