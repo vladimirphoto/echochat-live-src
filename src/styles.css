@@ -960,3 +960,5 @@ main{position:relative}
 #tab-live .wish{margin:14px 0 0;padding:12px 0 0;border-top:1px dashed rgba(255,255,255,.14);justify-content:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.4px;background:none;color:transparent}
 #tab-live .wish span{background:linear-gradient(90deg,#ff8fc4,#c58bff 60%,#8fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 #tab-live .wish-heart{width:17px;height:17px;color:#ff4d8d}
+#tab-live .conn-quick{margin-top:14px;gap:8px}
+#tab-live .conn-quick .btn{padding:10px 8px;font-size:13px;white-space:nowrap}
