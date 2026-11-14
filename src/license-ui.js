@@ -77,7 +77,7 @@
     if (s.plan === 'pro') return { title: 'Pro активен', sub: s.until ? `Действует до ${fmtDate(s.until)} · осталось ${days(left)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (30 * DAY))) : 1 };
     if (s.plan === 'lifetime') return { title: 'Pro навсегда', sub: 'Бессрочная лицензия, продлевать не нужно', frac: 1 };
     if (s.plan === 'trial') return { title: 'Все функции открыты', sub: left != null ? `Пробный период: осталось ${days(left)}, до ${fmtDate(s.until)}` : '', frac: s.until ? Math.min(1, Math.max(0.02, (s.until - Date.now()) / (3 * DAY))) : 1 };
-    const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают, «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» откроются с Pro', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи»', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
+    const why = { 'trial-ended': 'Пробный период закончился. Эфир, озвучка и фильтры работают. Остальное откроется в Pro.', 'sub-expired': 'Подписка Pro закончилась. Продлите её, чтобы вернуть виджеты, оверлей, аватар и донаты Каспи.', 'offline-expired': 'Лицензию не удалось проверить давно. Подключитесь к интернету, и Pro вернётся сам', revoked: 'Ключ отозван. Напишите автору или введите другой ключ' }[s.reason];
     if (s.reason === 'trial-ended') return { title: 'Пробный период закончился', sub: 'Действует тариф Lite', frac: 0 };
     return { title: 'Бесплатный тариф', sub: why || 'Эфир, озвучка и фильтры. «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» открываются с Pro', frac: 0 };
   }
@@ -136,7 +136,7 @@
     $('.lb-price').hidden = life;
     $('#licPrice').textContent = life ? '' : money(p.price);
     $('#licPriceSub').textContent = life ? '' : `за ${days(p.days)}`;
-    $('#licPayNote').textContent = life ? 'Получите полную версию Pro навсегда бесплатно за продвижение программы на своих площадках (TikTok, Twitch и других).\nУсловия получения согласовываются индивидуально.' : (p.payNote || 'Оплатите по QR-коду');
+    $('#licPayNote').textContent = life ? 'Pro бесплатно навсегда за продвижение программы на ваших площадках (TikTok, Twitch и др.).\nУсловия получения согласовываются индивидуально.' : (p.payNote || 'Оплатите по QR-коду');
     const card = !life && p.cardNumber ? p.cardNumber : '';
     $('#licCardBox').hidden = !card;
     $('#licReceipt').hidden = life;
@@ -209,8 +209,8 @@
     const sub = s.reason === 'sub-expired';
     $('#licEndTitle').textContent = sub ? 'Подписка Pro закончилась' : 'Пробный период закончился';
     $('#licEndText').textContent = sub
-      ? 'Вы перешли на тариф Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» вернутся после продления'
-      : 'Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» откроются с Pro';
+      ? 'Тариф Lite. Эфир, озвучка и фильтры работают. Остальное вернётся после продления.'
+      : 'Тариф Lite. Эфир, озвучка и фильтры работают. Остальное откроется в Pro.';
     $('#licEndBack').hidden = false;
   }
   const closeEnd = () => { $('#licEndBack').hidden = true; if (st) store.set('licEndSeen', st.reason); };
@@ -269,7 +269,7 @@
     b._t = setTimeout(() => { b.textContent = REFRESH_LABEL; b.classList.remove('res-ok', 'res-bad'); }, 4000);
   });
   $('#licRelease').addEventListener('click', async () => {
-    const ok = await askConfirm({ title: 'Освободить это устройство?', text: 'Лицензия отвяжется от этого компьютера, и здесь вернётся тариф Lite. Ключ можно будет ввести на другом компьютере', ok: 'Освободить', cancel: 'Отмена', danger: true });
+    const ok = await askConfirm({ title: 'Освободить это устройство?', text: 'Лицензия отвяжется от этого компьютера, здесь станет Lite. Ключ можно ввести на другом компьютере.', ok: 'Освободить', cancel: 'Отмена', danger: true });
     if (!ok) return;
     const r = await echo.licDeactivate();
     if (!r || !r.ok) { statMsg((r && r.message) || 'Не удалось освободить устройство', 'bad'); return; }

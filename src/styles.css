@@ -752,6 +752,10 @@ main{position:relative}
 /* кнопки камеры («Включить камеру», «Калибровка», «Обновить камеры») всегда в одну линию */
 #tab-avatar .wbtn-row.wbtn-line{flex-wrap:nowrap}
 #tab-avatar .wbtn-row.wbtn-line .btn{flex:1 1 auto;min-width:0;padding-left:10px;padding-right:10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* кнопки вкладки «Аватар» растянуты от края до края ряда, одинаковой ширины */
+#tab-avatar .wbtn-row{width:100%;box-sizing:border-box;gap:8px}
+#tab-avatar .wbtn-row .btn{flex:1 1 0;min-width:0;justify-content:center;text-align:center}
+#tab-avatar .wbtn-row .btn:only-child{flex:1 1 100%}
 #tab-avatar .wbtn{width:auto!important;flex:0 0 auto;white-space:nowrap;line-height:1.2;min-height:40px;text-align:center;padding:10px 16px!important;overflow:visible}
 #tab-avatar .muted{margin:14px 0 0;line-height:1.45}
 #tab-avatar #avSetupTxt,#tab-avatar #av3SetupTxt{margin-top:12px;line-height:1.45}

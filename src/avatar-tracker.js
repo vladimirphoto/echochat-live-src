@@ -11,7 +11,7 @@
   const state = (s, extra) => host.state(Object.assign({ state: s }, extra || {}));
   const errText = (e) => {
     const n = e && e.name;
-    if (n === 'NotAllowedError' || n === 'SecurityError') return 'Нет доступа к камере. Windows: Параметры → Конфиденциальность → Камера → разрешите классическим приложениям.';
+    if (n === 'NotAllowedError' || n === 'SecurityError') return 'Нет доступа к камере. Разрешите её в Параметры → Конфиденциальность → Камера.';
     if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'Камера не найдена. Подключите её или выберите другую.';
     if (n === 'NotReadableError') return 'Камеру занимает другая программа. Закройте её и попробуйте снова.';
     return String((e && e.message) || e);

@@ -118,7 +118,7 @@
                 <div class="toggles"><label class="sw"><input type="checkbox" data-k="twChat" checked /><i></i><span>Сообщения чата</span></label></div></div>
               <div class="vgroup"><div class="vg-head">Для всех платформ</div>
                 <div class="toggles"><label class="sw"><input type="checkbox" data-k="readName" checked /><i></i><span>Читать ник перед сообщением</span></label></div></div>
-              <div class="note">Если зрители не слышат голос — проверь захват системного звука в OBS или TikTok LIVE Studio. Нейро-голоса требуют интернет.</div>
+              <div class="note">Если зрители не слышат голос, проверьте захват системного звука в OBS или TikTok LIVE Studio. Нейро-голоса работают только с интернетом.</div>
             </div>
             <div class="card studio" id="studio">
               <h2>Студия озвучки</h2>
@@ -137,7 +137,7 @@
           <div class="col-right">
           <div class="card">
             <h2>Мои голоса</h2>
-            <p class="muted">Выбери голос — он подсветится. Нажми TikTok и/или Twitch в его карточке, чтобы им озвучивался чат этой платформы. Скорость и тон настраиваются ниже</p>
+            <p class="muted">Выберите голос и нажмите TikTok и/или Twitch — им будет читаться чат этой платформы. Скорость и тон — ниже.</p>
             <div class="voices" id="voices"></div>
             <div class="row"><label>Громкость</label><b id="volVal">80%</b></div>
             <input type="range" id="vol" min="0" max="100" value="80" />
@@ -176,7 +176,7 @@
         <div class="cols wtop">
           <div class="card">
             <h2>Виджеты чата</h2>
-            <p class="muted">Для каждого места (OBS, TikTok LIVE Studio) — своя ссылка со своим выравниванием. Чат TikTok и Twitch на прозрачном фоне.</p>
+            <p class="muted">У каждого места (OBS, TikTok LIVE Studio) своя ссылка. Фон чата прозрачный.</p>
             <div class="wtabs" id="wTabs"></div>
             <div class="align-row">
               <div><label>Выравнивание TikTok</label><div class="csel" id="wAlignTtSel"><div class="csel-val"></div><svg class="csel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg><div class="csel-drop"></div></div></div>
@@ -216,7 +216,7 @@
         <div class="cols likes-row">
           <div class="card likes-card">
             <h2>Топ лайков</h2>
-            <p class="muted">Отдельный виджет: самые активные зрители TikTok по лайкам за эфир — закруглённые квадратики с аватарками и никами. Таблица обнуляется при новом подключении к эфиру. Кнопка «Тест» показывает, как вышедший на 1 или 2 место бьёт по аватарке соседа. Ссылка подходит и для OBS, и для Twitch Studio (источник «Браузер»)</p>
+            <p class="muted">Самые активные зрители TikTok по лайкам за эфир: квадратики с аватарками и никами. Таблица сбрасывается при новом подключении. Кнопка «Тест» показывает, как работает удар рукой. Ссылка подходит для OBS и Twitch Studio (источник «Браузер»).</p>
             <div class="ctl"><div class="row"><label>Сколько показывать</label><b id="lCountVal">5</b></div><input type="range" id="lCount" min="5" max="10" value="5" /></div>
             <div class="toggles" style="margin-top:10px">
               <label class="sw"><input type="checkbox" data-lk="showCount" checked /><i></i><span>Число лайков под аватаркой</span></label>
@@ -239,7 +239,7 @@
         <div class="cols likes-row">
           <div class="card likes-card">
             <h2>Топ подарков</h2>
-            <p class="muted">Отдельный вертикальный виджет (строки сверху вниз: аватарка, ник, монеты), по настройкам как «Топ лайков», но по подаркам: сколько монет в подарках отправил каждый зритель TikTok за эфир. Когда кто-то выходит на 1 место, его аватарка слегка подпрыгивает и светится. Таблица обнуляется при новом подключении к эфиру. Ссылка подходит и для OBS, и для Twitch Studio (источник «Браузер»)</p>
+            <p class="muted">Зрители, которые больше всех отправили монет в подарках за эфир. Список сверху вниз: аватарка, ник, монеты. Таблица сбрасывается при новом подключении. Ссылка подходит для OBS и Twitch Studio (источник «Браузер»).</p>
             <div class="ctl"><div class="row"><label>Сколько показывать</label><b id="gCountVal">5</b></div><input type="range" id="gCount" min="5" max="10" value="5" /></div>
             <div class="toggles" style="margin-top:10px">
               <label class="sw"><input type="checkbox" data-gf="showCount" checked /><i></i><span>Число монет под аватаркой</span></label>
@@ -262,7 +262,7 @@
         <div class="cols alert-row">
           <div class="card alert-card">
             <h2>Оповещения</h2>
-            <p class="muted">Когда кто-то подписывается на канал, на экране стрима появляется красивая плашка с ником и звуком. Ссылка подходит и для OBS, и для TikTok LIVE Studio</p>
+            <p class="muted">Когда кто-то подписывается, на экране появляется плашка с ником и звуком. Ссылка подходит для OBS и TikTok LIVE Studio.</p>
             <div class="toggles" style="margin-top:8px">
               <label class="sw"><input type="checkbox" data-ak="enabled" checked /><i></i><span>Показывать оповещения о подписках</span></label>
               <label class="sw"><input type="checkbox" data-ak="showAvatar" checked /><i></i><span>Аватарка подписчика</span></label>
@@ -319,7 +319,7 @@
               <div class="kstep"><span class="kn">1</span><div class="kb"><b>Скопируйте токен</b>
                 <input id="kTok" class="ktok" readonly spellcheck="false" />
                 <div class="wbtn-row"><button class="btn wbtn primary" id="kTokCopy">Скопировать токен</button><button class="btn wbtn ghost" id="kToken">Перевыпустить</button></div>
-                <small>Токен нужен при добавлении команды. Никому его не показывайте. После перевыпуска введите новый токен в команде.</small></div></div>
+                <small>Токен нужен для добавления команды. Не передавайте его никому. После перевыпуска введите новый токен в команде.</small></div></div>
               <div class="kstep"><span class="kn">2</span><div class="kb"><b>Добавьте команду</b>
                 <div class="kinst"><div id="kQr" class="kqr"></div>
                   <div class="kside"><small>Наведите камеру iPhone на QR и нажмите «Добавить команду». Когда iOS спросит токен, вставьте скопированный.</small></div></div>
@@ -362,7 +362,7 @@
             </div>
             <div class="card">
               <h2>Виджет донатов</h2>
-              <p class="muted">Вставь ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает имя, сумму и картинку в тему суммы</p>
+              <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка»). Показывает имя, сумму и картинку в тему суммы</p>
               <label>Ссылка на виджет</label>
               <div class="nick-field"><input id="dUrl" readonly spellcheck="false" /></div>
               <div class="wbtn-row"><button class="btn wbtn primary" id="dCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Копировать</button><button class="btn wbtn ghost" id="btnDonateTest" title="Временная кнопка: потом уберём">Тест доната</button></div>
@@ -429,7 +429,7 @@
 <div class="da-col">
           <div class="card">
             <h2>Виджет донатов DonationAlerts</h2>
-            <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка») так же, как виджет чата. Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
+            <p class="muted">Вставьте ссылку в OBS («Браузер») или TikTok LIVE Studio («Ссылка»). Показывает картинку, имя, сумму в валюте перевода и сообщение</p>
             <div class="da-push">
               <label>Ссылка на виджет</label>
               <div class="nick-field"><input id="daUrl" readonly spellcheck="false" /></div>
@@ -472,7 +472,7 @@
         <div class="cols">
           <div class="card">
             <h2>2D аватар (Live2D)</h2>
-            <p class="muted">Персонаж Live2D повторяет ваше лицо с веб-камеры: голова, глаза, брови и рот. Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется. Идея и формулы отслеживания — из проекта VTubeLeaf (MIT).</p>
+            <p class="muted">Live2D-персонаж повторяет движения лица с веб-камеры. Видео не покидает компьютер. Идея и формулы — из проекта VTubeLeaf (MIT). Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется. Идея и формулы отслеживания — из проекта VTubeLeaf (MIT).</p>
             <div id="avSetup">
               <div class="wstat" id="avSetupTxt"></div>
               <div class="wbtn-row"><button class="btn wbtn primary" id="avInstall" type="button">Скачать компоненты</button></div>
@@ -499,7 +499,7 @@
               </div>
               <div class="wstat" id="avModelTxt"></div>
               <p class="muted" id="avCredit" hidden></p>
-              <p class="muted">Бесплатные модели: нажмите «Скачать бесплатные модели», выберите модель на BOOTH (японский каталог, больше 400 Live2D-моделей, большинство за 0 ¥; платные отличаются ценой) и скачайте её, затем добавьте скачанный .zip кнопкой «Архив .zip» (или папку кнопкой «Папка модели»). Подходят модели Live2D Cubism 3 и 4. Читайте условия использования модели: у каждой они свои.</p>
+              <p class="muted">Модели: скачайте на BOOTH (больше 400 Live2D-моделей, многие бесплатные) и добавьте архив кнопкой «Архив .zip» или папку кнопкой «Папка модели». Подходят Live2D Cubism 3 и 4. У каждой модели свои условия, читайте их перед использованием.</p>
             </div>
           </div>
           <div class="card preview-card">
@@ -523,14 +523,14 @@
           <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
           <div class="nick-field"><input id="avUrl" readonly spellcheck="false" /></div>
           <div class="wbtn-row"><button class="btn wbtn primary" id="avCopy" type="button">Копировать</button></div>
-          <p class="muted" style="margin-top:8px">Камеру держит приложение, поэтому ЭхоЧат LIVE должен быть запущен и камера включена кнопкой выше. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
+          <p class="muted" style="margin-top:8px">Камеру держит ЭхоЧат LIVE, поэтому программа должна быть запущена с включённой камерой. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
         </div>
         </div>
         <div class="avpane" id="av3Pane" hidden>
         <div class="cols">
           <div class="card">
             <h2>3D аватар (VRM)</h2>
-            <p class="muted">3D-персонаж в формате VRM повторяет ваше лицо с веб-камеры: голова, глаза, моргание, рот и улыбка. Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется.</p>
+            <p class="muted">VRM-персонаж повторяет движения лица с веб-камеры. Видео не покидает компьютер. Картинка с камеры обрабатывается на этом компьютере и никуда не отправляется.</p>
             <div id="av3Setup">
               <div class="wstat" id="av3SetupTxt"></div>
               <div class="wbtn-row"><button class="btn wbtn primary" id="av3Install" type="button">Скачать компоненты</button></div>
@@ -580,7 +580,7 @@
           <label>Ссылка на виджет (OBS и TikTok LIVE Studio)</label>
           <div class="nick-field"><input id="av3Url" readonly spellcheck="false" /></div>
           <div class="wbtn-row"><button class="btn wbtn primary" id="av3Copy" type="button">Копировать</button></div>
-          <p class="muted" style="margin-top:8px">Камеру держит приложение, поэтому ЭхоЧат LIVE должен быть запущен и камера включена кнопкой выше. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
+          <p class="muted" style="margin-top:8px">Камеру держит ЭхоЧат LIVE, поэтому программа должна быть запущена с включённой камерой. Источник «Браузер» в OBS показывает аватар на прозрачном фоне. У 2D и 3D свои настройки и свои ссылки.</p>
         </div>
         </div>
       </section>
@@ -591,7 +591,7 @@
             <div class="ov-head">
               <div>
                 <h2>Оверлей чата</h2>
-                <p class="muted">Отдельное окно поверх всех окон, как чат в TikTok LIVE Studio: шапка LIVE с таймером, счётчики эфира и лента сообщений TikTok и Twitch вместе. Включайте на время стрима, выключайте после. Положение и размер запоминаются. Размер меняется за боковые и нижний края окна, двигать окно можно за шапку.</p>
+                <p class="muted">Окно поверх других окон: шапка с таймером, счётчики и лента чата TikTok и Twitch. Включайте на время стрима. Положение и размер сохраняются. Двигается за шапку.</p>
               </div>
               <label class="sw ov-main"><input type="checkbox" id="ovToggle" /><i></i><span id="ovToggleTxt">Выключен</span></label>
             </div>
@@ -621,7 +621,7 @@
                 <button class="btn wbtn ghost" id="ovHotkey" type="button" title="Нажмите и затем нужное сочетание клавиш">Ctrl+Alt+I</button>
                 <button class="btn wbtn ghost" id="ovHotkeyReset" type="button">По умолчанию</button>
               </div>
-              <p class="muted" style="margin:6px 0 0" id="ovHotkeyHint">Нажмите на кнопку и затем сочетание, например Ctrl+Alt+I. Backspace — выключить, Esc — отмена. Работает из любой программы, пока открыт ЭхоЧат LIVE (можно свернуть в трей).</p>
+              <p class="muted" style="margin:6px 0 0" id="ovHotkeyHint">Нажмите кнопку и затем нужное сочетание, например Ctrl+Alt+I. Backspace — выключить, Esc — отмена. Работает из любой программы, пока открыт ЭхоЧат LIVE.</p>
               <div class="wstat bad" id="ovHotkeyErr" hidden>Это сочетание занято другой программой. Выберите другое.</div>
             </div>
           </div>
@@ -654,7 +654,7 @@
               <div class="nick-field" id="licKeyField"><input id="licKeyInput" maxlength="29" placeholder="Введите ключ" spellcheck="false" autocomplete="off" /></div>
               <div class="lic-msg" id="licMsg" aria-live="polite"></div>
               <button class="btn primary" id="licActivate" type="button">Активировать</button>
-              <div class="note">Один ключ можно перенести на другой компьютер: нажмите «Освободить устройство» здесь, затем введите ключ на новом. Если старый компьютер недоступен, напишите автору, он сбросит устройства</div>
+              <div class="note">Чтобы перенести ключ на другой компьютер, нажмите «Освободить устройство» здесь и введите ключ на новом. Если старый компьютер недоступен, напишите автору — он сбросит устройства.</div>
             </div>
           </div>
         </div>
@@ -684,14 +684,14 @@
           <div class="au-glow" aria-hidden="true"></div>
           <div class="au-ava"><div class="au-ring"></div><img src="author.png" alt="Владимир, автор ЭхоЧат LIVE" width="132" height="132" draggable="false" /></div>
           <div class="au-body">
-            <h2>Привет! Меня зовут Владимир <span class="au-wave">👋</span></h2>
+            <h2>Привет, я Владимир <span class="au-wave">👋</span></h2>
             <div class="au-chips"><span>31 год</span><span>Казахстан</span><span>Стример</span><span>Фотограф</span></div>
-            <p>Мне 31 год, я из Казахстана. Я стример, фотограф и человек, который любит создавать что-то новое.</p>
-            <p>ЭхоЧат LIVE — это проект, который я создал с душой и большой любовью к стримингу. Я сам стримлю и прекрасно понимаю, как хочется сделать свои эфиры интереснее, уютнее и ближе к зрителям.</p>
-            <p>Мне хотелось создать инструмент, который поможет другим стримерам, сделает общение со зрителями живее и подарит больше возможностей для развития своего канала.</p>
-            <p>Я делаю этот проект не просто как программу, а как что-то действительно полезное для нашего небольшого, но классного стримерского сообщества.</p>
-            <p>Спасибо, что выбрали ЭхоЧат LIVE и стали частью этой истории! ❤️</p>
-            <div class="au-sign">С теплом, Владимир — автор ЭхоЧат LIVE.</div>
+            <p>Мне 31, живу в Казахстане. Стримлю и фотографирую.</p>
+            <p>ЭхоЧат LIVE я сделал для себя и для стримеров, которые хотят, чтобы чат и зрители были заметнее на экране.</p>
+            
+            
+            <p>Спасибо, что пользуетесь ЭхоЧат LIVE ❤️</p>
+            <div class="au-sign">Владимир</div>
             <div class="au-btns">
               <a class="btn primary au-tg" id="auTg" href="https://t.me/artavenuekz" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.5 3.4 2.9 10.6c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.2-1.6zM9 13.2l9.3-5.9c.4-.3.8-.1.5.2l-7.6 6.9-.3 3.2z"/></svg>Telegram · @artavenuekz</a>
               <button class="btn ghost" id="auWrite" type="button">Написать на почту</button>
@@ -718,7 +718,7 @@
             <div class="card">
               <h2>Обновления</h2>
               <div class="toggles">
-                <label class="sw"><input type="checkbox" id="setAutoUpd" checked /><i></i><span>Обновляться автоматически<small>При запуске программа сама скачивает и ставит новую версию. Если выключить, проверка идёт как обычно, а обновлять вы будете кнопкой слева внизу или из меню значка в трее</small></span></label>
+                <label class="sw"><input type="checkbox" id="setAutoUpd" checked /><i></i><span>Обновляться автоматически<small>Программа сама скачивает и ставит обновления при запуске. Если выключить, обновляться можно кнопкой слева внизу или из меню значка в трее.</small></span></label>
               </div>
             </div>
             <div class="card thanks" id="thanksCard">
@@ -737,13 +737,13 @@
   <div class="scrollhint" id="scrollHint"><button type="button" class="sh-btn" aria-label="Прокрутить вниз" title="Прокрутить вниз"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
   <div class="wn-back" id="wnBack" hidden><div class="wn-box"><div class="wn-badge" id="wnVer"></div><h2>Что нового</h2><ul id="wnList"></ul><button class="btn primary" id="wnClose">Закрыть</button></div></div>
   <div class="wn-back cf-back" id="cfBack" hidden><div class="wn-box cf-box" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText"><h2 id="cfTitle"></h2><p id="cfText"></p><div class="cf-row"><button class="btn ghost" id="cfNo" type="button">Отмена</button><button class="btn primary" id="cfYes" type="button">Да</button></div></div></div>
-  <div class="wn-back" id="closeBack" hidden><div class="wn-box"><h2>Закрыть ЭхоЧат LIVE?</h2><p class="muted">Если свернуть в трей, озвучка и подключение к чату продолжат работать. Вернуть окно можно кликом по значку у часов</p><label class="sw cl-rem"><input type="checkbox" id="closeRemember" /><i></i><span>Больше не спрашивать<small>Выбор можно поменять во вкладке «Настройки»</small></span></label><div class="cl-btns"><button class="btn primary" id="closeTray">Свернуть в трей</button><button class="btn ghost" id="closeQuit">Закрыть программу</button><button class="btn ghost" id="closeCancel">Отмена</button></div></div></div>
+  <div class="wn-back" id="closeBack" hidden><div class="wn-box"><h2>Закрыть ЭхоЧат LIVE?</h2><p class="muted">В трее озвучка и чат продолжают работать. Открыть окно можно кликом по значку у часов.</p><label class="sw cl-rem"><input type="checkbox" id="closeRemember" /><i></i><span>Больше не спрашивать<small>Выбор можно поменять во вкладке «Настройки»</small></span></label><div class="cl-btns"><button class="btn primary" id="closeTray">Свернуть в трей</button><button class="btn ghost" id="closeQuit">Закрыть программу</button><button class="btn ghost" id="closeCancel">Отмена</button></div></div></div>
   </div>
   <div class="wn-back" id="bugBack" hidden>
     <div class="wn-box bug-box" role="dialog" aria-modal="true" aria-labelledby="bugTitle">
       <div class="lb-head"><span class="wn-badge" id="bugBadge">Баг-репорт</span><button class="lb-x" id="bugX" type="button" aria-label="Закрыть">×</button></div>
       <h2 id="bugTitle">Нашли ошибку?</h2>
-      <p class="bug-hint" id="bugHint">Опишите, что пошло не так: что нажимали и что ожидали увидеть. Версия программы и система добавятся к письму сами</p>
+      <p class="bug-hint" id="bugHint">Опишите, что случилось: что нажимали и чего ждали. Версия программы и система добавятся сами.</p>
       <textarea id="bugText" maxlength="3000" rows="6" placeholder="Опишите проблему…" spellcheck="true"></textarea>
       <div class="nick-field bug-contact"><input id="bugContact" maxlength="120" placeholder="Как с вами связаться (необязательно)" spellcheck="false" autocomplete="off" /></div>
       <div class="lic-msg" id="bugMsg" aria-live="polite"></div>
@@ -777,7 +777,7 @@
     <div class="wn-box lic-end" role="dialog" aria-modal="true" aria-labelledby="licEndTitle">
       <div class="le-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2c0 5 3 6 5 10-2 4-5 5-5 10M17 2c0 5-3 6-5 10 2 4 5 5 5 10"/></svg></div>
       <h2 id="licEndTitle">Пробный период закончился</h2>
-      <p id="licEndText">Вы остались на тарифе Lite. Эфир, озвучка и фильтры работают как раньше, а «Виджеты», «Оверлей чата», «Аватар», «Донаты Каспи» откроются с Pro</p>
+      <p id="licEndText">Тариф Lite. Эфир, озвучка и фильтры работают, а «Виджеты», «Оверлей чата», «Аватар» и «Донаты Каспи» доступны в Pro.</p>
       <ul><li>Виджеты чата, топ лайков и оповещения о подписках для OBS и TikTok LIVE Studio</li><li>Оверлей чата и аватар 2D/3D, который повторяет ваше лицо</li><li>Донаты Каспи на экране стрима</li><li>Перенос лицензии на другой компьютер</li></ul>
       <div class="cf-row"><button class="btn ghost" id="licEndLite" type="button">Остаться на Lite</button><button class="btn primary" id="licEndPro" type="button">Открыть Pro</button></div>
     </div>
