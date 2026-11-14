@@ -417,3 +417,38 @@ test('закреп: ставится только из оверлея и рас�
   assert.doesNotMatch(pre, /pinSet|pinClear|onPinState/); assert.doesNotMatch(ui, /pcAdd|pcRecent/);
   assert.ok(!html.includes('Закреп сообщения'), 'в index.html нет блока закрепа');
 });
+
+test('оверлей: подписавшийся запоминается между эфирами — его ник получает fol, а плашка Sub не меняется', () => {
+  const saved = [];
+  const m1 = new ov.OverlayModel({ onKnown: (k) => saved.push(k) });
+  // подписался в эфире (TikTok в его сообщениях «подписан» пока не пишет)
+  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
+  assert.deepEqual(saved, ['rashid']);
+  m1.track('tt:follow', { name: 'Рашид', id: 'rashid' });
+  assert.equal(saved.length, 1, 'повторно в список не добавляется');
+  // новый запуск приложения: список читается с диска
+  const m2 = new ov.OverlayModel({ known: saved });
+  const e = m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'привет', isFollower: false }).entry;
+  assert.equal(e.fol, true, 'ник подписавшегося другого цвета');
+  assert.ok(!('sub' in e), 'плашка Sub по-прежнему только по данным TikTok');
+  const other = m2.track('tt:chat', { name: 'Декстер', id: 'dexter', text: 'привет', isFollower: false }).entry;
+  assert.ok(!('fol' in other) && !('sub' in other), 'неподписанный — всё как раньше');
+  // сброс счётчиков после эфира не стирает память о подписавшихся
+  m2.track('tt:status', { state: 'offline' });
+  assert.equal(m2.track('tt:chat', { name: 'Рашид', id: 'rashid', text: 'ещё', isFollower: false }).entry.fol, true);
+});
+
+test('оверлей: если TikTok сам прислал isFollower === true — fol есть сразу и человек запоминается; у Twitch fol нет', () => {
+  const saved = [];
+  const m = new ov.OverlayModel({ onKnown: (k) => saved.push(k) });
+  const e = m.track('tt:chat', { name: 'Анна', id: 'anna', text: 'hi', isFollower: true }).entry;
+  assert.equal(e.sub, true); assert.equal(e.fol, true);
+  assert.deepEqual(saved, ['anna']);
+  assert.ok(!('fol' in m.track('tw:chat', { name: 'Max', id: 'anna', text: 'hi', isFollower: true }).entry));
+});
+
+test('оверлей: закреп сохраняет fol только когда он true', () => {
+  const m = new ov.OverlayModel();
+  assert.equal(m.setPin({ kind: 'chat', name: 'Анна', text: 'hi', fol: true }, 'end').entry.fol, true);
+  assert.ok(!('fol' in m.setPin({ kind: 'chat', name: 'Анна', text: 'hi', fol: 'yes' }, 'end').entry));
+});

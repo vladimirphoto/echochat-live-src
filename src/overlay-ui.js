@@ -50,7 +50,7 @@
   function rowOf(e) {
     const row = el('div', 'row ' + (e.platform === 'twitch' ? 'twitch' : 'tiktok'));
     if (e.kind === 'chat') {
-      if (e.sub) row.classList.add('issub');
+      if (e.fol) row.classList.add('fol'); // подписавшийся: ник розово-фиолетовый
       row.appendChild(avatar(e));
       const b = el('div', 'body'), nm = el('div', 'nm');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
@@ -135,7 +135,7 @@
     nm.replaceChildren(); tx.textContent = '';
     if (PIN) {
       const e = PIN.entry;
-      nm.className = 'pin-nm' + (e.platform === 'twitch' ? ' twitch' : '') + (e.sub ? ' issub' : '');
+      nm.className = 'pin-nm' + (e.platform === 'twitch' ? ' twitch' : '') + (e.fol ? ' fol' : '');
       nm.insertAdjacentHTML('beforeend', e.platform === 'twitch' ? ICON.twitch : ICON.tiktok);
       nm.firstChild.style.cssText = 'width:13px;height:13px;flex:none';
       nm.appendChild(el('span', '', String(e.name || 'Гость')));
@@ -165,7 +165,7 @@
     const e = pinMenu._e, m = b.dataset.m;
     closePinMenu();
     if (!e) return;
-    const entry = { platform: e.platform, kind: 'chat', name: e.name, text: e.text, avatar: e.avatar, color: e.color, sub: e.sub };
+    const entry = { platform: e.platform, kind: 'chat', name: e.name, text: e.text, avatar: e.avatar, color: e.color, sub: e.sub, fol: e.fol };
     const mins = m === 'end' ? 'end' : Number(m);
     let res = null;
     try { res = await api.pin(entry, mins); } catch (_) {}
