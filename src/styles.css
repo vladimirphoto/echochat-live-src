@@ -761,7 +761,6 @@ main{position:relative}
 #tab-avatar #avSetupTxt,#tab-avatar #av3SetupTxt{margin-top:12px;line-height:1.45}
 .avprog{margin-top:12px;height:18px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .avbar{visibility:hidden}.avbar.on{visibility:visible}
-#tab-avatar .prev-box{position:relative;background:repeating-conic-gradient(#14141f 0 25%,#191927 0 50%) 0 0/20px 20px}
 #avFrame,#av3Frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;pointer-events:auto}
 .avbar{height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}.avbar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--a1),#f472b6);transition:width .2s}
 /* ---------- DonationAlerts ---------- */
@@ -946,3 +945,18 @@ main{position:relative}
 .card.thanks h2{margin-bottom:14px}
 .card.thanks p{line-height:1.55}
 .th-btns{padding-top:20px}
+
+/* ===== единый вид окон предпросмотра: градиент как у «Топа лайков», без квадратной сетки ===== */
+.prev-box,.lk-prev{background:linear-gradient(135deg,#1b2a3d,#2b1f3d 55%,#3a1f33),#111!important;border-radius:14px;border:1px solid var(--line)}
+.prev-box:before,.lk-prev:before{display:none!important;content:none!important}
+
+/* ===== «Эфир»: одинаковые блоки слева и лента справа, «Удачных стримов» внутри «Перед эфиром» ===== */
+#tab-live .card,#tab-live .tips{padding:16px 18px}
+#tab-live .tips h2,#tab-live h2{margin:0 0 10px;font-size:16px}
+#tab-live .tips ol{gap:6px;font-size:13px}
+#tab-live .col-left{gap:16px}
+#tab-live .col-left>.card:not(.tips){flex:1;display:flex;flex-direction:column}
+#tab-live .col-left .conn-rows{margin-top:auto}
+#tab-live .wish{margin:14px 0 0;padding:12px 0 0;border-top:1px dashed rgba(255,255,255,.14);justify-content:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.4px;background:none;color:transparent}
+#tab-live .wish span{background:linear-gradient(90deg,#ff8fc4,#c58bff 60%,#8fb4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#tab-live .wish-heart{width:17px;height:17px;color:#ff4d8d}
