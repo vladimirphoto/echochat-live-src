@@ -79,6 +79,29 @@ function poseArms(){ // у VRM руки по умолчанию разведен
     if(lo)lo.rotation.z=best*0.1;
   });
 }
+// Знак наклона и поворота «ухо к плечу» зависит от версии VRM: у VRM 0.x (после rotateVRM0) оси X и Z нормализованных костей зеркальны.
+// Поэтому проверяем на самой модели: чуть наклоняем голову и смотрим, куда сместились глаза. xs: +1 — плюс по X поднимает лицо вверх; zs: +1 — плюс по Z наклоняет голову вправо по экрану. Без проверки (нет костей глаз) берём версию модели
+var AX={xs:-1,zs:-1};
+function detectAxes(){
+  AX={xs:-1,zs:-1};
+  var head=bone('head');
+  try{
+    var le=raw('leftEye'),re=raw('rightEye');
+    if(head&&le&&re){
+      var a=new T.Vector3(),b=new T.Vector3();
+      var eyes=function(){vrm.update(0);le.getWorldPosition(a);re.getWorldPosition(b);return new T.Vector3().addVectors(a,b).multiplyScalar(0.5);};
+      head.rotation.set(0,0,0);var p0=eyes();
+      head.rotation.set(0.15,0,0);var px=eyes();
+      head.rotation.set(0,0,0.15);var pz=eyes();
+      head.rotation.set(0,0,0);vrm.update(0);
+      if(Math.abs(px.y-p0.y)>1e-5)AX.xs=px.y>p0.y?1:-1;
+      if(Math.abs(pz.x-p0.x)>1e-5)AX.zs=pz.x<p0.x?-1:1; // плюс по Z против часовой: глаза уезжают влево по экрану, тогда вправо наклоняет минус
+      return;
+    }
+  }catch(_){}
+  if(head)head.rotation.set(0,0,0);
+  if(vrm&&vrm.meta&&vrm.meta.metaVersion==='0'){AX.xs=1;AX.zs=1;}
+}
 function setExp(n,v){var m=vrm&&vrm.expressionManager;if(m&&m.getExpression(n))m.setValue(n,v);}
 function drive(dt,now){
   if(!vrm)return;
@@ -87,9 +110,10 @@ function drive(dt,now){
   if(live()){
     var yaw=(V.V_yaw||0)*sign,pit=V.V_pitch||0,rol=(V.V_roll||0)*sign;
     // поворот головы делят шея, голова и немного грудь: так естественнее
-    if(head)head.rotation.set(-pit*r*0.6,yaw*r*0.6,-rol*r*0.6);
-    if(neck)neck.rotation.set(-pit*r*0.3,yaw*r*0.3,-rol*r*0.3);
-    if(chest)chest.rotation.set(-pit*r*0.1,yaw*r*0.1,-rol*r*0.1);
+    var px=AX.xs*pit*r,pz=AX.zs*rol*r; // голова вверх (pit>0) должна поднимать лицо у любой версии VRM
+    if(head)head.rotation.set(px*0.6,yaw*r*0.6,pz*0.6);
+    if(neck)neck.rotation.set(px*0.3,yaw*r*0.3,pz*0.3);
+    if(chest)chest.rotation.set(px*0.1,yaw*r*0.1,pz*0.1);
     setExp('blink',0);setExp('blinkLeft',V.V_blinkL||0);setExp('blinkRight',V.V_blinkR||0);
     setExp('aa',V.V_aa||0);setExp('happy',V.V_happy||0);
     if(vrm.lookAt){vrm.lookAt.yaw=(V.V_lookX||0)*sign*25;vrm.lookAt.pitch=(V.V_lookY||0)*20;}
@@ -135,7 +159,7 @@ function loadModel(){
     dispose();
     try{VRMLIB.VRMUtils.rotateVRM0(m);}catch(_){} // VRM 0.x смотрят в другую сторону: разворачиваем
     m.scene.traverse(function(o){o.frustumCulled=false;});
-    vrm=m;loadedKey=key;scene.add(m.scene);poseArms();vrm.update(0);frameModel();nextBlink=0;layout();say('');
+    vrm=m;loadedKey=key;scene.add(m.scene);poseArms();detectAxes();vrm.update(0);frameModel();nextBlink=0;layout();say('');
   }).catch(function(e){
     dispose();loadedKey='';
     say('Не удалось загрузить 3D-аватар. Откройте вкладку «Аватар» в ЭхоЧат, режим 3D, и проверьте компоненты и модель.');

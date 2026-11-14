@@ -297,6 +297,36 @@ test('страница 3D слушает настройки и кадры, бе�
   assert.match(PAGE3, /echochat:'avatar-view',engine:'3d'/); assert.match(PAGE3, /127\.0\.0\.1:'\+port\+'\/events/);
   assert.doesNotMatch(PAGE3, /innerHTML/);
 });
+test('3D: голова вверх поднимает лицо и у VRM 1.0, и у VRM 0.x (зеркальные оси X и Z)', () => {
+  const vm = require('vm');
+  const src = PAGE3.slice(PAGE3.indexOf('var AX='), PAGE3.indexOf('function setExp'));
+  assert.ok(src.includes('function detectAxes'));
+  // мини-имитация: глаза в точке (±0.03; 0,07; 0,09 вперёд) относительно головы, голова поворачивается по X, затем по Z; у VRM 0.x родитель развёрнут на 180° вокруг Y
+  const run = (flip) => {
+    const head = { rotation: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } } };
+    const eye = (sx) => ({ getWorldPosition(out) {
+      let [x, y, z] = [sx * 0.03, 0.07, flip ? -0.09 : 0.09];
+      const cx = Math.cos(head.rotation.x), sxn = Math.sin(head.rotation.x); [y, z] = [y * cx - z * sxn, y * sxn + z * cx];
+      const cz = Math.cos(head.rotation.z), sz = Math.sin(head.rotation.z); [x, y] = [x * cz - y * sz, x * sz + y * cz];
+      if (flip) { x = -x; z = -z; }
+      out.x = x; out.y = y; out.z = z; return out;
+    } });
+    class V3 { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } addVectors(a, b) { this.x = a.x + b.x; this.y = a.y + b.y; this.z = a.z + b.z; return this; } multiplyScalar(k) { this.x *= k; this.y *= k; this.z *= k; return this; } }
+    const ctx = { T: { Vector3: V3 }, vrm: { update() {}, meta: { metaVersion: flip ? '0' : '1' } }, bone: () => head, raw: (n) => eye(n === 'leftEye' ? -1 : 1), Math };
+    vm.createContext(ctx);
+    vm.runInContext(src + ';this.AX=AX;this.detect=detectAxes;', ctx);
+    ctx.detect();
+    return { AX: ctx.AX, head, eyeY: (xr) => { head.rotation.set(xr, 0, 0); const o = new V3(); eye(1).getWorldPosition(o); return o.y; } };
+  };
+  for (const flip of [false, true]) {
+    const { AX, eyeY } = run(flip);
+    const up = AX.xs * 20 * Math.PI / 180; // голова поднята на 20°
+    assert.ok(eyeY(up) > eyeY(0), 'голова вверх → лицо вверх, flip=' + flip);
+    assert.ok(eyeY(-up) < eyeY(0), 'голова вниз → лицо вниз, flip=' + flip);
+  }
+  assert.equal(run(false).AX.xs, -1); // прежнее поведение для VRM 1.0 не меняется
+  assert.equal(run(true).AX.xs, 1);
+});
 
 test('виджет-сервер: страница /avatar3d, файлы VRM и настройки 3D по SSE', async () => {
   const widget = require('../widget'), ud = tmp(), src = tmp();
