@@ -456,6 +456,7 @@ async function doConnect(rawName) {
 
   c.on(WebcastEvent.CHAT || 'chat', (d) => {
     if (!alive()) return;
+    followDebug(d, 'chat');
     const m = ev.chatOf(d);
     send('tt:chat', m);
     if (m.text) wmsg({ platform: 'tiktok', name: m.name, text: m.text, avatar: m.avatar, color: colorOf(m.name) });
@@ -509,6 +510,7 @@ async function doConnect(rawName) {
   });
   // кто-то зашёл на эфир: в оверлее «ник — теперь с нами» и счётчик просмотров за эфир
   c.on(WebcastEvent.MEMBER || 'member', (d) => {
+    followDebug(d, 'join');
     if (!alive()) return;
     const u = ev.userOf(d);
     if (u.name !== 'Гость' || u.id) send('tt:join', u);
@@ -536,6 +538,21 @@ async function doConnect(rawName) {
     try { c.removeAllListeners(); c.disconnect().catch(() => {}); } catch (_) {}
     return { ok: false, ...explain(err) };
   }
+}
+
+// Что TikTok присылает про «подписан» (анонимное подключение может не присылать ничего): первые 300 зрителей за запуск пишутся в follow-debug.json
+// рядом с настройками. Только служебные поля — ни текста сообщений, ни аватарок. Нужно, чтобы понять, откуда брать подписчиков, подписавшихся раньше
+const fdSeen = new Map(); let fdT = null;
+function followDebug(d, kind) {
+  try {
+    const u = (d && d.user) || d || {}, id = String(u.uniqueId || u.userId || '');
+    if (!id || fdSeen.size >= 300) return;
+    const e = fdSeen.get(id) || { id, kinds: {}, isFollower: u.isFollower, followRole: [u.followRole, d && d.followRole], followStatus: u.followStatus, followInfo: u.followInfo || u.follow_info || (d && (d.followInfo || d.follow_info)) || null, keys: Object.keys(u).slice(0, 60), badges: JSON.stringify(u.badges || u.badgeList || u.userBadges || []).slice(0, 400) };
+    e.kinds[kind] = (e.kinds[kind] || 0) + 1;
+    fdSeen.set(id, e);
+    clearTimeout(fdT);
+    fdT = setTimeout(() => { try { require('fs').writeFileSync(path.join(app.getPath('userData'), 'follow-debug.json'), JSON.stringify([...fdSeen.values()], (k, v) => (typeof v === 'bigint' ? String(v) : v), 1)); } catch (_) {} }, 5000);
+  } catch (_) {}
 }
 
 ipcMain.handle('tt:connect', async (_e, rawName) => {
